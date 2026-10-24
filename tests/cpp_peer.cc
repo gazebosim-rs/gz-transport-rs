@@ -132,6 +132,22 @@ int main(int argc, char **argv) {
       publisher.Publish(message);
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
+  } else if (mode == "subscribe-recreate") {
+    struct State { std::mutex mutex; std::condition_variable cv; bool before=false, after=false; };
+    auto state=std::make_shared<State>();
+    std::function<void(const gz::msgs::StringMsg&)> callback = [state,value](const auto &message) {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      if (message.data()==value+"-before") state->before=true;
+      if (state->before && message.data()==value+"-after") state->after=true;
+      state->cv.notify_all();
+    };
+    if (!node.Subscribe(topic,callback)) return 23;
+    std::cout << "READY" << std::endl;
+    std::unique_lock<std::mutex> lock(state->mutex);
+    if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->before;})) return 24;
+    std::cout << "FIRST" << std::endl;
+    if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->after;})) return 25;
+    std::cout << "SECOND" << std::endl;
   } else if (mode == "subscribe" || mode == "subscribe-unknown") {
     struct State { std::mutex mutex; std::condition_variable cv; bool received=false; };
     auto state=std::make_shared<State>();

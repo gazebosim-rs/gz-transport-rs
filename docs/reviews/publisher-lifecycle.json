@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "author": "/root/transport",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-24T23:48:32.381694+00:00",
+  "tracked_diff": "1e6182f626a9ecfd219ca89d2fea76c8640b3f751ca74f2dec24e5774c0161fc",
+  "new_document_sha256": "da7fa9a565a610a341950796ef97b402b7853f0a42399a4d00a6720b3ea7a299",
+  "scope": "Independent source/concurrency/lifecycle review against native Node.cc1282\u20131340 and four exact duplicate-publisher originals Node_TEST.cc1187\u20131250. All validity, topic/type/node/namespace literals retained with invalid handle mapped AlreadyAdvertised. Qualified-topic Mutex admission is serialized; weak lease pruning bounded; Drop remains atomic-only, failed queue admission releases provisional ownership, cleanup precedes replacement advertisement and skips already-expired queued ADS. One-line capacity-test topic correction preserves original QueueFull assertion meaning. Remap remains pending, no packet acceptance.",
+  "independent_checks": {
+    "rust": "Three lib publisher-filter tests, four original Rust ports, one fresh-C++ recreate integration test passed.",
+    "native": "Four exact native originals independently rerun, four run and zero failures XML.",
+    "provenance": "All recorded source/native binary/CPP peer/old failing regression hashes verified; independent CPP peer freshly compiled.",
+    "limits": "Author full62Rust/21tools gate and coverage reported, not independently recomputed. Matching strict staged gate required after receipt metadata."
+  }
+}

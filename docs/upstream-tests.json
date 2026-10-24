@@ -3805,10 +3805,12 @@
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseTwoEqualTopics",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AdvertiseTwoEqualTopics",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_advertise_two_equal_topics"
+      ],
+      "review": "/root/msgs; 2026-10-24; exact native source and all original validity assertions/literals compared; independently ran4 Rust original ports,3 publisher library tests, real C++ immediate recreation and4 native originals, all passed. Receipt docs/reviews/publisher-lifecycle.json; remapping remains pending.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3817,17 +3819,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All original publisher validity assertions retained. Per-node qualified-topic duplicate rejection maps invalid C++ Publisher handles to Error::AlreadyAdvertised. Different Nodes remain independent. Native original executed in mandatory gate; independent assertion review pending.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-publisher-lifecycle.md; mandatory native original executable and source-exact Rust duplicate-topic assertion port"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseSameTopicSameTypeOnSameNode",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AdvertiseSameTopicSameTypeOnSameNode",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_advertise_same_topic_same_type_on_same_node"
+      ],
+      "review": "/root/msgs; 2026-10-24; exact native source and all original validity assertions/literals compared; independently ran4 Rust original ports,3 publisher library tests, real C++ immediate recreation and4 native originals, all passed. Receipt docs/reviews/publisher-lifecycle.json; remapping remains pending.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3836,17 +3841,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All original publisher validity assertions retained. Per-node qualified-topic duplicate rejection maps invalid C++ Publisher handles to Error::AlreadyAdvertised. Different Nodes remain independent. Native original executed in mandatory gate; independent assertion review pending.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-publisher-lifecycle.md; mandatory native original executable and source-exact Rust duplicate-topic assertion port"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseRelativeTopicTwice",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AdvertiseRelativeTopicTwice",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_advertise_relative_topic_twice"
+      ],
+      "review": "/root/msgs; 2026-10-24; exact native source and all original validity assertions/literals compared; independently ran4 Rust original ports,3 publisher library tests, real C++ immediate recreation and4 native originals, all passed. Receipt docs/reviews/publisher-lifecycle.json; remapping remains pending.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3855,8 +3863,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All original publisher validity assertions retained. Per-node qualified-topic duplicate rejection maps invalid C++ Publisher handles to Error::AlreadyAdvertised. Different Nodes remain independent. Native original executed in mandatory gate; independent assertion review pending.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-publisher-lifecycle.md; mandatory native original executable and source-exact Rust duplicate-topic assertion port"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseRemappedTopicTwice",
@@ -3881,10 +3890,12 @@
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseNamespacedTopicTwice",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AdvertiseNamespacedTopicTwice",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_advertise_namespaced_topic_twice"
+      ],
+      "review": "/root/msgs; 2026-10-24; exact native source and all original validity assertions/literals compared; independently ran4 Rust original ports,3 publisher library tests, real C++ immediate recreation and4 native originals, all passed. Receipt docs/reviews/publisher-lifecycle.json; remapping remains pending.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3893,8 +3904,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All original publisher validity assertions retained. Per-node qualified-topic duplicate rejection maps invalid C++ Publisher handles to Error::AlreadyAdvertised. Different Nodes remain independent. Native original executed in mandatory gate; independent assertion review pending.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-publisher-lifecycle.md; mandatory native original executable and source-exact Rust duplicate-topic assertion port"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubTwoThreadsSameTopic",

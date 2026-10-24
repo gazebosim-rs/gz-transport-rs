@@ -15,6 +15,7 @@ pub use runtime::{Message, Node, Publisher, Request, Service, Statistics, Subscr
 pub enum Error {
     InvalidName,
     InvalidConfig,
+    AlreadyAdvertised,
     Unsupported(&'static str),
     InvalidFrame,
     QueueFull,

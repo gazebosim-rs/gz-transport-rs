@@ -5,6 +5,99 @@ use super::*;
 trait TestDiscovery {
     fn discovered(&mut self, channel: usize, message: Discovery);
 }
+
+#[test]
+fn publisher_recreation_withdraws_old_before_new_advertisement() {
+    let (mut worker, _) = state(3);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let old = Arc::new(AtomicBool::new(true));
+    worker.command(Command::Advertise(
+        "/topic".into(),
+        "old".into(),
+        old.clone(),
+    ));
+    old.store(false, Ordering::Release);
+    let retired = Arc::new(AtomicBool::new(false));
+    worker.command(Command::Advertise(
+        "/topic".into(),
+        "never-advertised".into(),
+        retired,
+    ));
+    worker.command(Command::Advertise(
+        "/topic".into(),
+        "new".into(),
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.cleanup();
+    let mut trace = Vec::new();
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while let Ok(len) = receiver.recv(&mut buffer) {
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        let Some(DiscContents::Pub(p)) = message.disc_contents else {
+            panic!("missing publisher")
+        };
+        let Some(PubType::MsgPub(info)) = p.pub_type else {
+            panic!("wrong publisher kind")
+        };
+        trace.push((message.r#type, info.msg_type));
+    }
+    assert_eq!(
+        trace,
+        [
+            (Type::Advertise as i32, "old".into()),
+            (Type::Unadvertise as i32, "old".into()),
+            (Type::Advertise as i32, "new".into())
+        ]
+    );
+    assert_eq!(worker.advertisements.len(), 1);
+}
+
+#[test]
+fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
+    let (worker, commands) = state(2);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+    };
+    let results = thread::scope(|scope| {
+        let first = scope.spawn(|| node.advertise("/topic", "one"));
+        let second = scope.spawn(|| node.advertise("topic", "two"));
+        [first.join().unwrap(), second.join().unwrap()]
+    });
+    assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+    assert_eq!(
+        results
+            .iter()
+            .filter(|r| matches!(r, Err(Error::AlreadyAdvertised)))
+            .count(),
+        1
+    );
+    drop(results);
+    drop(commands.recv().unwrap());
+    let first = node.advertise("/first", "one").unwrap();
+    let second = node.advertise("/second", "two").unwrap();
+    drop(first);
+    assert!(matches!(
+        node.advertise("/first", "three"),
+        Err(Error::QueueFull)
+    ));
+    drop(commands.recv().unwrap());
+    let replacement = node.advertise("/first", "three").unwrap();
+    assert!(matches!(
+        node.advertise("/first", "three"),
+        Err(Error::AlreadyAdvertised)
+    ));
+    drop((replacement, second));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(node.topics.lock().unwrap().len() <= node.config.capacity);
+}
 impl TestDiscovery for Worker {
     fn discovered(&mut self, channel: usize, message: Discovery) {
         self.discovery(channel, message, self.config.interface.into());
@@ -470,7 +563,7 @@ fn invalid_names_native_errors_and_deadlines() {
     );
     let _publisher = node.advertise("topic", "type").unwrap();
     assert!(matches!(
-        node.advertise("topic", "type"),
+        node.advertise("other", "type"),
         Err(Error::QueueFull)
     ));
     assert!(matches!(

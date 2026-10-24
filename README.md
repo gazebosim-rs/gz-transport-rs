@@ -7,7 +7,10 @@ The first NET-01 slice interoperates with the pinned real C++ Gazebo Transport
 main reference in both directions for pub/sub and request/reply. It includes
 partition/namespace qualification, delayed startup, reconnect, raw typed bytes,
 request correlation/timeouts, local delivery, dropped-handle withdrawal, and
-shutdown. Local counters expose drops and wire errors; service replies retry
+shutdown. One publisher per qualified topic is allowed on each Node; duplicates
+return `AlreadyAdvertised`. Dropping the lease permits immediate recreation;
+the worker withdraws the old identity before advertising its replacement.
+Local counters expose drops and wire errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
 relay/all-interface discovery, the full CLI and other retained behaviors remain
 listed in [the protocol contract](docs/PROTOCOL.md) and the 418-case

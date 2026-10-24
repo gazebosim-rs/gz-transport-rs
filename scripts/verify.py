@@ -244,7 +244,7 @@ def verify(profile):
     run(['git', '-C', str(reference), 'diff', '--exit-code', 'HEAD'])
     run([str(reference / 'build/bin/UNIT_TopicUtils_TEST'), '--gtest_filter=TopicUtilsTest.testFullyQualifiedName:TopicUtilsTest.asValidTopic'], env=env)
     run([str(reference / 'build/bin/UNIT_TopicStorage_TEST'), '--gtest_filter=TopicStorageTest.TopicStorageAPI'], env=env)
-    run([str(reference / 'build/bin/UNIT_Node_TEST'), '--gtest_filter=NodeTest.ServiceWithoutOutputCallAsync'], env=env)
+    run([str(reference / 'build/bin/UNIT_Node_TEST'), '--gtest_filter=NodeTest.ServiceWithoutOutputCallAsync:NodeTest.AdvertiseTwoEqualTopics:NodeTest.AdvertiseSameTopicSameTypeOnSameNode:NodeTest.AdvertiseRelativeTopicTwice:NodeTest.AdvertiseNamespacedTopicTwice'], env=env)
     run([str(reference / 'build/bin/UNIT_NodeOptions_TEST'), '--gtest_filter=NodeOptionsTest.accessors:NodeOptionsTest.ignPartition'], env=env)
     run([str(reference / 'build/bin/INTEGRATION_twoProcsPubSub'), '--gtest_filter=twoProcPubSub.TopicListSubscriberOnly:twoProcPubSub.TopicListRemovesUnsubscribed'], env=env)
     artifacts = ROOT / 'artifacts'

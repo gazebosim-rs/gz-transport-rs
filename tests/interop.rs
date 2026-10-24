@@ -26,6 +26,57 @@ fn config() -> Config {
         ..Default::default()
     }
 }
+
+// Original Node_TEST.cc duplicate-publisher assertions: Copyright (C) 2014
+// Open Source Robotics Foundation. Invalid C++ handles map to explicit errors.
+#[test]
+fn original_advertise_two_equal_topics() {
+    let config = config();
+    let first = Node::new(config.clone()).unwrap();
+    let second = Node::new(config).unwrap();
+    let _one = first.advertise("/foo", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        first.advertise("/foo", TYPE),
+        Err(Error::AlreadyAdvertised)
+    ));
+    let _two = second.advertise("/foo", TYPE).unwrap();
+}
+
+#[test]
+fn original_advertise_same_topic_same_type_on_same_node() {
+    let node = Node::new(config()).unwrap();
+    let _one = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        node.advertise("/foo", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
+}
+
+#[test]
+fn original_advertise_relative_topic_twice() {
+    let node = Node::new(config()).unwrap();
+    let _one = node.advertise("relative_topic", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        node.advertise("relative_topic", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
+}
+
+#[test]
+fn original_advertise_namespaced_topic_twice() {
+    let mut config = config();
+    config.set_namespace("my_ns").unwrap();
+    let node = Node::new(config).unwrap();
+    let _one = node.advertise("ns_topic", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        node.advertise("ns_topic", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
+    assert!(matches!(
+        node.advertise("/my_ns/ns_topic", TYPE),
+        Err(Error::AlreadyAdvertised)
+    ));
+}
 struct Peer(Child, BufReader<ChildStdout>);
 impl Peer {
     fn start(config: &Config, mode: &str, topic: &str, value: &str) -> Self {
@@ -585,5 +636,50 @@ fn cpp_same_node_publishes_and_serves_the_same_topic() {
         (data("rust-dual"), true)
     );
     writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+}
+
+#[test]
+fn cpp_subscriber_observes_immediately_recreated_publisher() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut peer = Peer::start(&config, "subscribe-recreate", "/recreated", "sample");
+    let publisher = node.advertise("/recreated", TYPE).unwrap();
+    thread::scope(|scope| {
+        let (tx, rx) = std::sync::mpsc::sync_channel(2);
+        let stdout = &mut peer.1;
+        scope.spawn(move || {
+            for expected in ["FIRST", "SECOND"] {
+                let mut line = String::new();
+                stdout.read_line(&mut line).unwrap();
+                assert_eq!(line.trim(), expected);
+                tx.send(expected).unwrap();
+            }
+        });
+        let observed = |publisher: &gz_transport::Publisher, value: &str, stage| {
+            let deadline = Instant::now() + Duration::from_secs(8);
+            loop {
+                publisher.publish(data(value)).unwrap();
+                match rx.recv_timeout(Duration::from_millis(10)) {
+                    Ok(actual) => {
+                        assert_eq!(actual, stage);
+                        break;
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        assert!(Instant::now() < deadline)
+                    }
+                    Err(error) => panic!("native observation failed: {error}"),
+                }
+            }
+        };
+        observed(&publisher, "sample-before", "FIRST");
+        assert!(matches!(
+            node.advertise("/recreated", TYPE),
+            Err(Error::AlreadyAdvertised)
+        ));
+        drop(publisher);
+        let replacement = node.advertise("/recreated", TYPE).unwrap();
+        observed(&replacement, "sample-after", "SECOND");
+    });
     peer.success();
 }

@@ -13,7 +13,7 @@ use std::{
     collections::{HashMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddrV4, UdpSocket},
     sync::{
-        Arc,
+        Arc, Mutex, Weak,
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc::{self, Receiver, SyncSender, TrySendError},
     },
@@ -172,6 +172,7 @@ pub struct Node {
     sender: Sender,
     worker: Option<JoinHandle<()>>,
     config: Config,
+    topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
 }
 impl Node {
     pub fn new(config: Config) -> Result<Self, Error> {
@@ -193,6 +194,7 @@ impl Node {
             sender,
             worker: Some(worker),
             config,
+            topics: Mutex::new(HashMap::new()),
         })
     }
     fn topic(&self, topic: &str) -> Result<String, Error> {
@@ -210,14 +212,25 @@ impl Node {
             slots: self.sender.slots.clone(),
         })
     }
+    /// Reserve one publisher per qualified topic on this Node, as native Gazebo does.
+    /// Dropping it immediately releases ownership; worker withdrawal precedes recreation.
     pub fn advertise(&self, topic: &str, type_name: &str) -> Result<Publisher, Error> {
         let topic = self.topic(topic)?;
+        let mut topics = self
+            .topics
+            .lock()
+            .map_err(|_| Error::Native("publisher registry poisoned".into()))?;
+        topics.retain(|_, active| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
+        if topics.contains_key(&topic) {
+            return Err(Error::AlreadyAdvertised);
+        }
         let lease = self.reserve()?;
         self.sender.send(Command::Advertise(
             topic.clone(),
             type_name.into(),
             lease.active.clone(),
         ))?;
+        topics.insert(topic.clone(), Arc::downgrade(&lease.active));
         Ok(Publisher {
             _lease: lease,
             sender: self.sender.clone(),
@@ -612,6 +625,11 @@ impl Worker {
     fn command(&mut self, command: Command) {
         match command {
             Command::Advertise(topic, type_name, active) => {
+                // A queued replacement must never be followed by the old withdrawal.
+                self.cleanup();
+                if !active.load(Ordering::Acquire) {
+                    return;
+                }
                 let p = self.wire_publisher(
                     topic,
                     PubType::MsgPub(MessagePublisher {
