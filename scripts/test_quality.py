@@ -20,7 +20,7 @@ class CoveragePolicy(unittest.TestCase):
             path = root / 'src/lib.rs'
             path.write_text('pub fn f() {}')
             manifest = {'production_files': ['src/lib.rs'], 'production_roots': ['src'], 'exclusions': [], 'crate': 'test', 'profile': 'test'}
-            good = {'data': [{'files': [{'filename': str(path), 'summary': {metric: {'covered': 96, 'count': 100} for metric in ('lines', 'regions')}}]}]}
+            good = {'type':'llvm.coverage.json.export', 'data': [{'files': [{'filename': str(path), 'summary': {metric: {'covered': 96, 'count': 100} for metric in ('lines', 'regions')}}]}]}
             self.assertEqual(check(good, manifest, root)['lines']['count'], 100)
             for metric in ('lines', 'regions'):
                 for covered, count in [(95, 100), (94, 100), (0, 0)]:
@@ -30,6 +30,16 @@ class CoveragePolicy(unittest.TestCase):
                         check(bad, manifest, root)
             with self.assertRaises(ValueError):
                 check({'data': [{'files': []}]}, manifest, root)
+            for invalid in ['type', 'duplicate', 'outside']:
+                bad = copy.deepcopy(good)
+                if invalid == 'type':
+                    bad['type'] = 'missing'
+                elif invalid == 'duplicate':
+                    bad['data'][0]['files'] *= 2
+                else:
+                    bad['data'][0]['files'].append(dict(good['data'][0]['files'][0], filename=str(root/'production.inc')))
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    check(bad, manifest, root)
             (root / 'src/new.rs').write_text('pub fn uncovered() {}')
             with self.assertRaises(ValueError):
                 check(good, manifest, root)
@@ -203,6 +213,102 @@ class PushRangePolicy(unittest.TestCase):
             self.assertEqual(source_changes(root,['src/lib.rs','src/new.rs'],base),{'src/lib.rs':{2,3},'src/new.rs':{1}})
             self.assertEqual(source_changes(root,['src/lib.rs'],'0'*40),{'src/lib.rs':{1,2,3}})
             with self.assertRaises(ValueError):source_changes(root,['src/lib.rs'],'HEAD~2')
+
+
+class CargoLayoutPolicy(unittest.TestCase):
+    def manifest(self):
+        return {'crate':'gz-transport','production_roots':['src'],'exclusions':[], 'required_runners':['linux-x86_64-multicast','pinned-cpp-peer']}
+
+    def test_real_cargo_implicit_targets_and_features_are_rejected_before_build(self):
+        import json
+        import subprocess
+        from verify import check_layout
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'src').mkdir()
+            (root/'src/lib.rs').write_text('pub fn function() {}')
+            cargo='[package]\nname="gz-transport"\nversion="0.1.0"\nedition="2024"\nlicense="Apache-2.0"\n'
+            (root/'Cargo.toml').write_text(cargo)
+            def metadata():
+                return json.loads(subprocess.check_output(['cargo','metadata','--offline','--no-deps','--format-version=1'],cwd=root,text=True))
+            check_layout(root,metadata(),self.manifest())
+            for relative in ['build.rs','src/main.rs','src/bin/tool.rs','examples/example.rs','benches/bench.rs']:
+                path=root/relative
+                path.parent.mkdir(parents=True,exist_ok=True)
+                path.write_text('compile_error!("must not compile before layout rejection");')
+                with self.subTest(target=relative),self.assertRaisesRegex(ValueError,'Unaccounted Cargo target'):
+                    check_layout(root,metadata(),self.manifest())
+                path.unlink()
+            (root/'Cargo.toml').write_text(cargo+'\n[features]\nextra=[]\n')
+            with self.assertRaisesRegex(ValueError,'Feature profiles'):
+                check_layout(root,metadata(),self.manifest())
+
+    def test_packages_sources_license_and_runner_require_supported_profiles(self):
+        from verify import check_layout
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'src').mkdir()
+            (root/'src/lib.rs').write_text('pub fn function() {}')
+            package={'id':'owned','name':'gz-transport','source':None,'manifest_path':str(root/'Cargo.toml'),'license':'Apache-2.0','features':{},'targets':[{'kind':['lib'],'crate_types':['lib'],'src_path':str(root/'src/lib.rs')}]}
+            metadata={'packages':[package],'workspace_members':['owned']}
+            check_layout(root,metadata,self.manifest())
+            for key,value in [('packages',[package,dict(package,id='other')]),('workspace_members',['owned','other'])]:
+                with self.subTest(metadata=key),self.assertRaises(ValueError):
+                    check_layout(root,dict(metadata,**{key:value}),self.manifest())
+            for key,value in [('license','MIT'),('targets',[]),('targets',[dict(package['targets'][0],src_path=str(root/'outside.rs'))])]:
+                with self.subTest(package=key),self.assertRaises(ValueError):
+                    check_layout(root,dict(metadata,packages=[dict(package,**{key:value})]),self.manifest())
+            with patch('verify.platform.system',return_value='Windows'),self.assertRaisesRegex(ValueError,'runner unavailable'):
+                check_layout(root,metadata,self.manifest())
+            (root/'forgotten.rs').write_text('pub fn omitted() {}')
+            with self.assertRaisesRegex(ValueError,'Unaccounted owned Rust source'):
+                check_layout(root,metadata,self.manifest())
+
+
+class CompilerInputPolicy(unittest.TestCase):
+    def test_normal_library_cannot_import_production_code_from_test_or_data_paths(self):
+        import json
+        import os
+        import subprocess
+        from verify import check_layout, production_inputs
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'repo with spaces'
+            (root/'src').mkdir(parents=True)
+            (root/'tests').mkdir()
+            (root/'Cargo.toml').write_text('[package]\nname="gz-transport"\nversion="0.1.0"\nedition="2024"\nlicense="Apache-2.0"\n')
+            source=root/'src/lib.rs'
+            source.write_text('pub fn root() {}\n#[cfg(test)] #[path="../tests/support.rs"] mod support;')
+            (root/'tests/support.rs').write_text('compile_error!("cfg(test) source must not enter normal library audit");')
+            env=dict(os.environ,RUSTUP_TOOLCHAIN='1.94.1',CARGO_TARGET_DIR=str(root/'target'))
+            subprocess.run(['cargo','generate-lockfile','--offline'],cwd=root,env=env,check=True)
+            def metadata():
+                return json.loads(subprocess.check_output(['cargo','metadata','--offline','--no-deps','--format-version=1'],cwd=root,env=env,text=True))
+            layout=CargoLayoutPolicy().manifest()
+            package=check_layout(root,metadata(),layout)
+            proof=production_inputs(root,['src/lib.rs'],package['id'],env,root/'artifacts')
+            self.assertEqual(proof['inputs'],['src/lib.rs'])
+            for name in ['tests/hidden.rs','tests/hidden.inc','outside.inc']:
+                path=root/name
+                path.write_text('pub fn hidden() {}')
+                module = f'#[path="../{name}"] pub mod hidden;' if name.endswith('.rs') else f'include!("../{name}");'
+                stamp=source.stat()
+                source.write_text(f'pub fn root() {{}}\n{module}')
+                os.utime(source,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+                package=check_layout(root,metadata(),layout)
+                with self.subTest(name=name),self.assertRaisesRegex(ValueError,'Normal library compiler inputs differ'):
+                    production_inputs(root,['src/lib.rs'],package['id'],env,root/'artifacts')
+                self.assertFalse((root/'artifacts/production-inputs.json').exists())
+                path.unlink()
+
+    def test_depinfo_missing_duplicate_or_escaped_inputs_fail_closed(self):
+        from verify import depinfo_inputs
+        root=Path('/tmp')
+        good='output.rlib: src/lib.rs\n\nsrc/lib.rs:\n'
+        self.assertEqual(depinfo_inputs(good,root,['src/lib.rs']),['src/lib.rs'])
+        for bad in ['',good+'src/lib.rs:\n',good.replace('src/lib.rs','src/hidden.rs'), 'output.rlib: src/lib.rs\n',good.replace('src/lib.rs','src/with\\ space.rs')]:
+            with self.subTest(bad=bad),self.assertRaises(ValueError):
+                depinfo_inputs(bad,root,['src/lib.rs'])
 
 
 if __name__ == '__main__':

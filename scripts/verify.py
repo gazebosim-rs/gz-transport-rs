@@ -7,6 +7,7 @@ import glob
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import shutil
@@ -122,6 +123,90 @@ def staged():
         shutil.copytree(candidate / 'artifacts', destination)
 
 
+def check_layout(root, metadata, manifest):
+    if manifest['crate'] != 'gz-transport' or manifest['production_roots'] != ['src'] or manifest['exclusions']:
+        raise ValueError('Unreviewed production layout or exclusions')
+    if manifest['required_runners'] != ['linux-x86_64-multicast', 'pinned-cpp-peer'] or (platform.system(), platform.machine()) != ('Linux', 'x86_64'):
+        raise ValueError('Required native runner unavailable or matrix changed')
+    owned = [package for package in metadata['packages'] if package['source'] is None]
+    if len(owned) != 1:
+        raise ValueError('Additional local packages require production coverage support')
+    package = owned[0]
+    if package['name'] != 'gz-transport' or Path(package['manifest_path']).resolve() != root / 'Cargo.toml' or metadata['workspace_members'] != [package['id']]:
+        raise ValueError('Unreviewed Cargo package or workspace')
+    if package['features']:
+        raise ValueError('Feature profiles require explicit coverage support')
+    if package['license'] != 'Apache-2.0':
+        raise ValueError('Owned package must remain Apache-2.0')
+    libraries = 0
+    for target in package['targets']:
+        path = Path(target['src_path']).resolve()
+        if target['kind'] == ['lib'] and target['crate_types'] == ['lib'] and path == root / 'src/lib.rs':
+            libraries += 1
+        elif target['kind'] != ['test'] or not path.is_relative_to(root / 'tests'):
+            raise ValueError('Unaccounted Cargo target requires production coverage support')
+    if libraries != 1:
+        raise ValueError('Exactly one production library is required')
+    for directory, children, files in os.walk(root):
+        if Path(directory) == root:
+            children[:] = [name for name in children if name not in ('.git', 'target', 'artifacts')]
+        for name in files:
+            path = (Path(directory) / name).resolve()
+            if name.endswith('.rs') and not (path.is_relative_to(root / 'src') or path.is_relative_to(root / 'tests')):
+                raise ValueError(f'Unaccounted owned Rust source: {path}')
+    return package
+
+
+def depinfo_inputs(text, root, production_files):
+    expected = {(root / name).resolve() for name in production_files}
+    sources, rules = [], []
+    def paths(parts):
+        # This profile has plain Rust paths. Refuse ambiguous Make escaping,
+        # rather than guessing which compiler inputs a transformed name denotes.
+        if any(not part or any(c.isspace() or c in "\\$#" for c in part) for part in parts):
+            raise ValueError('Unsupported compiler dep-info path encoding')
+        return [(root / part).resolve() for part in parts]
+    for line in text.splitlines():
+        if not line or line.startswith('# env-dep:'):
+            continue
+        if line.endswith(':'):
+            sources.extend(paths([line[:-1]]))
+        elif ': ' in line:
+            rules.append(paths([part for part in line.split(': ', 1)[1].split(' ') if part]))
+        else:
+            raise ValueError('Unrecognized compiler dep-info record')
+    if not rules or len(sources) != len(expected) or set(sources) != expected or any(len(rule) != len(expected) or set(rule) != expected for rule in rules):
+        raise ValueError('Normal library compiler inputs differ from production inventory')
+    return sorted(str(path.relative_to(root)) for path in expected)
+
+
+def production_inputs(root, production_files, package_id, env, artifact_dir):
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    proof = artifact_dir / 'production-inputs.json'
+    proof.unlink(missing_ok=True)
+    probe_env = dict(env, RUSTFLAGS='')
+    probe_env.pop('CARGO_ENCODED_RUSTFLAGS', None)
+    probe_env.pop('RUSTC_WORKSPACE_WRAPPER', None)
+    # Cargo's timestamp cache can miss a changed module graph after restored
+    # mtimes. Clean only this package's normal dev outputs, keeping dependencies.
+    run(['cargo', 'clean', '--package', 'gz-transport', '--profile', 'dev'], cwd=root, env=probe_env)
+    output = subprocess.check_output(['cargo', 'rustc', '--locked', '--lib', '--message-format=json'], cwd=root, env=probe_env, text=True)
+    artifacts = [json.loads(line) for line in output.splitlines()]
+    libraries = [record for record in artifacts if record.get('reason') == 'compiler-artifact' and record['package_id'] == package_id and record['target']['kind'] == ['lib'] and not record['profile']['test']]
+    if len(libraries) != 1 or libraries[0]['fresh']:
+        raise ValueError('Missing unique normal library compiler artifact')
+    outputs = [Path(path) for path in libraries[0]['filenames'] if path.endswith('.rmeta')]
+    if len(outputs) != 1:
+        raise ValueError('Missing normal library dep-info artifact')
+    depinfo = outputs[0].with_name(outputs[0].stem.removeprefix('lib') + '.d')
+    raw = depinfo.read_bytes()
+    inputs = depinfo_inputs(raw.decode(), root, production_files)
+    evidence = {'inputs': inputs, 'depinfo_sha256': hashlib.sha256(raw).hexdigest()}
+    # Do not publish raw env-dep values from compiler dep-info.
+    proof.write_text(json.dumps(evidence, indent=2) + '\n')
+    return evidence
+
+
 def verify(profile):
     manifest = json.loads((ROOT / 'coverage.json').read_text())
     if profile != manifest['profile']:
@@ -134,9 +219,12 @@ def verify(profile):
     env.pop('CARGO_ENCODED_RUSTFLAGS', None)
     prefix = Path(env.get('GZ_REFERENCE_PREFIX', '/home/nkoenig/local')).resolve()
     env['LD_LIBRARY_PATH'] = str(prefix / 'lib') + ':' + env.get('LD_LIBRARY_PATH', '')
+    metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=ROOT, env=env, text=True))
+    package = check_layout(ROOT, metadata, manifest)
     run(['cargo', 'fmt', '--check'], env=env)
+    library_inputs = production_inputs(ROOT, manifest['production_files'], package['id'], env, ROOT / 'artifacts')
     run(['cargo', 'clippy', '--locked', '--all-targets', '--', '-D', 'warnings'], env=env)
-    run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py'])
+    run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py'], env=env)
     run(['bash', 'scripts/build-cpp-peer.sh'], env=env)
     linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts/cpp-peer')], env=env, text=True)
     (ROOT / 'artifacts/cpp-linkage.txt').write_text(linkage)
@@ -202,7 +290,7 @@ def verify(profile):
     else:
         changed = {p: set(range(1, len((ROOT / p).read_text().splitlines()) + 1)) for p in manifest['production_files']}
     changed_totals = changed_check(lcov, changed, ROOT, manifest['production_files'])
-    evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'reference': reference_counts, 'cpp_libraries_sha256': {Path(path).name:hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in libraries}, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
+    evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'reference': reference_counts, 'production_inputs': library_inputs, 'cpp_libraries_sha256': {Path(path).name:hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in libraries}, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
     validate_evidence(evidence, ROOT, profile)
     (artifacts / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
     print(json.dumps({'profile':profile,'totals':totals,'changed_lines':changed_totals,'evidence':str(artifacts/'evidence.json')},indent=2))

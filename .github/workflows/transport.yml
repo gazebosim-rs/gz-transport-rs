@@ -8,10 +8,13 @@ concurrency:
 jobs:
   policy:
     runs-on: ubuntu-24.04
+    env:
+      RUSTUP_TOOLCHAIN: 1.94.1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - run: rustup toolchain install 1.94.1 --profile minimal
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
   native-parity-and-coverage:
     runs-on: ubuntu-24.04
@@ -40,6 +43,7 @@ jobs:
           name: native-parity-${{ github.sha }}
           path: |
             artifacts/evidence.json
+            artifacts/production-inputs.json
             artifacts/coverage.json
             artifacts/coverage.lcov
             artifacts/coverage.profdata

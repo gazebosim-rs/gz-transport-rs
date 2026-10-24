@@ -12,11 +12,23 @@ def above_95(covered, count):
 
 
 def check(report, manifest, root):
+    if report.get('type') != 'llvm.coverage.json.export':
+        raise ValueError('Missing LLVM coverage export')
     expected = {str((root / name).resolve()) for name in manifest['production_files']}
     actual = {str(p.resolve()) for directory in manifest['production_roots'] for p in (root / directory).rglob('*.rs')}
-    if expected != actual or manifest['exclusions']:
+    if expected != actual or len(expected) != len(manifest['production_files']) or manifest['exclusions']:
         raise ValueError('Production inventory mismatch or unreviewed exclusion')
-    files = {f['filename']: f for d in report['data'] for f in d['files']}
+    files = {}
+    for data in report['data']:
+        for file in data['files']:
+            path = Path(file['filename']).resolve()
+            filename = str(path)
+            if filename in expected:
+                if filename in files:
+                    raise ValueError('Duplicate owned LLVM source')
+                files[filename] = file
+            elif path.is_relative_to(root) and not (path.is_relative_to(root / 'tests') and path.suffix == '.rs'):
+                raise ValueError(f'Unaccounted owned LLVM input: {path}')
     totals = {metric: {'covered': 0, 'count': 0} for metric in ('lines', 'regions')}
     for filename in expected:
         if filename not in files:

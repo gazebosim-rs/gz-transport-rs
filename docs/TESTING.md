@@ -14,6 +14,20 @@ reference `/home/nkoenig/work/gazebo/rust/gz-transport` and `/home/nkoenig/local
 Local networking/multicast must be permitted. Missing C++ dependencies, native
 socket failures, absent LLVM tools, or unavailable reference runners are failures.
 
+Before compiling, the runner uses Cargo metadata to verify the current one-library,
+no-feature, Linux x86_64 layout. Implicit build scripts, bins/examples/benches,
+additional local packages/features and owned Rust outside src/tests require a
+reviewed coverage-profile extension. A freshly compiled normal `cargo rustc --lib`
+dependency inventory must match every declared production file before tests run; production
+imports from tests or other data paths therefore cannot borrow the test-code
+exemption. Only this package's dev outputs are cleaned for the audit, so restored
+source timestamps cannot reuse a stale proof; dependencies stay cached. Existing
+cfg(test) support remains separate. This profile accepts
+plain compiler input paths and fails closed on ambiguous Make escaping. A hashed
+compiler-input proof is retained without raw environment dependency values. The
+LLVM report also rejects unexpected owned inputs regardless of extension, and
+duplicate production records cannot mask coverage.
+
 The runner checks format, Clippy with warnings denied, quality-tool regressions,
 builds a genuine C++ peer linked to libgz-transport, executes the original
 TopicUtilsTest.testFullyQualifiedName, NodeTest.ServiceWithoutOutputCallAsync and
