@@ -9,6 +9,31 @@ pub(crate) fn valid(name: &str) -> bool {
         && !["~", " ", "//", "@", ":="].iter().any(|s| name.contains(s))
 }
 
+/// Apply Gazebo's one-pass topic sanitization; invalid results become empty.
+/// ASCII spaces become underscores, `@`/`~` and each `:=`/`//` pair are removed.
+/// Remaining UTF-8 is preserved and the output byte length must fit 65535.
+pub fn as_valid_topic(topic: &str) -> String {
+    let mut result = String::with_capacity(topic.len());
+    let mut input = topic.chars().peekable();
+    while let Some(c) = input.next() {
+        match c {
+            ' ' => result.push('_'),
+            '@' | '~' => {}
+            ':' if input.peek() == Some(&'=') => {
+                input.next();
+            }
+            '/' if input.peek() == Some(&'/') => {
+                input.next();
+            }
+            c => result.push(c),
+        }
+    }
+    if result.is_empty() || !valid(&result) {
+        result.clear();
+    }
+    result
+}
+
 /// Resolve a topic exactly as Gazebo TopicUtils::FullyQualifiedName does.
 pub fn qualified_name(partition: &str, namespace: &str, topic: &str) -> Result<String, Error> {
     if !valid(partition) || !valid(namespace) || !valid(topic) || topic.is_empty() {

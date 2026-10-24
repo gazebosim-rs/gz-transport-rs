@@ -6916,10 +6916,12 @@
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.asValidTopic",
       "target": "UNIT_TopicUtils_TEST",
       "case": "TopicUtilsTest.asValidTopic",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "runtime::tests::upstream_as_valid_topic_preserves_all_original_inputs_and_assertions"
+      ],
+      "review": "/root/sdformat; 2026-10-24; native scan/predicate plus all16 original inputs/assertions compared; independently ran exact native original1/1, Rust16-input table1/1 and22 raw-stdin C++ differential inputs, all passed. UTF8/NUL, one-pass formed-invalid pairs and final postshrink byte bounds retained.",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6928,8 +6930,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All16 original inputs and exact output plus IsValidTopic true/false assertions retained, including duplicate /abc row. Native one-pass sanitization and final validation preserved. Supplemental native C++ comparison checks slash/colon pair order, formed-invalid pairs, Unicode whitespace, NUL, UTF-8 byte limits and shrink-after-overlength input.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-topic-sanitization.md; mandatory native original and original Rust table"
     },
     {
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.CreateMsgLivelinessToken",

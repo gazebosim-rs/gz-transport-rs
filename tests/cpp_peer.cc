@@ -4,6 +4,7 @@
 // Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
 #include <gz/transport/Node.hh>
 #include <gz/transport/NodeShared.hh>
+#include <gz/transport/TopicUtils.hh>
 #include <gz/msgs/stringmsg.pb.h>
 #include <gz/msgs/empty.pb.h>
 #include <chrono>
@@ -14,10 +15,18 @@
 #include <google/protobuf/unknown_field_set.h>
 #include <thread>
 #include <algorithm>
+#include <iterator>
 
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "valid-topic" || mode == "valid-topic-bytes") {
+    const auto input=mode == "valid-topic-bytes" ?
+      std::string(std::istreambuf_iterator<char>(std::cin), {}) : topic;
+    auto result=gz::transport::TopicUtils::AsValidTopic(input);
+    std::cout << result;
+    return mode == "valid-topic-bytes" || result == value ? 0 : 15;
+  }
   gz::transport::Node node;
   if (mode == "config") {
     gz::transport::NodeOptions options;

@@ -7,7 +7,7 @@ mod protocol;
 mod runtime;
 
 pub use config::Config;
-pub use names::qualified_name;
+pub use names::{as_valid_topic, qualified_name};
 pub use runtime::{Message, Node, Publisher, Request, Service, Statistics, Subscription};
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.

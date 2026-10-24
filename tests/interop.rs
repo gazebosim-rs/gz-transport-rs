@@ -500,3 +500,56 @@ fn original_oneway_int32_five_dispatches_once_and_rejects_invalid_service() {
     }
     assert_eq!(counter, 1);
 }
+
+#[test]
+fn native_as_valid_topic_preserves_scan_order_utf8_and_byte_boundaries() {
+    let mut cases: Vec<(String, String)> = [
+        ("/", ""),
+        ("//", ""),
+        ("///", ""),
+        ("////", ""),
+        ("a///b", "a/b"),
+        ("a////b", "ab"),
+        ("a/~/b", ""),
+        ("a:~=b", ""),
+        (":", ":"),
+        (":=", ""),
+        (":==", "="),
+        ("a/", "a/"),
+        ("a:", "a:"),
+        ("é🦀 b", "é🦀_b"),
+        ("a\u{a0}b", "a\u{a0}b"),
+        ("a\tb\nc", "a\tb\nc"),
+        ("a\0b", "a\0b"),
+    ]
+    .into_iter()
+    .map(|(a, b)| (a.into(), b.into()))
+    .collect();
+    cases.extend([
+        ("a".repeat(65535), "a".repeat(65535)),
+        ("a".repeat(65536), String::new()),
+        ("é".repeat(32767) + "a", "é".repeat(32767) + "a"),
+        ("é".repeat(32768), String::new()),
+        ("@".repeat(65536) + "a", "a".into()),
+    ]);
+    let peer = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    for (input, expected) in cases {
+        assert_eq!(gz_transport::as_valid_topic(&input), expected);
+        let mut child = Command::new(&peer)
+            .args(["valid-topic-bytes", "unused", "unused"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(input.as_bytes())
+            .unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected.as_bytes());
+    }
+}

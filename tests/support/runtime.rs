@@ -1155,3 +1155,37 @@ fn subscriber_withdrawal_waits_for_last_lease_and_emits_one_generic_end() {
     worker.cleanup();
     assert!(receiver.recv(&mut buffer).is_err());
 }
+
+#[test]
+fn upstream_as_valid_topic_preserves_all_original_inputs_and_assertions() {
+    for unmodified in [
+        "/abc",
+        "abc/de",
+        "a",
+        "ABC/",
+        "/abc",
+        "/abc/d",
+        "/abc/d/e",
+        "a(bc)d-e_f=h+i.j",
+    ] {
+        let result = crate::as_valid_topic(unmodified);
+        assert_eq!(result, unmodified);
+        assert!(!result.is_empty() && crate::names::valid(&result));
+    }
+    for (input, expected) in [
+        ("a b  c", "a_b__c"),
+        ("a@b@c", "abc"),
+        ("a:=b:=c", "abc"),
+        ("a//b/c", "ab/c"),
+        ("a~b~c", "abc"),
+    ] {
+        let result = crate::as_valid_topic(input);
+        assert_eq!(result, expected);
+        assert!(!result.is_empty() && crate::names::valid(&result));
+    }
+    for input in ["", "@@@", "~@~"] {
+        let result = crate::as_valid_topic(input);
+        assert!(result.is_empty());
+        assert!(result.is_empty() || !crate::names::valid(&result));
+    }
+}
