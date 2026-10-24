@@ -105,7 +105,7 @@ def verify(profile):
     if sha != baseline['upstream_sha']:
         raise ValueError('C++ reference SHA mismatch')
     ledger = json.loads((ROOT / 'docs/upstream-tests.json').read_text())
-    expanded = collect(reference, ROOT / 'artifacts/reference-enumeration')
+    expanded = collect(reference, ROOT / 'artifacts/reference-enumeration', env=env)
     catalog = json.loads((ROOT / 'docs/reference-catalog.json').read_text())
     reference_counts = check_ledger(ledger, expanded, enabled_features(reference), catalog)
     run(['git', '-C', str(reference), 'diff', '--exit-code', 'HEAD'])

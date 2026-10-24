@@ -26,7 +26,7 @@ def check_ledger(ledger, expanded, features, catalog):
     applicable = {entry['id'] for entry in entries if set(entry.get('reference_features', [])) <= features}
     actual = {entry['id'] for entry in expanded['entries']}
     if applicable != actual or expanded['unavailable_targets'] or ledger['source_fixture_sha256'] != expanded['source_fixture_sha256']:
-        raise ValueError(f'Reference ledger mismatch: missing={sorted(applicable-actual)}, extra={sorted(actual-applicable)}')
+        raise ValueError(f'Reference ledger mismatch: missing={sorted(applicable-actual)}, extra={sorted(actual-applicable)}, unavailable={expanded["unavailable_targets"]}')
     for entry in entries:
         if entry['disposition'] != 'pending' and (not entry['replacement'] or not entry.get('evidence')):
             raise ValueError('Missing retained-test mapping/evidence')

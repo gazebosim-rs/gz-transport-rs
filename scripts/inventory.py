@@ -24,7 +24,7 @@ def listed_cases(report):
     return cases
 
 
-def collect(upstream, diagnostics=None):
+def collect(upstream, diagnostics=None, *, env=None):
     sha = subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip()
     entries, unavailable = [], []
     with tempfile.TemporaryDirectory(prefix='gz-transport-enumeration-') as directory:
@@ -35,7 +35,7 @@ def collect(upstream, diagnostics=None):
                 continue
             listing=output / f'{executable.name}.json'
             listing.unlink(missing_ok=True)
-            result = subprocess.run([str(executable), '--gtest_list_tests', '--gtest_filter=*', '--gtest_color=no', f'--gtest_output=json:{listing}'], capture_output=True, text=True, timeout=30)
+            result = subprocess.run([str(executable), '--gtest_list_tests', '--gtest_filter=*', '--gtest_color=no', f'--gtest_output=json:{listing}'], capture_output=True, text=True, timeout=30, env=env)
             if diagnostics is not None:
                 (output/f'{executable.name}.stdout').write_text(result.stdout)
                 (output/f'{executable.name}.stderr').write_text(result.stderr)
@@ -78,7 +78,10 @@ def collect(upstream, diagnostics=None):
 if __name__ == "__main__":
     root = Path(__file__).resolve().parent.parent
     upstream = Path(os.environ.get("GZ_REFERENCE_SOURCE", str(root.parent / "gz-transport")))
-    record = collect(upstream)
+    native_env = dict(os.environ)
+    if prefix := native_env.get('GZ_REFERENCE_PREFIX'):
+        native_env['LD_LIBRARY_PATH'] = str(Path(prefix) / 'lib') + ':' + native_env.get('LD_LIBRARY_PATH', '')
+    record = collect(upstream, env=native_env)
     previous_path = root / 'docs/upstream-tests.json'
     if previous_path.exists():
         previous = {entry['id']:entry for entry in json.loads(previous_path.read_text())['entries']}

@@ -62,3 +62,34 @@ class RuntimeEnumeration(unittest.TestCase):
         self.assertEqual(listed_cases(report),['Suite.First','Suite.Second/0'])
         for bad in [dict(report,tests=3),{'tests':2,'testsuites':[{'name':'Suite','tests':3,'testsuite':[{'name':'First'},{'name':'First'}]}]}, {'tests':2,'testsuites':[{'name':'Suite','tests':2,'testsuite':[{'name':'First'},{'name':'First'}]}]}]:
             with self.assertRaises(ValueError):listed_cases(bad)
+
+
+    def test_native_environment_forwarding_and_loader_failure_are_retained(self):
+        import json
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from inventory import collect
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'build/bin').mkdir(parents=True)
+            (root/'build/bin/UNIT_peer').touch()
+            diagnostics=root/'diagnostics'
+            native_env={'LD_LIBRARY_PATH':'/isolated/reference/lib'}
+            report={'tests':1,'testsuites':[{'name':'Suite','tests':1,'testsuite':[{'name':'Case'}]}]}
+            def enumerate_peer(command, **kwargs):
+                self.assertEqual(kwargs['env'],native_env)
+                self.assertIn('--gtest_filter=*',command)
+                listing=Path(next(arg.removeprefix('--gtest_output=json:') for arg in command if arg.startswith('--gtest_output=json:')))
+                listing.write_text(json.dumps(report))
+                return SimpleNamespace(returncode=0,stdout='main banner',stderr='')
+            with patch('inventory.subprocess.check_output',return_value='pinned'),patch('inventory.subprocess.run',side_effect=enumerate_peer):
+                expanded=collect(root,diagnostics,env=native_env)
+            self.assertEqual([e['case'] for e in expanded['entries']],['Suite.Case'])
+            self.assertEqual((diagnostics/'UNIT_peer.stdout').read_text(),'main banner')
+            failure=SimpleNamespace(returncode=127,stdout='',stderr='libgz-utils.so.5: cannot open shared object file')
+            with patch('inventory.subprocess.check_output',return_value='pinned'),patch('inventory.subprocess.run',return_value=failure):
+                failed=collect(root,diagnostics,env=native_env)
+            self.assertEqual(failed['entries'],[])
+            self.assertFalse((diagnostics/'UNIT_peer.json').exists())
+            self.assertIn('libgz-utils.so.5',failed['unavailable_targets'][0]['stderr'])
+            self.assertEqual((diagnostics/'UNIT_peer.stderr').read_text(),failure.stderr)
