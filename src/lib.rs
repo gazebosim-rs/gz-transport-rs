@@ -1,16 +1,19 @@
 //! Gazebo's ZeroMQ transport. Each [`Node`] owns one bounded IO worker.
+mod config;
 mod names;
 mod protocol;
 mod runtime;
 
+pub use config::Config;
 pub use names::qualified_name;
-pub use runtime::{Config, Message, Node, Publisher, Request, Service, Statistics, Subscription};
+pub use runtime::{Message, Node, Publisher, Request, Service, Statistics, Subscription};
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     InvalidName,
     InvalidConfig,
+    Unsupported(&'static str),
     InvalidFrame,
     QueueFull,
     Shutdown,

@@ -75,5 +75,14 @@ class StagedAndEvidencePolicy(unittest.TestCase):
                 validate_evidence(evidence, root, 'native')
 
 
+
+
+class ChangedSourcePolicy(unittest.TestCase):
+    def test_changed_line_ranges_include_new_files(self):
+        from verify import changed_lines
+        diff='+++ b/src/lib.rs\n@@ -2 +2,2 @@\n+++ b/src/config.rs\n@@ -0,0 +1,3 @@\n+++ b/src/deletion.rs\n@@ -4,2 +4,0 @@\n'
+        self.assertEqual(changed_lines(diff),{'src/lib.rs':{2,3},'src/config.rs':{1,2,3},'src/deletion.rs':set()})
+
+
 if __name__ == '__main__':
     unittest.main()

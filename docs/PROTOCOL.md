@@ -57,7 +57,8 @@ interval. A simulator does not await a socket while stepping.
 
 Command queues, subscriptions, service request queues, outstanding requests,
 registration permits, retained peers, response connections, and delayed replies
-are bounded by `capacity`; message frames are bounded by `max_message_bytes`.
+are bounded by `capacity`; native queues use the explicit positive send/receive
+high water marks. Message frames are bounded by `max_message_bytes`.
 Multipart decoding drains malformed messages while retaining only the expected
 frame count. Publishers report command queue saturation. Slow subscription/service
 receivers drop new arrivals when full; ZeroMQ high water marks can also drop
@@ -76,7 +77,10 @@ pending reply senders so blocked callers receive Shutdown.
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
 HOST scope across multiple hosts; process-wide multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
-IPv6 and all-interface routing; environment compatibility; topic throttling and
+IPv6 and all-interface routing; legacy default host/user/interface selection; topic throttling and
 wire statistics version 110; authentication; oneway Empty services; complete
 legacy CLI grammar; SQLite log record/read/replay and performance qualification.
 Each remains retained in the 418-case runtime ledger and non-gtest inventory.
+
+Explicit supported environment capture and pending modes are documented in
+[NET-02 configuration](NET-02-config.md).

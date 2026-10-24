@@ -1,4 +1,4 @@
-use crate::{Error, protocol, qualified_name};
+use crate::{Config, Error, protocol, qualified_name};
 use gz_msgs::discovery::{
     Discovery,
     discovery::{
@@ -19,35 +19,6 @@ use std::{
     time::{Duration, Instant},
 };
 use uuid::Uuid;
-
-/// Explicit configuration. No process environment is read implicitly.
-#[derive(Clone, Debug)]
-pub struct Config {
-    pub partition: String,
-    pub namespace: String,
-    pub interface: Ipv4Addr,
-    pub multicast: Ipv4Addr,
-    pub message_port: u16,
-    pub service_port: u16,
-    pub capacity: usize,
-    pub max_message_bytes: usize,
-    pub reply_timeout: Duration,
-}
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            partition: String::new(),
-            namespace: String::new(),
-            interface: Ipv4Addr::LOCALHOST,
-            multicast: Ipv4Addr::new(239, 255, 0, 7),
-            message_port: 10317,
-            service_port: 10318,
-            capacity: 1000,
-            max_message_bytes: 16 * 1024 * 1024,
-            reply_timeout: Duration::from_secs(5),
-        }
-    }
-}
 
 /// Local application loss/error counters. Native PUB high-water-mark loss is not observable.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -194,21 +165,7 @@ pub struct Node {
 }
 impl Node {
     pub fn new(config: Config) -> Result<Self, Error> {
-        qualified_name(&config.partition, &config.namespace, "validation")?;
-        if config.capacity == 0
-            || config.capacity > i32::MAX as usize
-            || config.max_message_bytes == 0
-            || config.max_message_bytes > i64::MAX as usize
-            || config.reply_timeout.is_zero()
-            || Instant::now().checked_add(config.reply_timeout).is_none()
-            || !config.multicast.is_multicast()
-            || config.interface.is_unspecified()
-            || config.message_port == config.service_port
-            || config.message_port == 0
-            || config.service_port == 0
-        {
-            return Err(Error::InvalidConfig);
-        }
+        config.validate()?;
         let (tx, rx) = mpsc::sync_channel(config.capacity);
         let sender = Sender {
             tx,
@@ -404,8 +361,8 @@ fn socket(
 ) -> Result<zmq::Socket, Error> {
     let socket = context.socket(kind)?;
     socket.set_linger(0)?;
-    socket.set_sndhwm(config.capacity as i32)?;
-    socket.set_rcvhwm(config.capacity as i32)?;
+    socket.set_sndhwm(config.send_high_watermark as i32)?;
+    socket.set_rcvhwm(config.receive_high_watermark as i32)?;
     socket.set_maxmsgsize(config.max_message_bytes as i64)?;
     Ok(socket)
 }

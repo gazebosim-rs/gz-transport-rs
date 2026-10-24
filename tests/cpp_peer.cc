@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Differential peer for pinned Gazebo Transport; no replacement logic is linked.
 #include <gz/transport/Node.hh>
+#include <gz/transport/NodeShared.hh>
 #include <gz/msgs/stringmsg.pb.h>
 #include <chrono>
 #include <condition_variable>
@@ -12,7 +13,11 @@ int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
   gz::transport::Node node;
-  if (mode == "publish") {
+  if (mode == "config") {
+    gz::transport::NodeOptions options;
+    auto shared=gz::transport::NodeShared::Instance();
+    std::cout << "CONFIG " << options.Partition() << ' ' << shared->msgDiscPort << ' ' << shared->srvDiscPort << ' ' << shared->SndHwm() << ' ' << shared->RcvHwm() << std::endl;
+  } else if (mode == "publish") {
     auto publisher=node.Advertise<gz::msgs::StringMsg>(topic);
     if (!publisher) return 3;
     std::cout << "READY" << std::endl;

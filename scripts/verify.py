@@ -29,12 +29,28 @@ def validate_evidence(evidence, root, profile):
             raise ValueError(f'Stale evidence/source changed during verification: {filename}')
 
 
+def changed_lines(diff):
+    changed, filename = {}, None
+    for line in diff.splitlines():
+        if line.startswith('+++ b/'):
+            filename = line[6:]
+        elif line.startswith('@@') and filename:
+            start, _, count = re.search(r'\+(\d+)(,(\d+))?', line).groups()
+            changed.setdefault(filename, set()).update(range(int(start), int(start) + int(count or 1)))
+    return changed
+
+
 def staged():
     with tempfile.TemporaryDirectory(prefix='gz-transport-staged-') as directory:
         candidate = Path(directory) / ROOT.name
         candidate.mkdir()
         run(['git', 'checkout-index', '--all', f'--prefix={candidate}/'], cwd=ROOT)
         env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
+        has_head = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=ROOT, capture_output=True).returncode == 0
+        diff = subprocess.check_output(['git', 'diff', '--cached', '--no-ext-diff', '--unified=0', *(['HEAD'] if has_head else []), '--', 'src'], cwd=ROOT, text=True)
+        changed_file = Path(directory) / 'changed-lines.json'
+        changed_file.write_text(json.dumps({name: sorted(lines) for name, lines in changed_lines(diff).items()}))
+        env['GZ_CHANGED_LINES_FILE'] = str(changed_file)
         run([sys.executable, 'scripts/verify.py', 'verify', '--profile', 'zeromq-linux'], cwd=candidate, env=env)
         destination = ROOT / 'artifacts/staged'
         shutil.rmtree(destination, ignore_errors=True)
@@ -101,17 +117,17 @@ def verify(profile):
     (artifacts / 'coverage.lcov').write_text(lcov)
     report = json.loads((artifacts / 'coverage.json').read_text())
     totals = check(report, manifest, ROOT)
-    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD', '--', 'src'], text=True) if (ROOT / '.git').exists() else ''
-    changed, filename = {}, None
-    for line in diff.splitlines():
-        if line.startswith('+++ b/'):
-            filename = line[6:]
-        elif line.startswith('@@'):
-            start, _, count = re.search(r'\+(\d+)(,(\d+))?', line).groups()
-            changed.setdefault(filename, set()).update(range(int(start), int(start) + int(count or 1)))
-    # New untracked source files and exported staged snapshots have no working
-    # tree diff: their entire executable source is the conservative denominator.
-    if not changed:
+    if 'GZ_CHANGED_LINES_FILE' in env:
+        changed = json.loads(Path(env['GZ_CHANGED_LINES_FILE']).read_text())
+    elif (ROOT / '.git').exists():
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD', '--', 'src'], text=True)
+        if not diff and subprocess.run(['git', 'rev-parse', '--verify', 'HEAD^'], capture_output=True).returncode == 0:
+            diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], text=True)
+        changed = changed_lines(diff)
+        tracked = set(subprocess.check_output(['git', 'ls-files', '--', 'src'], text=True).splitlines())
+        for filename in set(manifest['production_files']) - tracked:
+            changed[filename] = set(range(1, len((ROOT / filename).read_text().splitlines()) + 1))
+    else:
         changed = {p: set(range(1, len((ROOT / p).read_text().splitlines()) + 1)) for p in manifest['production_files']}
     changed_totals = changed_check(lcov, changed, ROOT)
     evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}

@@ -3,9 +3,20 @@
   "crate": "gz-transport",
   "profile": "zeromq-linux",
   "toolchain": "1.94.1",
-  "production_roots": ["src"],
-  "production_files": ["src/lib.rs", "src/names.rs", "src/protocol.rs", "src/runtime.rs"],
+  "production_roots": [
+    "src"
+  ],
+  "production_files": [
+    "src/lib.rs",
+    "src/names.rs",
+    "src/protocol.rs",
+    "src/runtime.rs",
+    "src/config.rs"
+  ],
   "exclusions": [],
-  "required_runners": ["linux-x86_64-multicast", "pinned-cpp-peer"],
+  "required_runners": [
+    "linux-x86_64-multicast",
+    "pinned-cpp-peer"
+  ],
   "dependency_native_code": "zmq-sys 0.12.0 uses unmodified libzmq 4.3.4; not handwritten Gazebo production code"
 }

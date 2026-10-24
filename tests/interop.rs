@@ -33,6 +33,15 @@ impl Peer {
             .args([mode, topic, value])
             .env("GZ_PARTITION", &config.partition)
             .env("GZ_IP", config.interface.to_string())
+            .env("GZ_DISCOVERY_MULTICAST_IP", config.multicast.to_string())
+            .env(
+                "GZ_TRANSPORT_SNDHWM",
+                config.send_high_watermark.to_string(),
+            )
+            .env(
+                "GZ_TRANSPORT_RCVHWM",
+                config.receive_high_watermark.to_string(),
+            )
             .env("GZ_DISCOVERY_MSG_PORT", config.message_port.to_string())
             .env("GZ_DISCOVERY_SRV_PORT", config.service_port.to_string())
             .env("GZ_TRANSPORT_IMPLEMENTATION", "zeromq")
@@ -228,4 +237,76 @@ fn malformed_discovery_is_ignored_and_counted() {
         thread::sleep(Duration::from_millis(2));
     }
     assert_eq!(node.statistics().malformed_frames, 1);
+}
+
+#[test]
+fn configured_cpp_peer_partition_interface_ports_and_namespace() {
+    let config = Config {
+        partition: uuid::Uuid::new_v4().to_string(),
+        namespace: "robot".into(),
+        ..Default::default()
+    }
+    .with_environment(|key| match key {
+        "GZ_DISCOVERY_MULTICAST_IP" => Some("239.255.0.8".into()),
+        "GZ_DISCOVERY_MSG_PORT" => Some("12371".into()),
+        "GZ_DISCOVERY_SRV_PORT" => Some("12372".into()),
+        "GZ_TRANSPORT_SNDHWM" | "GZ_TRANSPORT_RCVHWM" => Some("16".into()),
+        _ => None,
+    })
+    .unwrap();
+    let node = Node::new(config.clone()).unwrap();
+    let sub = node.subscribe("wire", TYPE).unwrap();
+    let _peer = Peer::start(&config, "publish", "/robot/wire", "configured");
+    let message = sub.recv_timeout(Duration::from_secs(4)).unwrap();
+    assert_eq!(message.data, data("configured"));
+    assert_eq!(message.topic, format!("@/{}@/robot/wire", config.partition));
+}
+#[test]
+fn cpp_environment_integer_prefix_fallback_and_duplicate_port_differential() {
+    let path = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    for values in [
+        [
+            ("GZ_DISCOVERY_MSG_PORT", "12375tail"),
+            ("GZ_DISCOVERY_SRV_PORT", "12376"),
+            ("GZ_TRANSPORT_SNDHWM", "12tail"),
+            ("GZ_TRANSPORT_RCVHWM", "-1"),
+        ],
+        [
+            ("GZ_DISCOVERY_MSG_PORT", "65535"),
+            ("GZ_DISCOVERY_SRV_PORT", "65535"),
+            ("GZ_TRANSPORT_SNDHWM", "bad"),
+            ("GZ_TRANSPORT_RCVHWM", "2147483648"),
+        ],
+    ] {
+        let config = Config::default()
+            .with_environment(|key| {
+                values
+                    .iter()
+                    .find(|(k, _)| key == *k)
+                    .map(|(_, v)| v.to_string())
+            })
+            .unwrap();
+        let mut peer = Command::new(&path);
+        peer.args(["config", "unused", "unused"])
+            .env("GZ_PARTITION", "native-config")
+            .env("GZ_IP", "127.0.0.1")
+            .env("GZ_TRANSPORT_IMPLEMENTATION", "zeromq")
+            .env("GZ_TRANSPORT_TOPIC_STATISTICS", "0");
+        for (key, value) in values {
+            peer.env(key, value);
+        }
+        let output = peer.output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap().trim(),
+            format!(
+                "CONFIG native-config {} {} {} {}",
+                config.message_port,
+                config.service_port,
+                config.send_high_watermark,
+                config.receive_high_watermark
+            )
+        );
+    }
 }

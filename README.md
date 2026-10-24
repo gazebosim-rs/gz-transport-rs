@@ -26,7 +26,9 @@ Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies
 are pinned. `zmq` uses native libzmq; this is intentional wire compatibility.
 Default configuration binds loopback, with an explicit IPv4 interface for remote
-use. There is no hidden async runtime or implicit environment capture.
+use. There is no hidden async runtime or implicit environment capture. Opt in through
+`Config::from_env()` or apply an injected lookup with `with_environment`; pending
+wire modes return explicit Unsupported errors.
 
 Run `scripts/bootstrap.sh`, then
 `python3 scripts/verify.py verify --profile zeromq-linux` on the native reference

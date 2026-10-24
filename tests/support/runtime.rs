@@ -427,7 +427,7 @@ fn invalid_names_native_errors_and_deadlines() {
             &context,
             zmq::PAIR,
             &Config {
-                capacity: usize::MAX,
+                send_high_watermark: usize::MAX,
                 ..Default::default()
             }
         )
