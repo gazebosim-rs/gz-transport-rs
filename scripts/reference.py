@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
 """Reconcile applicable reference configurations without retiring baseline cases."""
 from pathlib import Path
 import hashlib

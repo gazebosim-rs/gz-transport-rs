@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
 """Expand the pinned C++ runtime test cases and hash their source corpus."""
 import hashlib
 import json

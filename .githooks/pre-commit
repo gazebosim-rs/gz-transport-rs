@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 exec python3 scripts/verify.py verify --staged

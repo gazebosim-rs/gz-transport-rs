@@ -1,0 +1,11 @@
+Gazebo Transport in Rust
+Copyright (C) 2026 Open Source Robotics Foundation
+
+Newly authored implementation, tests and developer tooling are licensed under
+the Apache License, Version 2.0. See LICENSE.
+
+Faithful upstream assertion ports preserve their original attribution, including
+Copyright (C) 2014 Open Source Robotics Foundation for TopicUtils assertion tables.
+Imported schemas, fixtures, native references and third-party dependencies retain
+their original copyright notices, years, provenance and licenses. This notice
+does not relicense third-party material.

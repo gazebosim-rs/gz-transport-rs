@@ -1,3 +1,4 @@
+// Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Differential peer for pinned Gazebo Transport; no replacement logic is linked.
 #include <gz/transport/Node.hh>

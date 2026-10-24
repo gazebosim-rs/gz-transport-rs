@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
 """Strict LLVM line/region accounting; fail on missing/empty instrumentation."""
 import argparse
 import json

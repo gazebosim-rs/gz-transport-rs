@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Open Source Robotics Foundation
+// SPDX-License-Identifier: Apache-2.0
 //! Gazebo's ZeroMQ transport. Each [`Node`] owns one bounded IO worker.
 mod config;
 mod names;

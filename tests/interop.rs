@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Open Source Robotics Foundation
+// SPDX-License-Identifier: Apache-2.0
 use gz_msgs::{prost::Message, stringmsg::StringMsg};
 use gz_transport::{Config, Error, Node};
 use std::{

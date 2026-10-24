@@ -55,7 +55,9 @@ credentials, private paths or raw environment variables. Each owner updates only
 
 ## Licensing
 
-Owned code is Apache-2.0. Preserve original copyright and license notices for
+Owned code is Apache-2.0 and uses `Copyright (C) 2026 Open Source Robotics
+Foundation` plus `SPDX-License-Identifier: Apache-2.0` in new Rust, Python,
+C++ and shell source (after shebangs). Preserve original copyright and license notices for
 imported schemas, fixtures, faithful test ports and vendored dependencies; do not
 relabel third-party code as Apache-2.0. Keep Cargo metadata and the root license
 consistent with this policy.

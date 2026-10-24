@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Open Source Robotics Foundation
+// SPDX-License-Identifier: Apache-2.0
 use super::*;
 fn configured(values: &[(&str, &str)]) -> Result<Config, Error> {
     Config::default().with_environment(|key| {

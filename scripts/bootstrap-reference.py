@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
 """Build an isolated immutable native reference on an ordinary Ubuntu host."""
 import argparse
 import hashlib

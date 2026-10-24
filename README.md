@@ -43,3 +43,7 @@ in [gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md)
 New Rust APIs preserve observable Gazebo wire behavior; no C++ ABI is claimed.
 
 License: Apache-2.0. Ported assertion provenance and fixture hashes are retained.
+
+Copyright (C) 2026 Open Source Robotics Foundation. Newly authored code is
+Apache-2.0; see [NOTICE](NOTICE) and [LICENSE](LICENSE). Imported notices, years
+and third-party licenses are preserved.
