@@ -42,6 +42,10 @@ def collect(upstream):
         suite, case = entry['case'].split('.', 1)
         key = f"{suite.split('/')[-1]}.{case.split('/')[0].removeprefix('DISABLED_')}"
         entry['source'] = symbols.get(key, [])
+        # Pinned CMake/header guards: these cases do not exist in a ZeroMQ-only
+        # native build. Keep them in the full catalog and require them with Zenoh.
+        zenoh = entry['target'].startswith('INTEGRATION_zenoh') or entry['case'].startswith('Zenoh') or entry['case'] in {'ShmHelpersTest.WithPayloadViewHeap', 'ShmHelpersTest.NoSession', 'ShmHelpersTest.DisabledInConfig'}
+        entry['reference_features'] = ['zenoh'] if zenoh else []
         entry['contract'] = 'Retained original assertions; detailed per-case contract audit pending.'
         entry['configuration'] = 'Expanded on Linux x86_64; backend/environment conditions remain pending audit.'
     record = {'upstream_sha': sha, 'expansion': 'runtime --gtest_list_tests', 'entries': entries, 'unavailable_targets': unavailable, 'source_fixture_sha256': sources, 'non_gtest_scope': 'Ruby/CLI/Python/example workflows remain pending inventory; not retired.'}

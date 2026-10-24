@@ -17,6 +17,7 @@
           "symbol": "authPubSub.InvalidAuth"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -35,6 +36,7 @@
           "symbol": "CallbackScope.CleanupCorrectly"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -53,6 +55,7 @@
           "symbol": "DefunctSockets.NodeSurvives"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -71,6 +74,7 @@
           "symbol": "playback.ReplayLog"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -89,6 +93,7 @@
           "symbol": "playback.ReplayNoSuchTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -107,6 +112,7 @@
           "symbol": "playback.ReplayLogRegex"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -125,6 +131,7 @@
           "symbol": "playback.RemoveTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -143,6 +150,7 @@
           "symbol": "playback.ReplayLogMoveInstances"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -161,6 +169,7 @@
           "symbol": "playback.ReplayStep"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -179,6 +188,7 @@
           "symbol": "playback.ReplaySeek"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -197,6 +207,7 @@
           "symbol": "QueryMessages.QueryAllTopicsAfterInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -215,6 +226,7 @@
           "symbol": "QueryMessages.QueryAllTopicsAfterInclusiveCopy"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -233,6 +245,7 @@
           "symbol": "QueryMessages.QueryAllTopicsAfterInclusiveMove"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -251,6 +264,7 @@
           "symbol": "QueryMessages.QueryAllTopicsAfterExclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -269,6 +283,7 @@
           "symbol": "QueryMessages.QueryAllTopicsBeforeInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -287,6 +302,7 @@
           "symbol": "QueryMessages.QueryAllTopicsBeforeExclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -305,6 +321,7 @@
           "symbol": "QueryMessages.QueryAllTopicsBetweenInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -323,6 +340,7 @@
           "symbol": "QueryMessages.QueryAllTopicsBetweenExclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -341,6 +359,7 @@
           "symbol": "QueryMessages.QueryTopicPatternAllTime"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -359,6 +378,7 @@
           "symbol": "QueryMessages.QueryTopicPatternAfterInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -377,6 +397,7 @@
           "symbol": "QueryMessages.QueryTopicPatternBeforeInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -395,6 +416,7 @@
           "symbol": "QueryMessages.QueryTopicListAllTime"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -413,6 +435,7 @@
           "symbol": "QueryMessages.QueryTopicListAfterInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -431,6 +454,7 @@
           "symbol": "QueryMessages.QueryTopicListBeforeInclusive"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -449,6 +473,7 @@
           "symbol": "recorder.BeginRecordingTopicsBeforeAdvertisement"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -467,6 +492,7 @@
           "symbol": "recorder.BeginRecordingTopicsAfterAdvertisement"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -485,6 +511,7 @@
           "symbol": "recorder.BeginRecordingPatternBeforeAdvertisement"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -503,6 +530,7 @@
           "symbol": "recorder.BeginRecordingAllBeforeAdvertisement"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -521,6 +549,7 @@
           "symbol": "recorder.DataWriterQueue"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -539,6 +568,7 @@
           "symbol": "recorder.DataWriterQueueClockUpdates"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -557,6 +587,7 @@
           "symbol": "recorder.DataWriterQueueDefaultBufferSize"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -575,6 +606,7 @@
           "symbol": "recorder.DataWriterQueueInfiniteBufferSize"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -593,6 +625,7 @@
           "symbol": "recorder.DataWriterQueueLargeMessages"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -611,6 +644,7 @@
           "symbol": "ScopedTopicTest.ProcessTest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -629,6 +663,7 @@
           "symbol": "topicStatistics.SingleProcessPublishStatistics"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -647,6 +682,7 @@
           "symbol": "twoProcPubSub.PubSubWrongTypesOnSubscription"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -665,6 +701,7 @@
           "symbol": "twoProcPubSub.PubRawSubWrongTypesOnSubscription"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -683,6 +720,7 @@
           "symbol": "twoProcPubSub.PubSubWrongTypesTwoSubscribers"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -701,6 +739,7 @@
           "symbol": "twoProcPubSub.PubSubWrongTypesTwoRawSubscribers"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -719,6 +758,7 @@
           "symbol": "twoProcPubSub.FastPublisher"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -737,6 +777,7 @@
           "symbol": "twoProcPubSub.SubThrottled"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -755,6 +796,7 @@
           "symbol": "twoProcPubSub.PubThrottled"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -773,6 +815,7 @@
           "symbol": "twoProcPubSub.PubSubMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -791,6 +834,7 @@
           "symbol": "twoProcPubSub.TopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -809,6 +853,7 @@
           "symbol": "twoProcPubSub.TopicListSubscriberOnly"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -827,6 +872,7 @@
           "symbol": "twoProcPubSub.TopicListRemovesUnsubscribed"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -845,6 +891,7 @@
           "symbol": "twoProcPubSub.TopicInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -863,6 +910,7 @@
           "symbol": "twoProcPubSub.AllTopicInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -881,6 +929,7 @@
           "symbol": "twoProcPubSub.PubSubTwoProcsScopedPub"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -899,6 +948,7 @@
           "symbol": "twoProcPubSub.PubSubTwoProcsMixedSubscribers"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -917,6 +967,7 @@
           "symbol": "twoProcPubSub.PubSubLargeMessageAboveShmThreshold"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -935,6 +986,7 @@
           "symbol": "twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -953,6 +1005,7 @@
           "symbol": "twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -971,6 +1024,7 @@
           "symbol": "twoProcPubSubStats.PubSubTwoProcsThreeNodes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -989,6 +1043,7 @@
           "symbol": "twoProcPubSubStats.RawPubSubTwoProcsThreeNodes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1007,6 +1062,7 @@
           "symbol": "twoProcSrvCall.SrvTwoProcs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1025,6 +1081,7 @@
           "symbol": "twoProcSrvCall.SrvRequestWrongReq"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1043,6 +1100,7 @@
           "symbol": "twoProcSrvCall.SrvRequestWrongRep"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1061,6 +1119,7 @@
           "symbol": "twoProcSrvCall.SrvTwoRequestsOneWrong"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1079,6 +1138,7 @@
           "symbol": "twoProcSrvCall.ServiceList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1097,6 +1157,7 @@
           "symbol": "twoProcSrvCall.ServiceInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1115,6 +1176,7 @@
           "symbol": "twoProcSrvCallLateResponder.RequestSucceedsWhenResponderAppearsLate"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1133,6 +1195,7 @@
           "symbol": "twoProcSrvCall.ThousandCalls"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1151,6 +1214,7 @@
           "symbol": "twoProcSrvCallSync1.SrvTwoProcs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1169,6 +1233,7 @@
           "symbol": "twoProcSrvCallWithoutInput.SrvTwoProcs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1187,6 +1252,7 @@
           "symbol": "twoProcSrvCallWithoutInput.SrvRequestWrongRep"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1205,6 +1271,7 @@
           "symbol": "twoProcSrvCallWithoutInput.SrvTwoRequestsOneWrong"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1223,6 +1290,7 @@
           "symbol": "twoProcSrvCallWithoutInput.ServiceList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1241,6 +1309,7 @@
           "symbol": "twoProcSrvCallWithoutInput.ServiceInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1259,6 +1328,7 @@
           "symbol": "twoProcSrvCallWithoutInput.ThousandCalls"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1277,6 +1347,7 @@
           "symbol": "twoProcSrvCallWithoutInputSync1.SrvTwoProcs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1295,6 +1366,7 @@
           "symbol": "twoProcSrvCallWithoutOutput.SrvRequestWrongReq"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1313,6 +1385,7 @@
           "symbol": "twoProcSrvCallWithoutOutput.ServiceList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1331,6 +1404,7 @@
           "symbol": "twoProcSrvCallWithoutOutput.ServiceInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1349,6 +1423,7 @@
           "symbol": "twoProcSrvCallWithoutOuput.ThousandCalls"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1366,6 +1441,9 @@
           "line": 46,
           "symbol": "zenohPublisherLeak.DiscoveryForgetsDestroyedPublisher"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -1385,6 +1463,9 @@
           "symbol": "ZenohShutdownStress.NoTokioPanicAcrossManyExits"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1402,6 +1483,9 @@
           "line": 65,
           "symbol": "zenohTeardownFromCallback.UnadvertiseSrvFromOwnCallback"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -1421,6 +1505,9 @@
           "symbol": "zenohTeardownFromCallback.UnsubscribeWhileCallbackInFlight"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1439,6 +1526,7 @@
           "symbol": "AdvertiseOptionsTest.defConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1457,6 +1545,7 @@
           "symbol": "AdvertiseOptionsTest.copyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1475,6 +1564,7 @@
           "symbol": "AdvertiseOptionsTest.assignmentOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1493,6 +1583,7 @@
           "symbol": "AdvertiseOptionsTest.equalityOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1511,6 +1602,7 @@
           "symbol": "AdvertiseOptionsTest.streamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1529,6 +1621,7 @@
           "symbol": "AdvertiseOptionsTest.accessors"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1547,6 +1640,7 @@
           "symbol": "AdvertiseOptionsTest.msgDefConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1565,6 +1659,7 @@
           "symbol": "AdvertiseOptionsTest.msgCopyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1583,6 +1678,7 @@
           "symbol": "AdvertiseOptionsTest.msgAssignmentOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1601,6 +1697,7 @@
           "symbol": "AdvertiseOptionsTest.msgEqualityOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1619,6 +1716,7 @@
           "symbol": "AdvertiseOptionsTest.msgStreamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1637,6 +1735,7 @@
           "symbol": "AdvertiseOptionsTest.msgAccessors"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1655,6 +1754,7 @@
           "symbol": "AdvertiseOptionsTest.srvDefConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1673,6 +1773,7 @@
           "symbol": "AdvertiseOptionsTest.srvCopyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1691,6 +1792,7 @@
           "symbol": "AdvertiseOptionsTest.srvAssignmentOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1709,6 +1811,7 @@
           "symbol": "AdvertiseOptionsTest.srvEqualityOp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1727,6 +1830,7 @@
           "symbol": "AdvertiseOptionsTest.srvStreamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1745,6 +1849,7 @@
           "symbol": "AdvertiseOptionsTest.srvAccessors"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1763,6 +1868,7 @@
           "symbol": "Batch.DefaultNoMessages"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1781,6 +1887,7 @@
           "symbol": "CIfaceTest.PubSub"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1799,6 +1906,7 @@
           "symbol": "CIfaceTest.PubSubPartitions"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1817,6 +1925,7 @@
           "symbol": "CIfaceTest.PublishRawBinarySafe"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1835,6 +1944,7 @@
           "symbol": "ParametersClient.ConstructDestruct"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1853,6 +1963,7 @@
           "symbol": "ParametersClientTest.Parameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1876,6 +1987,7 @@
           "symbol": "ParametersClientTest.SetParameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1894,6 +2006,7 @@
           "symbol": "ParametersClientTest.DeclareParameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1917,6 +2030,7 @@
           "symbol": "ParametersClientTest.ListParameters"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1935,6 +2049,7 @@
           "symbol": "ClockTest.WallClock"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1953,6 +2068,7 @@
           "symbol": "ClockTest.BadNetworkClock"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1971,6 +2087,7 @@
           "symbol": "NetworkClockTest.Functionality"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -1989,6 +2106,7 @@
           "symbol": "NetworkClockTest.Functionality"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2007,6 +2125,7 @@
           "symbol": "NetworkClockTest.Functionality"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2025,6 +2144,7 @@
           "symbol": "Descriptor.ConstructHasNothing"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2043,6 +2163,7 @@
           "symbol": "Descriptor.ResetNoTopics"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2061,6 +2182,7 @@
           "symbol": "Descriptor.TopicIdOneTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2079,6 +2201,7 @@
           "symbol": "Descriptor.TopicIdMultipleTopicsSameName"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2097,6 +2220,7 @@
           "symbol": "Descriptor.TopicIdMultipleTopicsSameType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2115,6 +2239,7 @@
           "symbol": "Descriptor.TopicsMapOneTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2133,6 +2258,7 @@
           "symbol": "Descriptor.MsgTypesMapOneTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2151,6 +2277,7 @@
           "symbol": "Descriptor.TopicKeyEquality"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2169,6 +2296,7 @@
           "symbol": "DiscoveryTest.TestBasicAPI"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2187,6 +2315,7 @@
           "symbol": "DiscoveryTest.WithoutCallingStart"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2205,6 +2334,7 @@
           "symbol": "DiscoveryTest.TestAdvertiseNoResponse"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2223,6 +2353,7 @@
           "symbol": "DiscoveryTest.TestAdvertise"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2241,6 +2372,7 @@
           "symbol": "DiscoveryTest.TestAdvertiseSameProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2259,6 +2391,7 @@
           "symbol": "DiscoveryTest.TestDiscover"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2277,6 +2410,7 @@
           "symbol": "DiscoveryTest.TestUnadvertise"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2295,6 +2429,7 @@
           "symbol": "DiscoveryTest.TestNodeBye"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2313,6 +2448,7 @@
           "symbol": "DiscoveryTest.TestTwoPublishersSameTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2331,6 +2467,7 @@
           "symbol": "DiscoveryTest.TestActivity"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2349,6 +2486,7 @@
           "symbol": "DiscoveryTest.WrongGzIp"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2367,6 +2505,7 @@
           "symbol": "RepStorageTest.RepStorageAPI"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2385,6 +2524,7 @@
           "symbol": "RepStorageTest.SubStorageNoCallbacks"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2403,6 +2543,7 @@
           "symbol": "HelpersTest.env"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2421,6 +2562,7 @@
           "symbol": "HelpersTest.SplitNoDelimiterPresent"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2439,6 +2581,7 @@
           "symbol": "HelpersTest.SplitOneDelimiterInMiddle"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2457,6 +2600,7 @@
           "symbol": "HelpersTest.SplitOneDelimiterAtBeginning"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2475,6 +2619,7 @@
           "symbol": "HelpersTest.SplitOneDelimiterAtEnd"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2493,6 +2638,7 @@
           "symbol": "HelpersTest.TransportImplementation"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2511,6 +2657,7 @@
           "symbol": "LogCommandAPI.RecordBadRegex"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2529,6 +2676,7 @@
           "symbol": "LogCommandAPI.PlaybackBadRegex"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2547,6 +2695,7 @@
           "symbol": "LogCommandAPI.PlaybackBadRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2565,6 +2714,7 @@
           "symbol": "LogCommandAPI.RecordFailedToOpen"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2583,6 +2733,7 @@
           "symbol": "LogCommandAPI.PlaybackFailedToOpen"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2601,6 +2752,7 @@
           "symbol": "Log.OpenMemoryDatabase"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2619,6 +2771,7 @@
           "symbol": "Log.OpenReadOnlyMemoryDatabase"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2637,6 +2790,7 @@
           "symbol": "Log.MoveConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2655,6 +2809,7 @@
           "symbol": "Log.UnopenedLog"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2673,6 +2828,7 @@
           "symbol": "Log.OpenMemoryDatabaseTwice"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2691,6 +2847,7 @@
           "symbol": "Log.OpenImpossibleFileName"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2709,6 +2866,7 @@
           "symbol": "Log.InsertMessage"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2727,6 +2885,7 @@
           "symbol": "Log.AllMessagesNone"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2745,6 +2904,7 @@
           "symbol": "Log.InsertMessageGetMessages"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2763,6 +2923,7 @@
           "symbol": "Log.QueryMessagesByTopicNone"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2781,6 +2942,7 @@
           "symbol": "Log.Insert2Get1MessageByTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2799,6 +2961,7 @@
           "symbol": "Log.CheckLogTimes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2817,6 +2980,7 @@
           "symbol": "Log.CheckVersion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2835,6 +2999,7 @@
           "symbol": "Log.NullDescriptorUnopenedLog"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2853,6 +3018,7 @@
           "symbol": "Log.OpenCorruptDatabase"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2871,6 +3037,7 @@
           "symbol": "MessageInfoTest.topic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2889,6 +3056,7 @@
           "symbol": "MessageInfoTest.type"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2907,6 +3075,7 @@
           "symbol": "MessageInfoTest.partition"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2925,6 +3094,7 @@
           "symbol": "MessageInfoTest.SetTopicAndPartition"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2943,6 +3113,7 @@
           "symbol": "MessageInfoTest.InterProcess"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2961,6 +3132,7 @@
           "symbol": "MessageInfoTest.CopyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2979,6 +3151,7 @@
           "symbol": "Message.DefaultConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -2997,6 +3170,7 @@
           "symbol": "Message.DataConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3015,6 +3189,7 @@
           "symbol": "NetUtilsTest.hostname"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3033,6 +3208,7 @@
           "symbol": "NetUtilsTest.username"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3051,6 +3227,7 @@
           "symbol": "NodeOptionsTest.ignPartition"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3069,6 +3246,7 @@
           "symbol": "NodeOptionsTest.accessors"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3086,6 +3264,9 @@
           "line": 32,
           "symbol": "ZenohConfigTest.LoadFromEnvVariable"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3105,6 +3286,9 @@
           "symbol": "ZenohConfigTest.LoadDefaultConfig"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3122,6 +3306,9 @@
           "line": 78,
           "symbol": "ZenohConfigTest.NonexistentConfigPath"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3141,6 +3328,9 @@
           "symbol": "ZenohConfigTest.InvalidConfigContent"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3158,6 +3348,9 @@
           "line": 136,
           "symbol": "ZenohConfigTest.ConfigOverrideSingle"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3177,6 +3370,9 @@
           "symbol": "ZenohConfigTest.ConfigOverrideMultiple"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3194,6 +3390,9 @@
           "line": 163,
           "symbol": "ZenohConfigTest.ConfigOverrideWhitespace"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3213,6 +3412,9 @@
           "symbol": "ZenohConfigTest.ConfigOverrideTrailingSemicolon"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3230,6 +3432,9 @@
           "line": 187,
           "symbol": "ZenohConfigTest.ConfigOverrideEmpty"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3249,6 +3454,9 @@
           "symbol": "ZenohConfigTest.ConfigOverrideInvalidKey"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3266,6 +3474,9 @@
           "line": 216,
           "symbol": "ZenohConfigTest.ConfigOverrideMalformedPair"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3285,6 +3496,9 @@
           "symbol": "ZenohConfigTest.ConfigOverrideEqualsInValue"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3302,6 +3516,9 @@
           "line": 242,
           "symbol": "ZenohConfigTest.ConfigOverrideViaEnvVar"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -3321,6 +3538,7 @@
           "symbol": "NodePubTest.BoolOperatorTest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3339,6 +3557,7 @@
           "symbol": "NodePubTest.DestructionOrder"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3357,6 +3576,7 @@
           "symbol": "NodeTest.PubWithoutAdvertise"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3375,6 +3595,7 @@
           "symbol": "NodeTest.PubSubSameThread"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3393,6 +3614,7 @@
           "symbol": "NodeTest.PubSubSameThreadGenericCb"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3411,6 +3633,7 @@
           "symbol": "NodeTest.PubSubSameThreadMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3429,6 +3652,7 @@
           "symbol": "NodeTest.RawPubSubSameThreadMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3447,6 +3671,7 @@
           "symbol": "NodeTest.RawPubRawSubSameThreadMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3465,6 +3690,7 @@
           "symbol": "NodeTest.PubRawSubSameThreadMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3483,6 +3709,7 @@
           "symbol": "NodeTest.PubSubSameThreadLambda"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3501,6 +3728,7 @@
           "symbol": "NodeTest.PubSubSameThreadLambdaMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3519,6 +3747,7 @@
           "symbol": "NodeTest.MoveSubscriber"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3537,6 +3766,7 @@
           "symbol": "NodeTest.PubSubWithCreateSubscriber"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3555,6 +3785,7 @@
           "symbol": "NodeTest.PubSubWithMixedSubscribeAPIs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3573,6 +3804,7 @@
           "symbol": "NodeTest.AdvertiseTwoEqualTopics"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3591,6 +3823,7 @@
           "symbol": "NodeTest.AdvertiseSameTopicSameTypeOnSameNode"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3609,6 +3842,7 @@
           "symbol": "NodeTest.AdvertiseRelativeTopicTwice"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3627,6 +3861,7 @@
           "symbol": "NodeTest.AdvertiseRemappedTopicTwice"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3645,6 +3880,7 @@
           "symbol": "NodeTest.AdvertiseNamespacedTopicTwice"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3663,6 +3899,7 @@
           "symbol": "NodeTest.PubSubTwoThreadsSameTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3681,6 +3918,7 @@
           "symbol": "NodeTest.ScopeProcess"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3699,6 +3937,7 @@
           "symbol": "NodeTest.ScopeHost"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3717,6 +3956,7 @@
           "symbol": "NodeTest.ScopeAll"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3735,6 +3975,7 @@
           "symbol": "NodeTest.PubSubTwoThreadsSameTopicRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3753,6 +3994,7 @@
           "symbol": "NodeTest.ScopeProcessRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3771,6 +4013,7 @@
           "symbol": "NodeTest.ScopeHostRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3789,6 +4032,7 @@
           "symbol": "NodeTest.ScopeAllRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3807,6 +4051,7 @@
           "symbol": "NodeTest.PubSubOneThreadTwoSubs"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3825,6 +4070,7 @@
           "symbol": "NodeTest.ClassMemberCallbackMessage"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3843,6 +4089,7 @@
           "symbol": "NodeTest.ClassMemberCallbackMessageInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3861,6 +4108,7 @@
           "symbol": "NodeTest.ClassMemberCallbackService"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3879,6 +4127,7 @@
           "symbol": "NodeTest.ClassMemberCallbackServiceWithoutInput"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3897,6 +4146,7 @@
           "symbol": "NodeTest.ClassMemberRequestServiceBeforeAdvertise"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3915,6 +4165,7 @@
           "symbol": "NodeTest.TypeMismatch"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3933,6 +4184,7 @@
           "symbol": "NodeTest.ServiceCallAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3951,6 +4203,7 @@
           "symbol": "NodeTest.ServiceCallWithoutInputAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3969,6 +4222,7 @@
           "symbol": "NodeTest.ServiceWithoutOutputCallAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -3987,6 +4241,7 @@
           "symbol": "NodeTest.ServiceCallAsyncLambda"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4005,6 +4260,7 @@
           "symbol": "NodeTest.ServiceCallWithoutInputAsyncLambda"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4023,6 +4279,7 @@
           "symbol": "NodeTest.ServiceCallWithoutOutputAsyncLambda"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4041,6 +4298,7 @@
           "symbol": "NodeTest.MultipleServiceCallAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4059,6 +4317,7 @@
           "symbol": "NodeTest.MultipleServiceCallWithoutInputAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4077,6 +4336,7 @@
           "symbol": "NodeTest.MultipleServiceWithoutOutputCallAsync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4095,6 +4355,7 @@
           "symbol": "NodeTest.ServiceCallSync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4113,6 +4374,7 @@
           "symbol": "NodeTest.ServiceCallWithoutInputSync"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4131,6 +4393,7 @@
           "symbol": "NodeTest.ServiceCallSyncTimeout"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4149,6 +4412,7 @@
           "symbol": "NodeTest.ServiceCallWithoutInputSyncTimeout"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4167,6 +4431,7 @@
           "symbol": "NodeTest.ResolveServiceTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4185,6 +4450,7 @@
           "symbol": "NodeTest.ResolveServiceTypesWaitsForProvider"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4203,6 +4469,7 @@
           "symbol": "NodeTest.ResolveServiceTypesAmbiguous"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4221,6 +4488,7 @@
           "symbol": "NodeTest.SigIntTermination"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4239,6 +4507,7 @@
           "symbol": "NodeTest.SigTermTermination"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4257,6 +4526,7 @@
           "symbol": "NodeTest.PubSubWrongTypesOnPublish"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4275,6 +4545,7 @@
           "symbol": "NodeTest.PubSubWrongTypesOnSubscription"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4293,6 +4564,7 @@
           "symbol": "NodeTest.PubSubWrongTypesTwoSubscribers"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4311,6 +4583,7 @@
           "symbol": "NodeTest.SubThrottled"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4329,6 +4602,7 @@
           "symbol": "NodeTest.PubThrottled"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4347,6 +4621,7 @@
           "symbol": "NodeTest.IgnoreLocalMessages"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4365,6 +4640,7 @@
           "symbol": "NodeTest.SrvRequestWrongReq"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4383,6 +4659,7 @@
           "symbol": "NodeTest.SrvRequestWrongRep"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4401,6 +4678,7 @@
           "symbol": "NodeTest.SrvWithoutInputRequestWrongRep"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4419,6 +4697,7 @@
           "symbol": "NodeTest.SrvTwoRequestsOneWrong"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4437,6 +4716,7 @@
           "symbol": "NodeTest.SrvWithoutInputTwoRequestsOneWrong"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4455,6 +4735,7 @@
           "symbol": "NodeTest.TopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4473,6 +4754,7 @@
           "symbol": "NodeTest.TopicListRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4491,6 +4773,7 @@
           "symbol": "NodeTest.TopicListSubscriberOnly"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4509,6 +4792,7 @@
           "symbol": "NodeTest.TopicInfoSubscriberOnly"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4527,6 +4811,7 @@
           "symbol": "NodeTest.AllTopicInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4545,6 +4830,7 @@
           "symbol": "NodeTest.ServiceList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4563,6 +4849,7 @@
           "symbol": "NodeTest.ServiceListRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4581,6 +4868,7 @@
           "symbol": "NodeTest.WrongTopicRemap"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4599,6 +4887,7 @@
           "symbol": "NodeTest.RcvHwm"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4617,6 +4906,7 @@
           "symbol": "NodeTest.SndHwm"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4635,6 +4925,7 @@
           "symbol": "NodeTest.statistics"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4653,6 +4944,7 @@
           "symbol": "NodeTest.relay"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4671,6 +4963,7 @@
           "symbol": "NodeSubTest.BoolOperatorTest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4689,6 +4982,7 @@
           "symbol": "ParametersClientTest.cmdParameterGet"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4712,6 +5006,7 @@
           "symbol": "ParametersClientTest.SetParameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4735,6 +5030,7 @@
           "symbol": "ParametersClientTest.ListParameters"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4753,6 +5049,7 @@
           "symbol": "Playback.PlaybackEmptyDatabase"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4771,6 +5068,7 @@
           "symbol": "PublisherTest.Publisher"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4789,6 +5087,7 @@
           "symbol": "PublisherTest.PublisherIO"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4807,6 +5106,7 @@
           "symbol": "PublisherTest.PublisherStreamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4825,6 +5125,7 @@
           "symbol": "PublisherTest.MessagePublisher"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4843,6 +5144,7 @@
           "symbol": "PublisherTest.MessagePublisherIO"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4861,6 +5163,7 @@
           "symbol": "PublisherTest.MessagePublisherStreamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4879,6 +5182,7 @@
           "symbol": "PublisherTest.ServicePublisher"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4897,6 +5201,7 @@
           "symbol": "PublisherTest.ServicePublisherIO"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4915,6 +5220,7 @@
           "symbol": "PublisherTest.ServicePublisherStreamInsertion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4933,6 +5239,7 @@
           "symbol": "QualifiedTime.DefaultIndeterminate"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4951,6 +5258,7 @@
           "symbol": "QualifiedTime.TimeOnlyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4969,6 +5277,7 @@
           "symbol": "QualifiedTime.TimeAndQualifierConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -4987,6 +5296,7 @@
           "symbol": "QualifiedTime.CopyAssignment"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5005,6 +5315,7 @@
           "symbol": "QualifiedTime.CopyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5023,6 +5334,7 @@
           "symbol": "QualifiedTime.EqualityOperators"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5041,6 +5353,7 @@
           "symbol": "QualifiedTime.SetTime"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5059,6 +5372,7 @@
           "symbol": "QualifiedTime.ClearTime"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5077,6 +5391,7 @@
           "symbol": "QualifiedTimeRange.ConstructWithBeginAndEnd"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5095,6 +5410,7 @@
           "symbol": "QualifiedTimeRange.SetRange"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5113,6 +5429,7 @@
           "symbol": "QualifiedTimeRange.SetBeginning"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5131,6 +5448,7 @@
           "symbol": "QualifiedTimeRange.SetEnding"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5149,6 +5467,7 @@
           "symbol": "QualifiedTimeRange.EqualTimesValid"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5167,6 +5486,7 @@
           "symbol": "QualifiedTimeRange.CopyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5185,6 +5505,7 @@
           "symbol": "QualifiedTimeRange.CopyAssignment"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5203,6 +5524,7 @@
           "symbol": "QualifiedTimeRange.AllTime"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5221,6 +5543,7 @@
           "symbol": "QualifiedTimeRange.From"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5239,6 +5562,7 @@
           "symbol": "QualifiedTimeRange.Until"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5257,6 +5581,7 @@
           "symbol": "QualifiedTimeRange.EqualityOperators"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5275,6 +5600,7 @@
           "symbol": "QualifiedTimeRange.AssignmentOperator"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5293,6 +5619,7 @@
           "symbol": "QueryOptionsTimeRange.GetRange"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5311,6 +5638,7 @@
           "symbol": "QueryOptionsTimeRange.GetRangeConst"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5329,6 +5657,7 @@
           "symbol": "QueryOptionsTopicList.TopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5347,6 +5676,7 @@
           "symbol": "QueryOptionsTopicList.TopicListConst"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5365,6 +5695,7 @@
           "symbol": "QueryOptionsTopicList.CopyTopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5383,6 +5714,7 @@
           "symbol": "QueryOptionsTopicList.CopyTopicListConst"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5401,6 +5733,7 @@
           "symbol": "QueryOptionsTopicList.CreateFromVector"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5419,6 +5752,7 @@
           "symbol": "QueryOptionsTopicList.CreateFromUnorderedSet"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5437,6 +5771,7 @@
           "symbol": "QueryOptionsTopicList.CreateFromSet"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5455,6 +5790,7 @@
           "symbol": "QueryOptionsTopicPattern.Pattern"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5473,6 +5809,7 @@
           "symbol": "QueryOptionsTopicPattern.PatternConst"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5491,6 +5828,7 @@
           "symbol": "QueryOptionsTopicPattern.Copy"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5509,6 +5847,7 @@
           "symbol": "QueryOptionsTopicPattern.CopyConst"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5527,6 +5866,7 @@
           "symbol": "QueryOptionsTopicPattern.MoveConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5545,6 +5885,7 @@
           "symbol": "Record.Start"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5563,6 +5904,7 @@
           "symbol": "Record.StartImpossibleFilename"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5581,6 +5923,7 @@
           "symbol": "Record.DoubleStart"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5599,6 +5942,7 @@
           "symbol": "Record.StartStopStart"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5617,6 +5961,7 @@
           "symbol": "Record.AddValidTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5635,6 +5980,7 @@
           "symbol": "Record.AddInvalidTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5653,6 +5999,7 @@
           "symbol": "Record.AddTopicRegex"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5671,6 +6018,7 @@
           "symbol": "Record.SetBufferSize"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5689,6 +6037,7 @@
           "symbol": "Record.DestroyUnderDiscoveryChurn"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5707,6 +6056,7 @@
           "symbol": "ParametersRegistry.ConstructDestruct"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5725,6 +6075,7 @@
           "symbol": "ParametersRegistry.DeclareParameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5743,6 +6094,7 @@
           "symbol": "ParametersRegistry.Parameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5761,6 +6113,7 @@
           "symbol": "ParametersRegistry.SetParameter"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5779,6 +6132,7 @@
           "symbol": "ParametersRegistry.ListParameters"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5797,6 +6151,7 @@
           "symbol": "ShmHelpersTest.CreateMsgFromBufferTyped"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5815,6 +6170,7 @@
           "symbol": "ShmHelpersTest.CreateMsgFromBufferInvalidData"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5833,6 +6189,7 @@
           "symbol": "ShmHelpersTest.CreateMsgFromBufferGeneric"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5851,6 +6208,7 @@
           "symbol": "ShmHelpersTest.CreateMsgFromBufferGenericUnknownType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5868,6 +6226,9 @@
           "line": 126,
           "symbol": "ShmHelpersTest.WithPayloadViewHeap"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -5887,6 +6248,9 @@
           "symbol": "ShmHelpersTest.NoSession"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5904,6 +6268,9 @@
           "line": 235,
           "symbol": "ShmHelpersTest.DisabledInConfig"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -5923,6 +6290,9 @@
           "symbol": "ZenohShmTest.ProviderIsStable"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5940,6 +6310,9 @@
           "line": 259,
           "symbol": "ZenohShmTest.AllocShmBufPoolExhausted"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -5959,6 +6332,9 @@
           "symbol": "ZenohShmTest.AllocShmBufMultiple"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -5976,6 +6352,9 @@
           "line": 283,
           "symbol": "ZenohShmTest.AllocShmChunk"
         }
+      ],
+      "reference_features": [
+        "zenoh"
       ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
@@ -5995,6 +6374,9 @@
           "symbol": "ZenohShmTest.WithPayloadViewShm"
         }
       ],
+      "reference_features": [
+        "zenoh"
+      ],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6013,6 +6395,7 @@
           "symbol": "SqlParameter.Construct"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6031,6 +6414,7 @@
           "symbol": "SqlParameter.Set"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6049,6 +6433,7 @@
           "symbol": "SqlParameter.QueryText"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6067,6 +6452,7 @@
           "symbol": "SqlParameter.QueryInteger"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6085,6 +6471,7 @@
           "symbol": "SqlParameter.QueryReal"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6103,6 +6490,7 @@
           "symbol": "SqlParameter.MoveConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6121,6 +6509,7 @@
           "symbol": "SqlParameter.CopyAssignment"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6139,6 +6528,7 @@
           "symbol": "SqlParameter.MoveAssignment"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6157,6 +6547,7 @@
           "symbol": "SubscribeOptionsTest.copyConstructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6175,6 +6566,7 @@
           "symbol": "SubscribeOptionsTest.accessors"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6193,6 +6585,7 @@
           "symbol": "SubscribeOptionsTest.throttled"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6211,6 +6604,7 @@
           "symbol": "TopicsStatistics.Constructor"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6229,6 +6623,7 @@
           "symbol": "TopicsStatistics.DroppedMsg"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6247,6 +6642,7 @@
           "symbol": "TopicsStatistics.MinMax"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6265,6 +6661,7 @@
           "symbol": "TopicsStatistics.AvgStdDev"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6283,6 +6680,7 @@
           "symbol": "TopicStorageTest.TopicStorageAPI"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6301,6 +6699,7 @@
           "symbol": "TopicStorageTest.TopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6319,6 +6718,7 @@
           "symbol": "TopicStorageTest.PublishersByProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6337,6 +6737,7 @@
           "symbol": "TopicStorageTest.PublishersByNode"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6355,6 +6756,7 @@
           "symbol": "TopicStorageTest.HasTopicWithType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6373,6 +6775,7 @@
           "symbol": "TopicUtilsTest.testTopics"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6391,6 +6794,7 @@
           "symbol": "TopicUtilsTest.testNamespaces"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6409,6 +6813,7 @@
           "symbol": "TopicUtilsTest.decomposeFullyQualifiedTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6427,6 +6832,7 @@
           "symbol": "TopicUtilsTest.decomposeMsgLivelinessToken"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6445,6 +6851,7 @@
           "symbol": "TopicUtilsTest.decomposeSrvLivelinessToken"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6463,6 +6870,7 @@
           "symbol": "TopicUtilsTest.testPartitions"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6483,6 +6891,7 @@
           "symbol": "TopicUtilsTest.testFullyQualifiedName"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
       "evidence": "docs/TESTING.md: mandatory original executable + Rust cross-product table"
@@ -6502,6 +6911,7 @@
           "symbol": "TopicUtilsTest.asValidTopic"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6520,6 +6930,7 @@
           "symbol": "TopicUtilsTest.CreateMsgLivelinessToken"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6538,6 +6949,7 @@
           "symbol": "TopicUtilsTest.CreateSrvLivelinessToken"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6556,6 +6968,7 @@
           "symbol": "TopicUtilsTest.MangleName"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6574,6 +6987,7 @@
           "symbol": "TopicUtilsTest.DemangleName"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6592,6 +7006,7 @@
           "symbol": "TopicUtilsTest.MangleType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6610,6 +7025,7 @@
           "symbol": "TopicUtilsTest.DemangleType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6628,6 +7044,7 @@
           "symbol": "ParametersUtils.getGzTypeFromAnyProto"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6646,6 +7063,7 @@
           "symbol": "UuidTest.testToString"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6664,6 +7082,7 @@
           "symbol": "WaitHelpersTest.WaitUntilImmediatelyTrue"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6682,6 +7101,7 @@
           "symbol": "WaitHelpersTest.WaitUntilNeverTrue"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6700,6 +7120,7 @@
           "symbol": "WaitHelpersTest.WaitUntilBecomesTrueMidWait"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6718,6 +7139,7 @@
           "symbol": "WaitHelpersTest.WaitUntilZeroTimeout"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6736,6 +7158,7 @@
           "symbol": "WaitHelpersTest.WaitUntilElapsedCloseToTimeout"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6754,6 +7177,7 @@
           "symbol": "WaitHelpersTest.WaitForServiceNotAdvertised"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6772,6 +7196,7 @@
           "symbol": "WaitHelpersTest.WaitForServiceAlreadyAdvertised"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6790,6 +7215,7 @@
           "symbol": "WaitHelpersTest.WaitForTopicAlreadyAdvertised"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6808,6 +7234,7 @@
           "symbol": "WaitHelpersTest.waitForShutdownSIGINT"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6826,6 +7253,7 @@
           "symbol": "WaitHelpersTest.waitForShutdownSIGTERM"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6844,6 +7272,7 @@
           "symbol": "WaitHelpersTest.waitForShutdownReEntryStress"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6862,6 +7291,7 @@
           "symbol": "gzTest.TopicList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6880,6 +7310,7 @@
           "symbol": "gzTest.TopicListSub"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6898,6 +7329,7 @@
           "symbol": "gzTest.TopicInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6916,6 +7348,7 @@
           "symbol": "gzTest.ServiceList"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6934,6 +7367,7 @@
           "symbol": "gzTest.ServiceInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6952,6 +7386,7 @@
           "symbol": "gzTest.TopicListSameProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6970,6 +7405,7 @@
           "symbol": "gzTest.TopicInfoSameProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -6988,6 +7424,7 @@
           "symbol": "gzTest.ServiceListSameProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7006,6 +7443,7 @@
           "symbol": "gzTest.ServiceInfoSameProc"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7024,6 +7462,7 @@
           "symbol": "gzTest.TopicPublish"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7042,6 +7481,7 @@
           "symbol": "gzTest.ServiceRequest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7060,6 +7500,7 @@
           "symbol": "gzTest.ServiceRequestNoTimeout"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7078,6 +7519,7 @@
           "symbol": "gzTest.ServiceOnewayRequest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7096,6 +7538,7 @@
           "symbol": "gzTest.ServiceRequestNoInput"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7114,6 +7557,7 @@
           "symbol": "gzTest.ServiceRequestAutoTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7132,6 +7576,7 @@
           "symbol": "gzTest.ServiceOnewayRequestAutoTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7150,6 +7595,7 @@
           "symbol": "gzTest.ServiceOnewayFlag"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7168,6 +7614,7 @@
           "symbol": "gzTest.ServiceOnewayFlagAutoReqType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7186,6 +7633,7 @@
           "symbol": "gzTest.ServiceOnewayFlagExcludesRepType"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7204,6 +7652,7 @@
           "symbol": "gzTest.ServiceRequestNoInputAutoTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7222,6 +7671,7 @@
           "symbol": "gzTest.TopicEcho"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7240,6 +7690,7 @@
           "symbol": "gzTest.TopicEchoNum"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7258,6 +7709,7 @@
           "symbol": "gzTest.ServiceHelpVsCompletionFlags"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7276,6 +7728,7 @@
           "symbol": "gzTest.TopicHelpVsCompletionFlags"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7294,6 +7747,7 @@
           "symbol": "gzTest.cmdTopicInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7312,6 +7766,7 @@
           "symbol": "gzTest.cmdServiceInfo"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7330,6 +7785,7 @@
           "symbol": "gzTest.cmdTopicPub"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7348,6 +7804,7 @@
           "symbol": "gzTest.cmdServiceReq"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7366,6 +7823,7 @@
           "symbol": "gzTest.cmdServiceReqInferTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7384,6 +7842,7 @@
           "symbol": "gzTest.cmdServiceReqNoProviders"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7402,6 +7861,7 @@
           "symbol": "gzTest.cmdServiceReqInvalidService"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7420,6 +7880,7 @@
           "symbol": "gzTest.cmdServiceReqOnewayDisambiguation"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7438,6 +7899,7 @@
           "symbol": "gzTest.cmdServiceReqOnewayNoCompatibleProvider"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7456,6 +7918,7 @@
           "symbol": "gzTest.cmdServiceReqOnewayAmbiguousRequest"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7474,6 +7937,7 @@
           "symbol": "gzTest.cmdServiceReqAmbiguousTypes"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7492,6 +7956,7 @@
           "symbol": "gzTest.cmdTopicEcho"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7510,6 +7975,7 @@
           "symbol": "gzTest.cmdTopicEchoOutputFormats"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7528,6 +7994,7 @@
           "symbol": "ParameterResult.ConstructorsAndGetters"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     },
@@ -7546,6 +8013,7 @@
           "symbol": "ParameterResult.BoolCoercion"
         }
       ],
+      "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
     }

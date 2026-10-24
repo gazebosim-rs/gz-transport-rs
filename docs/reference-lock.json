@@ -1,0 +1,14 @@
+{
+  "profile": "zeromq-linux",
+  "cmake_build_type": "Release",
+  "repositories": [
+    {"name":"gz-cmake","sha":"ca67ea8460fc03da062780805feb01cb20f4e0ba"},
+    {"name":"gz-utils","sha":"eafd2035e344eeb28ccab03409093637b89bee35"},
+    {"name":"gz-math","sha":"1316ed334f4d5bda7be59aae07cd6e8ff31cfe13"},
+    {"name":"gz-tools","sha":"832ff554af2605667bfebbbe7b794741d00d9c2f"},
+    {"name":"gz-msgs","sha":"89c0c3d1474f545cb889335daf930bfdab6ab852"},
+    {"name":"gz-transport","sha":"41913b9dfc3dbce33ac5464ddcb427cc82450f26"}
+  ],
+  "apt_dependencies": ["build-essential","cmake","git","pkg-config","protobuf-compiler","libprotobuf-dev","libtinyxml2-dev","libzmq3-dev","cppzmq-dev","uuid-dev","libsqlite3-dev","libeigen3-dev","libspdlog-dev","ruby"],
+  "transport_features": {"zeromq":true,"zenoh":false,"python":false,"logging":true,"parameters":true,"gz_tools":true}
+}

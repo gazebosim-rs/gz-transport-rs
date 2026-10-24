@@ -31,15 +31,25 @@ def check(report, manifest, root):
     return totals
 
 
-def changed_check(lcov, changed, root):
+def changed_check(lcov, changed, root, production_files=None):
     lines, filename = {}, None
     for line in lcov.splitlines():
         if line.startswith('SF:'):
             filename = str(Path(line[3:]).resolve())
+            if filename in lines:
+                raise ValueError('Duplicate LCOV source')
+            lines[filename] = {}
         elif line.startswith('DA:'):
             number, count, *_ = line[3:].split(',')
-            lines[(filename, int(number))] = int(count)
-    counts = [lines[(str((root / name).resolve()), number)] for name, numbers in changed.items() for number in numbers if (str((root / name).resolve()), number) in lines]
+            number, count = int(number), int(count)
+            if filename is None or number <= 0 or count < 0 or number in lines[filename]:
+                raise ValueError('Invalid or duplicate LCOV line')
+            lines[filename][number] = count
+    # check() already requires a nonempty executable JSON denominator per file.
+    for name in production_files if production_files is not None else changed:
+        if not lines.get(str((root / name).resolve())):
+            raise ValueError('Missing executable LCOV production source')
+    counts = [lines[str((root / name).resolve())][number] for name, numbers in changed.items() for number in numbers if number in lines.get(str((root / name).resolve()), {})]
     if counts and not above_95(sum(n > 0 for n in counts), len(counts)):
         raise ValueError('Changed executable production lines must be strictly >95%')
     return {'covered': sum(n > 0 for n in counts), 'count': len(counts)}

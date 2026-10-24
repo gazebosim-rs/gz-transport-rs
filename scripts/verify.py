@@ -13,6 +13,7 @@ import sys
 import tempfile
 from coverage import check, changed_check
 from inventory import collect
+from reference import check_ledger, check_mapped_tests, enabled_features
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,6 +41,23 @@ def changed_lines(diff):
     return changed
 
 
+def source_changes(root, production_files, base=None):
+    if base and not re.fullmatch(r'[0-9a-f]{40}', base):
+        raise ValueError('Invalid coverage base SHA')
+    if base == '0' * 40:
+        return {p: set(range(1, len((root / p).read_text().splitlines()) + 1)) for p in production_files}
+    if base:
+        run(['git', 'cat-file', '-e', f'{base}^{{commit}}'], cwd=root, capture_output=True)
+    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base or 'HEAD', '--', 'src'], cwd=root, text=True)
+    if not base and not diff and subprocess.run(['git', 'rev-parse', '--verify', 'HEAD^'], cwd=root, capture_output=True).returncode == 0:
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], cwd=root, text=True)
+    changed = changed_lines(diff)
+    tracked = set(subprocess.check_output(['git', 'ls-files', '--', 'src'], cwd=root, text=True).splitlines())
+    for filename in set(production_files) - tracked:
+        changed[filename] = set(range(1, len((root / filename).read_text().splitlines()) + 1))
+    return changed
+
+
 def staged():
     with tempfile.TemporaryDirectory(prefix='gz-transport-staged-') as directory:
         candidate = Path(directory) / ROOT.name
@@ -61,15 +79,23 @@ def verify(profile):
     manifest = json.loads((ROOT / 'coverage.json').read_text())
     if profile != manifest['profile']:
         raise ValueError(f'Missing required coverage profile: {profile}')
-    inputs_paths = [*manifest['production_files'], 'Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', 'coverage.json', 'docs/upstream-tests.json']
+    inputs_paths = [*manifest['production_files'], 'Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', 'coverage.json', 'docs/upstream-tests.json', 'docs/reference-catalog.json', 'docs/reference-lock.json']
     inputs_paths += [str(p.relative_to(ROOT)) for directory in ['tests', 'scripts'] for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts]
     inputs = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in inputs_paths}
     os.chdir(ROOT)
     env = dict(os.environ, RUSTUP_TOOLCHAIN=manifest['toolchain'])
+    env.pop('CARGO_ENCODED_RUSTFLAGS', None)
+    prefix = Path(env.get('GZ_REFERENCE_PREFIX', '/home/nkoenig/local')).resolve()
+    env['LD_LIBRARY_PATH'] = str(prefix / 'lib') + ':' + env.get('LD_LIBRARY_PATH', '')
     run(['cargo', 'fmt', '--check'], env=env)
     run(['cargo', 'clippy', '--locked', '--all-targets', '--', '-D', 'warnings'], env=env)
-    run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_quality.py'])
-    run(['bash', 'scripts/build-cpp-peer.sh'])
+    run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py'])
+    run(['bash', 'scripts/build-cpp-peer.sh'], env=env)
+    linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts/cpp-peer')], env=env, text=True)
+    (ROOT / 'artifacts/cpp-linkage.txt').write_text(linkage)
+    libraries = re.findall(r'libgz-[^ ]+\s+=>\s+(\S+)', linkage)
+    if len(libraries) < 2 or any(not Path(path).resolve().is_relative_to(prefix) for path in libraries):
+        raise ValueError('C++ peer linked outside the selected reference prefix')
     # Required original assertions are executed, not inferred from source names.
     reference = Path(os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
     baseline = json.loads((ROOT / 'docs/reference.json').read_text())
@@ -78,12 +104,9 @@ def verify(profile):
         raise ValueError('C++ reference SHA mismatch')
     ledger = json.loads((ROOT / 'docs/upstream-tests.json').read_text())
     expanded = collect(reference)
-    ids = [entry['id'] for entry in ledger['entries']]
-    if len(ids) != len(set(ids)) or set(ids) != {entry['id'] for entry in expanded['entries']} or ledger['source_fixture_sha256'] != expanded['source_fixture_sha256'] or expanded['unavailable_targets']:
-        raise ValueError('Upstream test/fixture ledger mismatch')
-    for entry in ledger['entries']:
-        if entry['disposition'] != 'pending' and (not entry['replacement'] or not entry.get('evidence')):
-            raise ValueError('Missing retained-test mapping/evidence')
+    catalog = json.loads((ROOT / 'docs/reference-catalog.json').read_text())
+    reference_counts = check_ledger(ledger, expanded, enabled_features(reference), catalog)
+    run(['git', '-C', str(reference), 'diff', '--exit-code', 'HEAD'])
     run([str(reference / 'build/bin/UNIT_TopicUtils_TEST'), '--gtest_filter=TopicUtilsTest.testFullyQualifiedName'], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
@@ -98,6 +121,7 @@ def verify(profile):
     env.update(RUSTFLAGS='', RUSTC_WORKSPACE_WRAPPER=str(wrapper), CARGO_TARGET_DIR=str(target), LLVM_PROFILE_FILE=str(profiles / '%m-%p.profraw'))
     with (artifacts / 'test-build.jsonl').open('w') as output:
         run(['cargo', 'test', '--locked', '--message-format=json', '--', '--test-threads=1'], stdout=output, env=env)
+    check_mapped_tests(ledger, (artifacts / 'test-build.jsonl').read_text())
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], env=env, text=True).strip())
     host = re.search(r'^host: (.+)$', subprocess.check_output(['rustc', '-vV'], env=env, text=True), re.M)[1]
     llvm = sysroot / 'lib/rustlib' / host / 'bin'
@@ -125,17 +149,11 @@ def verify(profile):
     if 'GZ_CHANGED_LINES_FILE' in env:
         changed = json.loads(Path(env['GZ_CHANGED_LINES_FILE']).read_text())
     elif (ROOT / '.git').exists():
-        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD', '--', 'src'], text=True)
-        if not diff and subprocess.run(['git', 'rev-parse', '--verify', 'HEAD^'], capture_output=True).returncode == 0:
-            diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], text=True)
-        changed = changed_lines(diff)
-        tracked = set(subprocess.check_output(['git', 'ls-files', '--', 'src'], text=True).splitlines())
-        for filename in set(manifest['production_files']) - tracked:
-            changed[filename] = set(range(1, len((ROOT / filename).read_text().splitlines()) + 1))
+        changed = source_changes(ROOT, manifest['production_files'], env.get('GZ_COVERAGE_BASE'))
     else:
         changed = {p: set(range(1, len((ROOT / p).read_text().splitlines()) + 1)) for p in manifest['production_files']}
-    changed_totals = changed_check(lcov, changed, ROOT)
-    evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
+    changed_totals = changed_check(lcov, changed, ROOT, manifest['production_files'])
+    evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'reference': reference_counts, 'cpp_libraries_sha256': {Path(path).name:hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in libraries}, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
     validate_evidence(evidence, ROOT, profile)
     (artifacts / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
     print(json.dumps({'profile':profile,'totals':totals,'changed_lines':changed_totals,'evidence':str(artifacts/'evidence.json')},indent=2))

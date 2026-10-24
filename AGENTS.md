@@ -32,3 +32,23 @@ Preserve the Gazebo wire protocol and real C++ peer interoperability. Do not rep
 
 Do not apply the monorepo's internal crate layout here. Do not edit the active Fuel
 rewrite or another repository without a coordinated assignment.
+
+## Public progress reporting
+
+Keep this repository's report current on the
+[rewrite progress dashboard](https://gazebosim-rs.github.io/rewrite-progress/).
+Follow the shared [status contract](https://github.com/gazebosim-rs/rewrite-progress/blob/main/status-contract.md).
+Prepare `artifacts/progress-status.json` (ignored), refresh its UTC timestamp,
+and publish with the sibling tracker checkout's `scripts/update-status.py`:
+
+```sh
+python3 ../rewrite-progress/scripts/update-status.py gz-transport-rs artifacts/progress-status.json --dry-run
+python3 ../rewrite-progress/scripts/update-status.py gz-transport-rs artifacts/progress-status.json
+```
+
+Update on accepted slices, task/review changes, new test evidence and real
+blockers. Only whole packets meeting all acceptance criteria may be complete;
+reviewed slices are separate. Report exact line/region counts and revision-linked
+CI state. A local pass or queued native job is not hosted CI success. Publish no
+credentials, private paths or raw environment variables. Each owner updates only
+`data/gz-transport-rs.json` on the tracker `status` branch through that script.

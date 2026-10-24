@@ -28,10 +28,10 @@ are written under artifacts/. No cached coverage evidence is accepted.
 
 The staged hook exports the Git index into a fresh temporary directory and runs
 the same runner there, then copies results into artifacts/staged. Unstaged source
-cannot validate a different staged source. CI invokes the same runner and requires
-a native reference runner with label `gazebo-transport-reference`; provisioning
-that runner and making its check required in branch protection remain release
-administration work. A queued/missing runner is not a passing result.
+cannot validate a different staged source. CI invokes the same runner on a standard Ubuntu24.04 hosted worker after
+building the exact native source chain; see [hosted CI](HOSTED-CI.md). No custom
+runner is required. Making its native check required in branch protection remains
+release administration work. A queued/missing/failed runner is not a passing result.
 
 # Preserved assertions and inventory
 

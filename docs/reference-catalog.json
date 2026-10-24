@@ -1,0 +1,10 @@
+{
+  "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+  "case_count": 418,
+  "case_ids_sha256": "cc82f2fccf86a64f9ce15bbab992e14e033b70263d471e980452b85353405799",
+  "full_reference_features": [
+    "zeromq",
+    "zenoh"
+  ],
+  "configuration_note": "Full pinned Linux reference inventory; optional cases remain retained when a ZeroMQ-only reference build cannot instantiate them."
+}

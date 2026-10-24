@@ -1,16 +1,50 @@
 name: transport
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+concurrency:
+  group: transport-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   policy:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - run: python3 -m unittest discover -s scripts -p test_quality.py
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
   native-parity-and-coverage:
-    runs-on: [self-hosted, linux, x64, gazebo-transport-reference]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     env:
-      GZ_REFERENCE_SOURCE: /opt/gazebo-reference/gz-transport
-      GZ_REFERENCE_PREFIX: /opt/gazebo-reference/install
+      GZ_COVERAGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+      GZ_REFERENCE_SOURCE: ${{ github.workspace }}/artifacts/reference/sources/gz-transport
+      GZ_REFERENCE_PREFIX: ${{ github.workspace }}/artifacts/reference/install
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - run: python3 scripts/verify.py verify --profile zeromq-linux
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install native reference build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake git pkg-config protobuf-compiler libprotobuf-dev libtinyxml2-dev libzmq3-dev cppzmq-dev uuid-dev libsqlite3-dev libeigen3-dev libspdlog-dev ruby
+      - run: rustup toolchain install 1.94.1 --profile minimal --component rustfmt,clippy,llvm-tools-preview
+      - name: Build immutable native reference sources
+        run: python3 scripts/bootstrap-reference.py --jobs 2
+      - name: Verify real C++ peers and strict owned coverage
+        run: python3 scripts/verify.py verify --profile zeromq-linux
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: native-parity-${{ github.sha }}
+          path: |
+            artifacts/evidence.json
+            artifacts/coverage.json
+            artifacts/coverage.lcov
+            artifacts/coverage.profdata
+            artifacts/profraw/
+            artifacts/test-build.jsonl
+            artifacts/cpp-linkage.txt
+            artifacts/reference/environment.json
+            artifacts/reference/logs/
