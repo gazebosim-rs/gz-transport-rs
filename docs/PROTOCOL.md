@@ -39,6 +39,13 @@ pending request is removed. The responder connects back to the requester's
 advertised response receiver. Mandatory routing retries until the socket's
 ZMTP handshake completes or the explicit reply_timeout expires (default 5s).
 
+A response descriptor of `gz.msgs.Empty` identifies a native one-way request.
+Providers enqueue the request without sending a reply. `Request::expects_response`
+returns false and `respond` simply consumes it. `Node::request_oneway` bounds
+provider discovery/send retries with the supplied timeout, then releases the
+pending slot after local queue or ZeroMQ handoff. Success acknowledges this
+handoff, not callback execution; no application-level acknowledgement exists.
+
 The library uses zmq 0.10.0 / zmq-sys 0.12.0, which builds unmodified libzmq 4.3.4.
 The independently built C++ reference links system libzmq 4.3.5. Native dependency
 code is outside handwritten Rust coverage; no owned Rust FFI or unsafe code is
@@ -78,7 +85,7 @@ This is a first interoperable NET-01 slice, not complete transport parity. Pendi
 HOST scope across multiple hosts; process-wide multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
 IPv6 and all-interface routing; legacy default host/user/interface selection; topic throttling and
-wire statistics version 110; authentication; oneway Empty services; complete
+wire statistics version 110; authentication; complete
 legacy CLI grammar; SQLite log record/read/replay and performance qualification.
 Each remains retained in the 418-case runtime ledger and non-gtest inventory.
 

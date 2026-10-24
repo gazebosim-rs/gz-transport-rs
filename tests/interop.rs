@@ -342,3 +342,66 @@ fn rust_unknown_application_fields_reach_cpp_unchanged() {
     }
     peer.success();
 }
+
+#[test]
+fn oneway_services_interoperate_without_reply_waiters() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut peer = Peer::start(&config, "serve-oneway", "/oneway_cpp", "rust");
+    node.request_oneway("/oneway_cpp", TYPE, data("rust"), Duration::from_secs(5))
+        .unwrap();
+    peer.success(); // C++ executed the callback; it never replies for Empty.
+    let service = node.serve("/oneway_rust", TYPE, "gz.msgs.Empty").unwrap();
+    let mut peer = Peer::start(&config, "request-oneway", "/oneway_rust", "cpp");
+    let request = service.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_eq!(request.data, data("cpp"));
+    assert!(!request.expects_response());
+    request.respond(Vec::new(), true).unwrap();
+    peer.success();
+    assert_eq!(node.statistics().reply_timeouts, 0);
+}
+
+#[test]
+fn oneway_local_handoff_bounds_and_matching() {
+    let config = Config {
+        capacity: 2,
+        max_message_bytes: 32,
+        ..config()
+    };
+    let mut node = Node::new(config).unwrap();
+    let service = node.serve("/oneway", TYPE, "gz.msgs.Empty").unwrap();
+    for value in ["first", "second", "third"] {
+        node.request_oneway("/oneway", TYPE, data(value), Duration::from_secs(1))
+            .unwrap();
+        let request = service.recv_timeout(Duration::from_secs(1)).unwrap();
+        assert!(!request.expects_response());
+        assert_eq!(request.data, data(value));
+        request.respond(vec![0; 64], false).unwrap(); // Unused response data is ignored.
+    }
+    for _ in 0..2 {
+        node.request_oneway("/oneway", TYPE, data("queued"), Duration::from_secs(1))
+            .unwrap();
+    }
+    assert_eq!(
+        node.request_oneway("/oneway", TYPE, data("full"), Duration::from_secs(1)),
+        Err(Error::QueueFull)
+    );
+    assert_eq!(node.statistics().queue_drops, 1);
+    assert_eq!(
+        node.request_oneway("/oneway", "wrong", vec![], Duration::from_millis(25)),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        node.request_oneway("invalid name", TYPE, vec![], Duration::from_secs(1)),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(
+        node.request_oneway("/oneway", TYPE, vec![0; 33], Duration::from_secs(1)),
+        Err(Error::InvalidFrame)
+    );
+    node.shutdown();
+    assert_eq!(
+        node.request_oneway("/oneway", TYPE, vec![], Duration::from_secs(1)),
+        Err(Error::Shutdown)
+    );
+}

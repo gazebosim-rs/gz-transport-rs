@@ -143,7 +143,15 @@ pub struct Request {
     max: usize,
 }
 impl Request {
+    /// Gazebo services with response type `gz.msgs.Empty` never send a reply.
+    pub fn expects_response(&self) -> bool {
+        !self.route.is_empty()
+    }
+    /// Complete a normal request, or consume a one-way request without sending.
     pub fn respond(self, data: impl Into<Vec<u8>>, success: bool) -> Result<(), Error> {
+        if !self.expects_response() {
+            return Ok(());
+        }
         let data = data.into();
         if data.len() > self.max {
             return Err(Error::InvalidFrame);
@@ -246,6 +254,20 @@ impl Node {
         ))?;
         Ok(Service { rx, _lease: lease })
     }
+    /// Hand a one-way request to a matching local queue or connected native peer.
+    /// The timeout bounds discovery and send retries; success does not acknowledge
+    /// execution by the service. No response is sent or awaited on the wire.
+    pub fn request_oneway(
+        &self,
+        topic: &str,
+        request_type: &str,
+        data: impl Into<Vec<u8>>,
+        timeout: Duration,
+    ) -> Result<(), Error> {
+        self.request(topic, request_type, EMPTY_TYPE, data, timeout)
+            .map(|_| ())
+    }
+    /// Request a response. `gz.msgs.Empty` selects Gazebo's one-way semantics.
     pub fn request(
         &self,
         topic: &str,
@@ -300,6 +322,8 @@ enum Command {
     Request(Pending),
     Respond(Vec<Vec<u8>>, Vec<u8>, bool),
 }
+const EMPTY_TYPE: &str = "gz.msgs.Empty";
+
 struct Pending {
     topic: String,
     request_type: String,
@@ -552,6 +576,10 @@ impl Worker {
                 });
             }
             Command::Request(pending) => {
+                if Instant::now() >= pending.deadline {
+                    let _ = pending.reply.try_send(Err(Error::Timeout));
+                    return;
+                }
                 if self.pending.len() < self.config.capacity {
                     self.subscribe_message(1, &pending.topic);
                     let id = Uuid::new_v4().to_string();
@@ -568,7 +596,11 @@ impl Worker {
                             .try_send(Request {
                                 data: pending.data.clone(),
                                 sender: self.sender.clone(),
-                                route: vec![id.as_bytes().to_vec()],
+                                route: if pending.response_type == EMPTY_TYPE {
+                                    Vec::new()
+                                } else {
+                                    vec![id.as_bytes().to_vec()]
+                                },
                                 max: self.config.max_message_bytes,
                             })
                             .is_err()
@@ -581,7 +613,11 @@ impl Worker {
                             return;
                         }
                     }
-                    self.pending.insert(id, pending);
+                    if pending.sent && pending.response_type == EMPTY_TYPE {
+                        let _ = pending.reply.try_send(Ok((Vec::new(), true)));
+                    } else {
+                        self.pending.insert(id, pending);
+                    }
                 } else {
                     self.sender
                         .counters
@@ -925,13 +961,17 @@ impl Worker {
                     && f[1] == p.topic.as_bytes()
                     && matches!(&p.pub_type,Some(PubType::SrvPub(types)) if f[7]==types.request_type.as_bytes() && f[8]==types.response_type.as_bytes())
                 {
-                    let route = vec![
-                        f[2].clone(),
-                        f[3].clone(),
-                        f[1].clone(),
-                        f[4].clone(),
-                        f[5].clone(),
-                    ];
+                    let route = if f[8] == EMPTY_TYPE.as_bytes() {
+                        Vec::new()
+                    } else {
+                        vec![
+                            f[2].clone(),
+                            f[3].clone(),
+                            f[1].clone(),
+                            f[4].clone(),
+                            f[5].clone(),
+                        ]
+                    };
                     self.sender.counters.dropped(service.tx.try_send(Request {
                         data: f[6].clone(),
                         sender: self.sender.clone(),
@@ -999,6 +1039,10 @@ impl Worker {
                     ));
                     break;
                 }
+            }
+            if p.sent && p.response_type == EMPTY_TYPE {
+                let _ = p.reply.try_send(Ok((Vec::new(), true)));
+                return false;
             }
             true
         });

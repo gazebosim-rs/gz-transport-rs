@@ -110,6 +110,7 @@ def verify(profile):
     reference_counts = check_ledger(ledger, expanded, enabled_features(reference), catalog)
     run(['git', '-C', str(reference), 'diff', '--exit-code', 'HEAD'])
     run([str(reference / 'build/bin/UNIT_TopicUtils_TEST'), '--gtest_filter=TopicUtilsTest.testFullyQualifiedName'], env=env)
+    run([str(reference / 'build/bin/UNIT_Node_TEST'), '--gtest_filter=NodeTest.ServiceWithoutOutputCallAsync'], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
     shutil.rmtree(profiles, ignore_errors=True)

@@ -4,6 +4,7 @@
 #include <gz/transport/Node.hh>
 #include <gz/transport/NodeShared.hh>
 #include <gz/msgs/stringmsg.pb.h>
+#include <gz/msgs/empty.pb.h>
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -50,6 +51,24 @@ int main(int argc, char **argv) {
     if (!node.Advertise(topic,callback)) return 6;
     std::cout << "READY" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(8));
+  } else if (mode == "serve-oneway") {
+    struct State { std::mutex mutex; std::condition_variable cv; bool received=false; };
+    auto state=std::make_shared<State>();
+    std::function<void(const gz::msgs::StringMsg&)> callback = [state,value](const auto &request) {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      if (request.data()==value) { state->received=true; state->cv.notify_all(); }
+    };
+    if (!node.Advertise(topic,callback)) return 9;
+    std::cout << "READY" << std::endl;
+    std::unique_lock<std::mutex> lock(state->mutex);
+    if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->received;})) return 10;
+  } else if (mode == "request-oneway") {
+    gz::msgs::StringMsg request; request.set_data(value);
+    std::cout << "READY" << std::endl;
+    if (!node.Request(topic,request)) return 11;
+    // Native one-way Request returns before discovery. Keep the process alive
+    // until its bounded test window ends so pending discovery can deliver it.
+    std::this_thread::sleep_for(std::chrono::seconds(3));
   } else if (mode == "request") {
     gz::msgs::StringMsg request,response; request.set_data(value);
     bool result=false;

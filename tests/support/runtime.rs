@@ -261,7 +261,7 @@ fn bounds_and_invalid_configuration() {
     let request = Request {
         data: vec![],
         sender: worker.sender.clone(),
-        route: vec![],
+        route: vec![b"local-request-id".to_vec()],
         max: 1,
     };
     assert_eq!(request.respond(vec![0; 2], true), Err(Error::InvalidFrame));
@@ -863,4 +863,70 @@ fn typed_discovery_rejects_wrong_publisher_kind_and_unknown_scope() {
     service.scope = 500;
     worker.discovery(1, protocol::advertisement("remote", service));
     assert!(worker.peers.is_empty());
+}
+
+#[test]
+fn oneway_wire_provider_does_not_enqueue_or_connect_a_reply() {
+    let (mut worker, commands) = state(2);
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/oneway".into(),
+        "req".into(),
+        EMPTY_TYPE.into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    let context = zmq::Context::new();
+    let requester = context.socket(zmq::DEALER).unwrap();
+    requester.connect(&worker.service_address).unwrap();
+    requester
+        .send_multipart(
+            [
+                b"/oneway".as_slice(),
+                b"tcp://127.0.0.1:1",
+                b"receiver",
+                b"node",
+                b"id",
+                b"payload",
+                b"req",
+                EMPTY_TYPE.as_bytes(),
+            ],
+            0,
+        )
+        .unwrap();
+    assert_ne!(worker.router.poll(zmq::POLLIN, 1000).unwrap(), 0);
+    worker.receive_requests();
+    let request = rx.try_recv().unwrap();
+    assert_eq!(request.data, b"payload");
+    assert!(!request.expects_response());
+    request.respond(b"discarded".to_vec(), false).unwrap();
+    assert!(matches!(
+        commands.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    assert!(worker.replies.is_empty());
+    assert!(worker.response_connections.is_empty());
+    assert_eq!(requester.poll(zmq::POLLIN, 10).unwrap(), 0);
+}
+
+#[test]
+fn expired_local_requests_never_enter_the_service_queue() {
+    for response_type in [EMPTY_TYPE, "rep"] {
+        let (mut worker, _) = state(2);
+        let (tx, rx) = mpsc::sync_channel(1);
+        worker.command(Command::Serve(
+            "/service".into(),
+            "req".into(),
+            response_type.into(),
+            tx,
+            Arc::new(AtomicBool::new(true)),
+        ));
+        let (mut pending, reply) = pending(Instant::now());
+        pending.response_type = response_type.into();
+        worker.command(Command::Request(pending));
+        assert_eq!(reply.try_recv().unwrap(), Err(Error::Timeout));
+        assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+        assert!(worker.pending.is_empty());
+        assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+    }
 }

@@ -4211,10 +4211,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceWithoutOutputCallAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceWithoutOutputCallAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial_port",
+      "replacement": [
+        "oneway_local_handoff_bounds_and_matching"
+      ],
+      "review": "pending independent assertion review",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4223,8 +4225,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Partial: local one-way callback dispatch, invalid request name; advertised-service enumeration and explicit unadvertise assertions remain pending.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-oneway.md: mandatory native original plus bounded local and real C++ supplemental tests"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsyncLambda",
