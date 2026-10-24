@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Differential peer for pinned Gazebo Transport; no replacement logic is linked.
+// Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
 #include <gz/transport/Node.hh>
 #include <gz/transport/NodeShared.hh>
 #include <gz/msgs/stringmsg.pb.h>
@@ -12,6 +13,7 @@
 #include <memory>
 #include <google/protobuf/unknown_field_set.h>
 #include <thread>
+#include <algorithm>
 
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
@@ -21,6 +23,37 @@ int main(int argc, char **argv) {
     gz::transport::NodeOptions options;
     auto shared=gz::transport::NodeShared::Instance();
     std::cout << "CONFIG " << options.Partition() << ' ' << shared->msgDiscPort << ' ' << shared->srvDiscPort << ' ' << shared->SndHwm() << ' ' << shared->RcvHwm() << std::endl;
+  } else if (mode == "inspect-subscriber") {
+    auto observed = [&](bool expected) {
+      std::vector<std::string> topics;
+      node.TopicList(topics);
+      std::vector<gz::transport::MessagePublisher> publishers, subscribers;
+      if (!node.TopicInfo(topic, publishers, subscribers)) return false;
+      if (!expected) return std::count(topics.begin(), topics.end(), topic) == 0 &&
+        publishers.empty() && subscribers.empty();
+      return std::count(topics.begin(), topics.end(), topic) == 1 &&
+        publishers.empty() && subscribers.size() == 1 &&
+        subscribers.front().MsgTypeName() == value &&
+        subscribers.front().Ctrl().empty();
+    };
+    auto wait = [&](bool expected) {
+      const auto seconds=expected ? (topic == "/unsub_test" ? 4 : 5) : 8;
+      const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(seconds);
+      do {
+        if (observed(expected)) return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      } while (std::chrono::steady_clock::now() < deadline);
+      return false;
+    };
+    std::vector<std::string> initialTopics;
+    node.TopicList(initialTopics); // Initialize discovery before the Rust subscription.
+    std::cout << "READY" << std::endl;
+    if (!wait(true)) return 12;
+    std::cout << "FOUND" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin, command) || command != "KEEP" || !observed(true)) return 13;
+    std::cout << "KEPT" << std::endl;
+    if (!std::getline(std::cin, command) || command != "GONE" || !wait(false)) return 14;
   } else if (mode == "publish" || mode == "publish-unknown") {
     auto publisher=node.Advertise<gz::msgs::StringMsg>(topic);
     if (!publisher) return 3;

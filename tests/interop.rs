@@ -1,10 +1,11 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
 use gz_msgs::{prost::Message, stringmsg::StringMsg};
 use gz_transport::{Config, Error, Node};
 use std::{
-    io::{BufRead, BufReader},
-    process::{Child, Command, Stdio},
+    io::{BufRead, BufReader, Write},
+    process::{Child, ChildStdout, Command, Stdio},
     thread,
     time::{Duration, Instant},
 };
@@ -25,7 +26,7 @@ fn config() -> Config {
         ..Default::default()
     }
 }
-struct Peer(Child);
+struct Peer(Child, BufReader<ChildStdout>);
 impl Peer {
     fn start(config: &Config, mode: &str, topic: &str, value: &str) -> Self {
         let path = std::env::var("GZ_CPP_PEER")
@@ -47,15 +48,15 @@ impl Peer {
             .env("GZ_DISCOVERY_SRV_PORT", config.service_port.to_string())
             .env("GZ_TRANSPORT_IMPLEMENTATION", "zeromq")
             .env("GZ_TRANSPORT_TOPIC_STATISTICS", "0")
+            .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
             .expect("Build the required real C++ peer with scripts/build-cpp-peer.sh");
         let mut ready = String::new();
-        BufReader::new(child.stdout.take().unwrap())
-            .read_line(&mut ready)
-            .unwrap();
+        let mut stdout = BufReader::new(child.stdout.take().unwrap());
+        stdout.read_line(&mut ready).unwrap();
         assert_eq!(ready.trim(), "READY");
-        Self(child)
+        Self(child, stdout)
     }
     fn success(&mut self) {
         assert!(self.0.wait().unwrap().success());
@@ -425,4 +426,35 @@ fn native_host_service_accepts_other_loopback_aliases() {
         ),
         Ok((data("rust-host"), true))
     );
+}
+
+#[test]
+fn cpp_inspects_subscriber_only_topics_until_the_last_lease_is_dropped() {
+    for (type_name, topic) in [
+        ("gz.msgs.Int32", "/subscriber_only"),
+        ("gz.msgs.Int32", "/unsub_test"),
+        ("", "/wildcard_only"),
+    ] {
+        let config = config();
+        let node = Node::new(config.clone()).unwrap();
+        let wire_type = if type_name.is_empty() {
+            "google.protobuf.Message"
+        } else {
+            type_name
+        };
+        let mut peer = Peer::start(&config, "inspect-subscriber", topic, wire_type);
+        let first = node.subscribe(topic, type_name).unwrap();
+        let last = node.subscribe(topic, type_name).unwrap();
+        let mut line = String::new();
+        peer.1.read_line(&mut line).unwrap();
+        assert_eq!(line.trim(), "FOUND");
+        drop(first);
+        writeln!(peer.0.stdin.as_mut().unwrap(), "KEEP").unwrap();
+        line.clear();
+        peer.1.read_line(&mut line).unwrap();
+        assert_eq!(line.trim(), "KEPT");
+        drop(last);
+        writeln!(peer.0.stdin.as_mut().unwrap(), "GONE").unwrap();
+        peer.success();
+    }
 }

@@ -842,10 +842,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicListSubscriberOnly",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.TopicListSubscriberOnly",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "cpp_inspects_subscriber_only_topics_until_the_last_lease_is_dropped"
+      ],
+      "review": "/root/sdformat; 2026-10-24; source/assertion equivalence approved for initialized discovery, Int32/topics, original deadlines and live-process unsubscribe; independently ran exact2 native originals,2 UDP unit tests and real C++ observer Rust test, all passed",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -854,17 +856,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original initialized-native-discovery ordering, Int32 subscription type, /subscriber_only and /unsub_test names and listing/info observations retained. Real C++ Node is observer; Rust supplies live subscriptions. Native observer must list topic once, no publishers and one subscriber; after last lease drops listing and info empty while Rust Node remains alive. Original present deadlines5s/4s and absent8s retained. Pipe barriers replace auxiliary fixed delays; wildcard and duplicate leases supplement.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-subscriber-inspection.md; mandatory native original executable and C++ observer/Rust subscription port"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicListRemovesUnsubscribed",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.TopicListRemovesUnsubscribed",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "cpp_inspects_subscriber_only_topics_until_the_last_lease_is_dropped"
+      ],
+      "review": "/root/sdformat; 2026-10-24; source/assertion equivalence approved for initialized discovery, Int32/topics, original deadlines and live-process unsubscribe; independently ran exact2 native originals,2 UDP unit tests and real C++ observer Rust test, all passed",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -873,8 +878,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original initialized-native-discovery ordering, Int32 subscription type, /subscriber_only and /unsub_test names and listing/info observations retained. Real C++ Node is observer; Rust supplies live subscriptions. Native observer must list topic once, no publishers and one subscriber; after last lease drops listing and info empty while Rust Node remains alive. Original present deadlines5s/4s and absent8s retained. Pipe barriers replace auxiliary fixed delays; wildcard and duplicate leases supplement.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-subscriber-inspection.md; mandatory native original executable and C++ observer/Rust subscription port"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicInfo",

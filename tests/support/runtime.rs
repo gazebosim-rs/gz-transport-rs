@@ -1048,3 +1048,110 @@ fn host_discovery_advertise_and_withdraw_follow_native_source_membership() {
     );
     assert_eq!(worker.peers.len(), 1);
 }
+
+#[test]
+fn subscriber_listing_uses_message_channel_live_leases_and_native_wildcard() {
+    let (mut worker, _) = state(4);
+    let dead = Arc::new(AtomicBool::new(false));
+    for (topic, type_name, active) in [
+        (
+            "/typed",
+            "gz.msgs.StringMsg",
+            Arc::new(AtomicBool::new(true)),
+        ),
+        ("/wildcard", "", Arc::new(AtomicBool::new(true))),
+        ("/dead", "gz.msgs.StringMsg", dead),
+    ] {
+        let (tx, _) = mpsc::sync_channel(1);
+        worker.command(Command::Subscribe(
+            topic.into(),
+            type_name.into(),
+            tx,
+            active,
+        ));
+    }
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let request = protocol::discovery("remote", Type::SubscribersReq, None);
+    worker.discovered(1, request.clone());
+    worker.discovered(
+        0,
+        protocol::discovery(&worker.process.clone(), Type::SubscribersReq, None),
+    );
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    assert!(receiver.recv(&mut buffer).is_err());
+    worker.discovered(0, request);
+    let mut replies = Vec::new();
+    for _ in 0..2 {
+        let len = receiver.recv(&mut buffer).unwrap();
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        assert_eq!(message.r#type, Type::SubscribersRep as i32);
+        assert_eq!(message.process_uuid, worker.process);
+        let Some(DiscContents::Pub(publisher)) = message.disc_contents else {
+            panic!("missing publisher")
+        };
+        assert_eq!(publisher.address, worker.address);
+        assert_eq!(publisher.node_uuid, worker.node);
+        assert_eq!(publisher.process_uuid, worker.process);
+        assert_eq!(publisher.scope, Scope::All as i32);
+        let Some(PubType::MsgPub(info)) = publisher.pub_type else {
+            panic!("wrong publisher kind")
+        };
+        assert!(info.ctrl.is_empty());
+        replies.push((publisher.topic, info.msg_type));
+    }
+    replies.sort();
+    assert_eq!(
+        replies,
+        [
+            ("/typed".into(), "gz.msgs.StringMsg".into()),
+            ("/wildcard".into(), "google.protobuf.Message".into())
+        ]
+    );
+    assert!(receiver.recv(&mut buffer).is_err());
+}
+
+#[test]
+fn subscriber_withdrawal_waits_for_last_lease_and_emits_one_generic_end() {
+    let (mut worker, _) = state(2);
+    let first = Arc::new(AtomicBool::new(true));
+    let last = Arc::new(AtomicBool::new(true));
+    for active in [first.clone(), last.clone()] {
+        let (tx, _) = mpsc::sync_channel(1);
+        worker.command(Command::Subscribe(
+            "/shared".into(),
+            "gz.msgs.StringMsg".into(),
+            tx,
+            active,
+        ));
+    }
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    first.store(false, Ordering::Release);
+    worker.cleanup();
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    assert!(receiver.recv(&mut buffer).is_err());
+    assert_eq!(worker.subscriptions.len(), 1);
+    last.store(false, Ordering::Release);
+    worker.cleanup();
+    assert!(worker.subscriptions.is_empty());
+    let len = receiver.recv(&mut buffer).unwrap();
+    let message = protocol::decode(&buffer[..len]).unwrap();
+    assert_eq!(message.r#type, Type::EndConnection as i32);
+    assert_eq!(
+        message.disc_contents,
+        Some(DiscContents::Pub(
+            worker.subscriber_publisher("/shared", "")
+        ))
+    );
+    worker.cleanup();
+    assert!(receiver.recv(&mut buffer).is_err());
+}

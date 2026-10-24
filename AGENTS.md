@@ -2,8 +2,8 @@
 
 Read README.md and the linked canonical plan, this repository's contract, task
 packets, and test policy. Confirmed owner decisions override proposed defaults.
-This is a planning shell; production quality gates must be implemented before
-accepting the first production feature.
+The bounded ZeroMQ runtime is implemented; retained NET-01/NET-02 scope remains
+open. Run the strict staged production gates for every accepted slice.
 
 Preserve the Gazebo wire protocol and real C++ peer interoperability. Do not replace it with a different transport protocol. Use bounded cancellable APIs with explicit runtime/thread ownership. Depend on gz-msgs-rs as needed, never on Bevy or the simulator.
 

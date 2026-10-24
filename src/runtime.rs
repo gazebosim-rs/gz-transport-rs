@@ -588,6 +588,19 @@ impl Worker {
             ),
         );
     }
+    fn subscriber_publisher(&self, topic: &str, type_name: &str) -> WirePublisher {
+        self.wire_publisher(
+            topic.into(),
+            PubType::MsgPub(MessagePublisher {
+                msg_type: if type_name.is_empty() {
+                    "google.protobuf.Message".into()
+                } else {
+                    type_name.into()
+                },
+                ..Default::default()
+            }),
+        )
+    }
     fn command(&mut self, command: Command) {
         match command {
             Command::Advertise(topic, type_name, active) => {
@@ -773,6 +786,23 @@ impl Worker {
             return;
         }
         let kind = Type::try_from(message.r#type).unwrap_or_default();
+        if channel == 0 && kind == Type::SubscribersReq {
+            for s in &self.subscriptions {
+                if s.active.load(Ordering::Acquire) {
+                    self.announce(
+                        0,
+                        protocol::discovery(
+                            &self.process,
+                            Type::SubscribersRep,
+                            Some(DiscContents::Pub(
+                                self.subscriber_publisher(&s.topic, &s.type_name),
+                            )),
+                        ),
+                    );
+                }
+            }
+            return;
+        }
         if kind == Type::Bye {
             self.peers
                 .retain(|_, (p, _)| p.process_uuid != message.process_uuid);
@@ -999,17 +1029,25 @@ impl Worker {
                 protocol::discovery(&self.process, Type::Unadvertise, Some(DiscContents::Pub(p))),
             );
         }
-        let mut topics = Vec::new();
+        let mut topics = HashSet::new();
         self.subscriptions.retain(|s| {
             let keep = s.active.load(Ordering::Acquire);
             if !keep {
-                topics.push(s.topic.clone());
+                topics.insert(s.topic.clone());
             }
             keep
         });
         for topic in topics {
             if !self.subscriptions.iter().any(|s| s.topic == topic) {
                 let _ = self.subscriber.set_unsubscribe(topic.as_bytes());
+                self.announce(
+                    0,
+                    protocol::discovery(
+                        &self.process,
+                        Type::EndConnection,
+                        Some(DiscContents::Pub(self.subscriber_publisher(&topic, ""))),
+                    ),
+                );
             }
         }
         self.connected.retain(|address| {

@@ -23,6 +23,15 @@ register with NEW_CONNECTION: their process/node UUID replaces the advertised
 identity and msg_pub.ctrl carries the publisher process UUID. C++ requires this
 registration before serializing publications (`NodeShared::OnNewConnection`).
 
+Message-channel SUBSCRIBERS_REQ receives one SUBSCRIBERS_REP per live local
+subscription, even without a publisher. Replies contain the local pub/sub
+address, process/node UUIDs, ALL scope, an empty control address and the subscribed
+type; a wildcard uses native `google.protobuf.Message`. Dropping the last local
+subscription lease for a topic sends a generic END_CONNECTION, including when
+no publisher exists. This removes native subscriber-list entries while the Rust
+process remains alive. Service-channel list requests receive no reply. Receiving
+and querying remote subscriber lists from Rust remains pending.
+
 Ordinary pub/sub ZeroMQ frames (`NodeShared::Publish`, RecvMsgUpdate):
 
 1. Fully qualified topic bytes (`@/partition@/namespace/topic`, or `@@/topic`).
