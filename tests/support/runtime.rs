@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// TopicUtils assertion tables: Copyright (C) 2014 Open Source Robotics Foundation.
 use super::*;
 
 fn state(capacity: usize) -> (Worker, Receiver<Command>) {

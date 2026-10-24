@@ -52,3 +52,10 @@ reviewed slices are separate. Report exact line/region counts and revision-linke
 CI state. A local pass or queued native job is not hosted CI success. Publish no
 credentials, private paths or raw environment variables. Each owner updates only
 `data/gz-transport-rs.json` on the tracker `status` branch through that script.
+
+## Licensing
+
+Owned code is Apache-2.0. Preserve original copyright and license notices for
+imported schemas, fixtures, faithful test ports and vendored dependencies; do not
+relabel third-party code as Apache-2.0. Keep Cargo metadata and the root license
+consistent with this policy.

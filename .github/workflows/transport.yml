@@ -28,7 +28,7 @@ jobs:
       - name: Install native reference build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake git pkg-config protobuf-compiler libprotobuf-dev libtinyxml2-dev libzmq3-dev cppzmq-dev uuid-dev libsqlite3-dev libeigen3-dev libspdlog-dev ruby
+          sudo apt-get install -y --no-install-recommends build-essential cmake git pkg-config protobuf-compiler libprotobuf-dev libprotoc-dev libtinyxml2-dev libzmq3-dev cppzmq-dev uuid-dev libsqlite3-dev libeigen3-dev libspdlog-dev ruby
       - run: rustup toolchain install 1.94.1 --profile minimal --component rustfmt,clippy,llvm-tools-preview
       - name: Build immutable native reference sources
         run: python3 scripts/bootstrap-reference.py --jobs 2
