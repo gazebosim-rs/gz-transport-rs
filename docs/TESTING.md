@@ -26,9 +26,13 @@ Generated messages and unmodified ZeroMQ are dependencies, not added to this
 repository's denominator. Reports, source hashes, runner details and test output
 are written under artifacts/. No cached coverage evidence is accepted.
 
-The staged hook exports the Git index into a fresh temporary directory and runs
-the same runner there, then copies results into artifacts/staged. Unstaged source
-cannot validate a different staged source. CI invokes the same runner on a standard Ubuntu24.04 hosted worker after
+The staged hook freezes the Git index as an immutable tree, exports it into a
+fresh temporary directory, verifies every exported blob against its Git object
+hash, and computes changed lines from that same tree. Export attributes cannot
+omit source or substitute transformed content. It
+runs the same runner there and rejects concurrent index or HEAD changes before
+copying evidence into artifacts/staged. Unstaged source cannot validate a
+different staged source. CI invokes the same runner on a standard Ubuntu24.04 hosted worker after
 building the exact native source chain; see [hosted CI](HOSTED-CI.md). No custom
 runner is required. Making its native check required in branch protection remains
 release administration work. A queued/missing/failed runner is not a passing result.

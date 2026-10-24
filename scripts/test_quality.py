@@ -51,6 +51,7 @@ class StagedAndEvidencePolicy(unittest.TestCase):
             (root / 'scripts').mkdir(parents=True)
             (root / 'src').mkdir()
             (root / 'src/lib.rs').write_text('staged')
+            (root / '.gitattributes').write_text('src/lib.rs export-ignore\n')
             (root / 'scripts/verify.py').write_text("from pathlib import Path\nassert Path('src/lib.rs').read_text() == 'staged'\nPath('artifacts').mkdir()\nPath('artifacts/proof').write_text('staged')\n")
             subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
             subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
@@ -59,6 +60,90 @@ class StagedAndEvidencePolicy(unittest.TestCase):
                 verify.staged()
             self.assertEqual((root / 'artifacts/staged/proof').read_text(), 'staged')
             self.assertEqual((root / 'src/lib.rs').read_text(), 'unstaged')
+
+    def test_checkout_attributes_cannot_substitute_transformed_staged_source(self):
+        import subprocess
+        import verify
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'repo'
+            (root / 'src').mkdir(parents=True)
+            (root / 'src/lib.rs').write_bytes(b'pub fn staged() {}\n')
+            (root / '.gitattributes').write_text('src/lib.rs text eol=crlf\n')
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True, capture_output=True)
+            with patch.object(verify, 'ROOT', root), self.assertRaisesRegex(ValueError, 'Exported staged blob differs'):
+                verify.staged()
+
+    def test_snapshot_identity_checks_content_file_type_and_executable_mode(self):
+        import shutil
+        import subprocess
+        import verify
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'repo'
+            root.mkdir()
+            source = root / 'source'
+            source.write_bytes(b'original')
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+            tree = verify.staged_tree(root)
+            candidate = Path(directory) / 'candidate'
+            candidate.mkdir()
+            exported = candidate / 'source'
+            shutil.copy2(source, exported)
+            verify.validate_snapshot(root, tree, candidate)
+            extra = candidate / 'untracked.rs'
+            extra.write_text('untracked source')
+            with self.assertRaisesRegex(ValueError, 'paths differ'):
+                verify.validate_snapshot(root, tree, candidate)
+            extra.unlink()
+            exported.write_bytes(b'substituted')
+            with self.assertRaisesRegex(ValueError, 'blob differs'):
+                verify.validate_snapshot(root, tree, candidate)
+            exported.write_bytes(b'original')
+            exported.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'executable mode differs'):
+                verify.validate_snapshot(root, tree, candidate)
+            source.chmod(0o755)
+            subprocess.run(['git', '-C', str(root), 'add', 'source'], check=True)
+            executable_tree = verify.staged_tree(root)
+            exported.chmod(0o645)  # Other-execute cannot replace Git's owner-execute bit.
+            with self.assertRaisesRegex(ValueError, 'executable mode differs'):
+                verify.validate_snapshot(root, executable_tree, candidate)
+            exported.unlink()
+            exported.symlink_to(source)
+            with self.assertRaisesRegex(ValueError, 'file type differs'):
+                verify.validate_snapshot(root, tree, candidate)
+
+    def test_concurrent_index_or_head_edit_cannot_validate_an_unchecked_commit(self):
+        import subprocess
+        import verify
+        from unittest.mock import patch
+        for mutation in ('index', 'head'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / 'repo'
+                (root / 'scripts').mkdir(parents=True)
+                (root / 'src').mkdir()
+                (root / 'src/lib.rs').write_text('staged')
+                mutate = (
+                    "(root/'src/lib.rs').write_text('unchecked concurrent edit')\nsubprocess.run(['git','-C',str(root),'add','src/lib.rs'],check=True)"
+                    if mutation == 'index' else
+                    "subprocess.run(['git','-C',str(root),'-c','user.name=Gate test','-c','user.email=gate@example.invalid','commit','--quiet','-m','concurrent HEAD change'],check=True)"
+                )
+                script = f"""from pathlib import Path
+import subprocess
+assert Path('src/lib.rs').read_text() == 'staged'
+root=Path({str(root)!r})
+{mutate}
+Path('artifacts').mkdir()
+Path('artifacts/proof').write_text('old tree passed')
+"""
+                (root / 'scripts/verify.py').write_text(script)
+                subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+                subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+                with patch.object(verify, 'ROOT', root), self.assertRaisesRegex(ValueError, 'Git index or HEAD changed'):
+                    verify.staged()
+                self.assertFalse((root / 'artifacts/staged/proof').exists())
 
     def test_stale_source_or_profile_is_rejected(self):
         import hashlib

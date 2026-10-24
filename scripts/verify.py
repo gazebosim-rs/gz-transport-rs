@@ -60,18 +60,63 @@ def source_changes(root, production_files, base=None):
     return changed
 
 
+def staged_head(root):
+    result = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=root, text=True, capture_output=True)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def staged_tree(root):
+    return subprocess.check_output(['git', 'write-tree'], cwd=root, text=True).strip()
+
+
+def validate_snapshot(root, tree, candidate):
+    algorithm = subprocess.check_output(['git', 'rev-parse', '--show-object-format'], cwd=root, text=True).strip()
+    expected = set()
+    for entry in subprocess.check_output(['git', 'ls-tree', '-rz', tree], cwd=root).split(b'\0'):
+        if not entry:
+            continue
+        metadata, name = entry.split(b'\t', 1)
+        mode, kind, oid = metadata.split()
+        relative = os.fsdecode(name)
+        expected.add(relative)
+        path = candidate / relative
+        if kind != b'blob':
+            raise ValueError('Unsupported non-blob staged input')
+        if mode == b'120000' and path.is_symlink():
+            data = os.fsencode(os.readlink(path))
+        elif mode in (b'100644', b'100755') and path.is_file() and not path.is_symlink():
+            if bool(path.stat().st_mode & 0o100) != (mode == b'100755'):
+                raise ValueError('Exported staged executable mode differs from Git tree')
+            data = path.read_bytes()
+        else:
+            raise ValueError('Exported staged file type differs from Git tree')
+        digest = hashlib.new(algorithm, f'blob {len(data)}\0'.encode() + data).hexdigest()
+        if digest != oid.decode():
+            raise ValueError(f'Exported staged blob differs from Git tree: {relative}')
+    actual = {str(path.relative_to(candidate)) for path in candidate.rglob('*') if path.is_file() or path.is_symlink()}
+    if actual != expected:
+        raise ValueError('Exported staged paths differ from Git tree')
+
+
 def staged():
+    tree, head = staged_tree(ROOT), staged_head(ROOT)
     with tempfile.TemporaryDirectory(prefix='gz-transport-staged-') as directory:
         candidate = Path(directory) / ROOT.name
         candidate.mkdir()
-        run(['git', 'checkout-index', '--all', f'--prefix={candidate}/'], cwd=ROOT)
+        # A private index preserves every blob, including export-ignore paths.
+        snapshot_env = dict(os.environ, GIT_INDEX_FILE=str(Path(directory) / 'index'))
+        run(['git', 'read-tree', tree], cwd=ROOT, env=snapshot_env)
+        run(['git', 'checkout-index', '--all', f'--prefix={candidate}/'], cwd=ROOT, env=snapshot_env)
+        validate_snapshot(ROOT, tree, candidate)
         env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
-        has_head = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=ROOT, capture_output=True).returncode == 0
-        diff = subprocess.check_output(['git', 'diff', '--cached', '--no-ext-diff', '--unified=0', *(['HEAD'] if has_head else []), '--', 'src'], cwd=ROOT, text=True)
+        base = head or subprocess.check_output(['git', 'mktree'], cwd=ROOT, input='', text=True).strip()
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src'], cwd=ROOT, text=True)
         changed_file = Path(directory) / 'changed-lines.json'
         changed_file.write_text(json.dumps({name: sorted(lines) for name, lines in changed_lines(diff).items()}))
         env['GZ_CHANGED_LINES_FILE'] = str(changed_file)
         run([sys.executable, 'scripts/verify.py', 'verify', '--profile', 'zeromq-linux'], cwd=candidate, env=env)
+        if staged_tree(ROOT) != tree or staged_head(ROOT) != head:
+            raise ValueError('Git index or HEAD changed during staged verification')
         destination = ROOT / 'artifacts/staged'
         shutil.rmtree(destination, ignore_errors=True)
         shutil.copytree(candidate / 'artifacts', destination)
