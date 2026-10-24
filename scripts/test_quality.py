@@ -84,5 +84,15 @@ class ChangedSourcePolicy(unittest.TestCase):
         self.assertEqual(changed_lines(diff),{'src/lib.rs':{2,3},'src/config.rs':{1,2,3},'src/deletion.rs':set()})
 
 
+
+
+class WorkspaceInstrumentationPolicy(unittest.TestCase):
+    def test_wrapper_preserves_arguments_and_adds_instrumentation(self):
+        import subprocess
+        wrapper = Path(__file__).resolve().parent / 'rustc-coverage.py'
+        result = subprocess.check_output([str(wrapper), '/bin/echo', '--crate-name', 'owned'], text=True)
+        self.assertEqual(result.strip(), '--crate-name owned -C instrument-coverage')
+
+
 if __name__ == '__main__':
     unittest.main()

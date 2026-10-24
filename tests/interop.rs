@@ -1,4 +1,4 @@
-use gz_msgs::{protobuf::Message, stringmsg::StringMsg};
+use gz_msgs::{prost::Message, stringmsg::StringMsg};
 use gz_transport::{Config, Error, Node};
 use std::{
     io::{BufRead, BufReader},
@@ -12,8 +12,7 @@ fn data(value: &str) -> Vec<u8> {
         data: value.into(),
         ..Default::default()
     }
-    .write_to_bytes()
-    .unwrap()
+    .encode_to_vec()
 }
 fn config() -> Config {
     let id = uuid::Uuid::new_v4();
@@ -309,4 +308,35 @@ fn cpp_environment_integer_prefix_fallback_and_duplicate_port_differential() {
             )
         );
     }
+}
+
+#[test]
+fn cpp_unknown_application_fields_are_received_without_reencoding() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let sub = node.subscribe("/unknown", TYPE).unwrap();
+    let _peer = Peer::start(&config, "publish-unknown", "/unknown", "opaque");
+    let mut expected = data("opaque");
+    expected.extend([0xf8, 0x07, 0x01]);
+    assert_eq!(
+        sub.recv_timeout(Duration::from_secs(4)).unwrap().data,
+        expected
+    );
+}
+#[test]
+fn rust_unknown_application_fields_reach_cpp_unchanged() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let publisher = node.advertise("/unknown", TYPE).unwrap();
+    let mut peer = Peer::start(&config, "subscribe-unknown", "/unknown", "opaque");
+    let mut bytes = data("opaque");
+    bytes.extend([0xf8, 0x07, 0x01]);
+    for _ in 0..100 {
+        publisher.publish(bytes.clone()).unwrap();
+        thread::sleep(Duration::from_millis(20));
+        if peer.0.try_wait().unwrap().is_some() {
+            break;
+        }
+    }
+    peer.success();
 }

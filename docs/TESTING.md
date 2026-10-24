@@ -17,7 +17,8 @@ socket failures, absent LLVM tools, or unavailable reference runners are failure
 The runner checks format, Clippy with warnings denied, quality-tool regressions,
 builds a genuine C++ peer linked to libgz-transport, executes the original
 TopicUtilsTest.testFullyQualifiedName assertions, and runs Rust unit/integration
-cases with LLVM instrumentation. Each of four handwritten production files must
+cases with LLVM instrumentation of owned workspace packages only. LLVM warnings
+are fatal; unmodified dependencies do not enter the production denominator. Each of five handwritten production files must
 appear in the report with a nonempty denominator. Integer comparisons enforce
 strictly >95% lines and regions for the sole crate and repository independently;
 no production exclusions exist. Changed executable lines also require >95%.

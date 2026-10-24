@@ -90,7 +90,12 @@ def verify(profile):
     shutil.rmtree(profiles, ignore_errors=True)
     profiles.mkdir(parents=True)
     target = Path(env.get('CARGO_TARGET_DIR', str(ROOT / 'target'))) / 'coverage'
-    env.update(RUSTFLAGS='-C instrument-coverage', CARGO_TARGET_DIR=str(target), LLVM_PROFILE_FILE=str(profiles / '%m-%p.profraw'))
+    wrapper_source = ROOT / 'scripts/rustc-coverage.py'
+    wrapper = artifacts / f'rustc-coverage-{hashlib.sha256(wrapper_source.read_bytes()).hexdigest()}.py'
+    shutil.copy2(wrapper_source, wrapper)
+    # Cargo includes the workspace wrapper path in its artifact hashes. The
+    # content digest prevents reuse after an instrumentation wrapper change.
+    env.update(RUSTFLAGS='', RUSTC_WORKSPACE_WRAPPER=str(wrapper), CARGO_TARGET_DIR=str(target), LLVM_PROFILE_FILE=str(profiles / '%m-%p.profraw'))
     with (artifacts / 'test-build.jsonl').open('w') as output:
         run(['cargo', 'test', '--locked', '--message-format=json', '--', '--test-threads=1'], stdout=output, env=env)
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], env=env, text=True).strip())
@@ -110,7 +115,7 @@ def verify(profile):
             objects.extend(['-object', record['executable']])
     if not objects:
         raise ValueError('Missing test executables')
-    command = [str(llvm / 'llvm-cov'), 'export', f'-instr-profile={artifacts}/coverage.profdata', *objects]
+    command = [str(llvm / 'llvm-cov'), 'export', '--fatal-warnings', '-num-threads=1', f'-instr-profile={artifacts}/coverage.profdata', *objects]
     with (artifacts / 'coverage.json').open('w') as output:
         run(command, stdout=output)
     lcov = subprocess.check_output([*command, '-format=lcov'], text=True)

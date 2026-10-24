@@ -34,7 +34,7 @@ fn pending(deadline: Instant) -> (Pending, ReplyReceiver) {
 }
 #[test]
 fn frames_and_errors() {
-    let message = protocol::discovery("process", Type::HEARTBEAT, None);
+    let message = protocol::discovery("process", Type::Heartbeat, None);
     let frame = protocol::encode(&message).unwrap();
     assert_eq!(protocol::decode(&frame).unwrap(), message);
     assert_eq!(
@@ -268,7 +268,7 @@ fn discovery_lifecycle_and_capacity() {
     let (mut worker, _) = state(2);
     let mut publisher = worker.wire_publisher(
         "/topic".into(),
-        Pub_type::MsgPub(MessagePublisher {
+        PubType::MsgPub(MessagePublisher {
             msg_type: "type".into(),
             ..Default::default()
         }),
@@ -282,23 +282,23 @@ fn discovery_lifecycle_and_capacity() {
     );
     assert!(worker.peers.is_empty());
     let mut process = publisher.clone();
-    process.scope = Scope::PROCESS.into();
+    process.scope = Scope::Process.into();
     worker.discovery(0, protocol::advertisement("remote", process));
     assert!(worker.peers.is_empty());
     worker.discovery(0, advertise.clone());
     assert_eq!(worker.peers.len(), 1);
-    worker.discovery(0, protocol::discovery("remote", Type::HEARTBEAT, None));
+    worker.discovery(0, protocol::discovery("remote", Type::Heartbeat, None));
     worker.discovery(
         0,
         protocol::discovery(
             "remote",
-            Type::UNADVERTISE,
-            Some(Disc_contents::Pub(publisher.clone())),
+            Type::Unadvertise,
+            Some(DiscContents::Pub(publisher.clone())),
         ),
     );
     assert!(worker.peers.is_empty());
     worker.discovery(0, advertise.clone());
-    worker.discovery(0, protocol::discovery("remote", Type::BYE, None));
+    worker.discovery(0, protocol::discovery("remote", Type::Bye, None));
     assert!(worker.peers.is_empty());
     worker.discovery(0, advertise);
     for i in 0..10 {
@@ -335,10 +335,9 @@ fn discovery_lifecycle_and_capacity() {
                 channel,
                 protocol::discovery(
                     "remote",
-                    Type::SUBSCRIBE,
-                    Some(Disc_contents::Sub(Subscriber {
+                    Type::Subscribe,
+                    Some(DiscContents::Sub(Subscriber {
                         topic: topic.into(),
-                        ..Default::default()
                     })),
                 ),
             );
@@ -784,11 +783,11 @@ fn malformed_publications_and_discovery_errors_are_counted() {
     assert_eq!(worker.sender.counters.snapshot().malformed_frames, 2);
     worker.announce(
         0,
-        protocol::discovery(&"x".repeat(65507), Type::HEARTBEAT, None),
+        protocol::discovery(&"x".repeat(65507), Type::Heartbeat, None),
     );
     assert_eq!(worker.sender.counters.snapshot().malformed_frames, 3);
     worker.config.multicast = Ipv4Addr::BROADCAST;
-    worker.announce(0, protocol::discovery("process", Type::HEARTBEAT, None));
+    worker.announce(0, protocol::discovery("process", Type::Heartbeat, None));
     assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
     worker.command(Command::Respond(
         vec![vec![255], vec![], vec![], vec![], vec![]],
@@ -842,4 +841,23 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
             Err(Error::InvalidConfig)
         ));
     }
+}
+
+#[test]
+fn typed_discovery_rejects_wrong_publisher_kind_and_unknown_scope() {
+    let (mut worker, _) = state(2);
+    let mut service = worker.wire_publisher(
+        "topic".into(),
+        PubType::SrvPub(ServicePublisher {
+            socket_id: "service".into(),
+            request_type: "req".into(),
+            response_type: "rep".into(),
+        }),
+    );
+    service.process_uuid = "remote".into();
+    worker.register_subscriber(&service);
+    assert!(worker.subscriptions_connected.is_empty());
+    service.scope = 500;
+    worker.discovery(1, protocol::advertisement("remote", service));
+    assert!(worker.peers.is_empty());
 }

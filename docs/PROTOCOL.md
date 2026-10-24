@@ -1,7 +1,7 @@
 # Pinned wire contract
 
 Upstream: gz-transport main `41913b9dfc3dbce33ac5464ddcb427cc82450f26`.
-Canonical schemas: gz-msgs `94e6c618dfbd25b1b43bb32aa28db3f8d9a9a3af`.
+Canonical schemas: gz-msgs `e1800c3e8d058ce7358b393e5f7aba6dd912920f`.
 
 Discovery (`src/Discovery.hh`, especially DispatchDiscoveryMsg, SendMsg,
 RecvDiscoveryUpdate) uses IPv4 UDP multicast 239.255.0.7, message port 10317,

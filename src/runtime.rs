@@ -2,8 +2,8 @@ use crate::{Config, Error, protocol, qualified_name};
 use gz_msgs::discovery::{
     Discovery,
     discovery::{
-        Disc_contents, Publisher as WirePublisher, Subscriber, Type,
-        publisher::{MessagePublisher, Pub_type, Scope, ServicePublisher},
+        DiscContents, Publisher as WirePublisher, Subscriber, Type,
+        publisher::{MessagePublisher, PubType, Scope, ServicePublisher},
     },
 };
 use socket2::{Domain, Protocol, Socket, Type as SocketType};
@@ -460,19 +460,18 @@ impl Worker {
                 .fetch_add(1, Ordering::Relaxed);
         }
     }
-    fn wire_publisher(&self, topic: String, kind: Pub_type) -> WirePublisher {
+    fn wire_publisher(&self, topic: String, kind: PubType) -> WirePublisher {
         WirePublisher {
             topic,
-            address: if matches!(kind, Pub_type::MsgPub(_)) {
+            address: if matches!(kind, PubType::MsgPub(_)) {
                 self.address.clone()
             } else {
                 self.service_address.clone()
             },
             process_uuid: self.process.clone(),
             node_uuid: self.node.clone(),
-            scope: Scope::ALL.into(),
+            scope: Scope::All.into(),
             pub_type: Some(kind),
-            ..Default::default()
         }
     }
     fn subscribe_message(&self, channel: usize, topic: &str) {
@@ -480,10 +479,9 @@ impl Worker {
             channel,
             protocol::discovery(
                 &self.process,
-                Type::SUBSCRIBE,
-                Some(Disc_contents::Sub(Subscriber {
+                Type::Subscribe,
+                Some(DiscContents::Sub(Subscriber {
                     topic: topic.into(),
-                    ..Default::default()
                 })),
             ),
         );
@@ -493,7 +491,7 @@ impl Worker {
             Command::Advertise(topic, type_name, active) => {
                 let p = self.wire_publisher(
                     topic,
-                    Pub_type::MsgPub(MessagePublisher {
+                    PubType::MsgPub(MessagePublisher {
                         msg_type: type_name,
                         ..Default::default()
                     }),
@@ -538,11 +536,10 @@ impl Worker {
             Command::Serve(topic, request_type, response_type, tx, active) => {
                 let p = self.wire_publisher(
                     topic,
-                    Pub_type::SrvPub(ServicePublisher {
+                    PubType::SrvPub(ServicePublisher {
                         socket_id: self.router_id.clone(),
                         request_type,
                         response_type,
-                        ..Default::default()
                     }),
                 );
                 self.announce(1, protocol::advertisement(&self.process, p.clone()));
@@ -559,8 +556,7 @@ impl Worker {
                     let local = self.services.iter().find(|s| {
                         s.active.load(Ordering::Acquire)
                             && s.publisher.topic == pending.topic
-                            && s.publisher.srv_pub().request_type == pending.request_type
-                            && s.publisher.srv_pub().response_type == pending.response_type
+                            && matches!(&s.publisher.pub_type,Some(PubType::SrvPub(types)) if types.request_type==pending.request_type && types.response_type==pending.response_type)
                     });
                     let mut pending = pending;
                     if let Some(service) = local {
@@ -662,12 +658,12 @@ impl Worker {
         if message.process_uuid == self.process {
             return;
         }
-        let kind = message.type_.enum_value_or_default();
-        if kind == Type::BYE {
+        let kind = Type::try_from(message.r#type).unwrap_or_default();
+        if kind == Type::Bye {
             self.peers
                 .retain(|_, (p, _)| p.process_uuid != message.process_uuid);
         }
-        if kind == Type::HEARTBEAT {
+        if kind == Type::Heartbeat {
             for (p, stamp) in self.peers.values_mut() {
                 if p.process_uuid == message.process_uuid {
                     *stamp = Instant::now();
@@ -675,11 +671,11 @@ impl Worker {
             }
         }
         match message.disc_contents {
-            Some(Disc_contents::Pub(p)) if kind == Type::ADVERTISE => {
-                if p.scope.enum_value_or_default() == Scope::PROCESS {
+            Some(DiscContents::Pub(p)) if kind == Type::Advertise => {
+                if Scope::try_from(p.scope).unwrap_or(Scope::Process) == Scope::Process {
                     return;
                 }
-                if channel == 0 && matches!(p.pub_type, Some(Pub_type::MsgPub(_))) {
+                if channel == 0 && matches!(p.pub_type, Some(PubType::MsgPub(_))) {
                     self.register_subscriber(&p);
                 }
                 let key = format!("{}:{}:{}", p.process_uuid, p.node_uuid, p.topic);
@@ -687,11 +683,11 @@ impl Worker {
                     self.peers.insert(key, (p, Instant::now()));
                 }
             }
-            Some(Disc_contents::Pub(p)) if kind == Type::UNADVERTISE => {
+            Some(DiscContents::Pub(p)) if kind == Type::Unadvertise => {
                 self.peers
                     .remove(&format!("{}:{}:{}", p.process_uuid, p.node_uuid, p.topic));
             }
-            Some(Disc_contents::Sub(s)) if kind == Type::SUBSCRIBE => {
+            Some(DiscContents::Sub(s)) if kind == Type::Subscribe => {
                 let publishers: Vec<_> = if channel == 0 {
                     self.advertisements
                         .iter()
@@ -715,10 +711,13 @@ impl Worker {
         }
     }
     fn register_subscriber(&mut self, publisher: &WirePublisher) {
+        let Some(PubType::MsgPub(message)) = &publisher.pub_type else {
+            return;
+        };
         if self.subscriptions.iter().any(|s| {
             s.active.load(Ordering::Acquire)
                 && s.topic == publisher.topic
-                && (s.type_name.is_empty() || s.type_name == publisher.msg_pub().msg_type)
+                && (s.type_name.is_empty() || s.type_name == message.msg_type)
         }) {
             if self.subscriptions_connected.len() < self.config.capacity
                 && self
@@ -732,13 +731,16 @@ impl Worker {
             let mut registered = publisher.clone();
             registered.process_uuid = self.process.clone();
             registered.node_uuid = self.node.clone();
-            registered.mut_msg_pub().ctrl = publisher.process_uuid.clone();
+            registered.pub_type = Some(PubType::MsgPub(MessagePublisher {
+                ctrl: publisher.process_uuid.clone(),
+                ..message.clone()
+            }));
             self.announce(
                 0,
                 protocol::discovery(
                     &self.process,
-                    Type::NEW_CONNECTION,
-                    Some(Disc_contents::Pub(registered)),
+                    Type::NewConnection,
+                    Some(DiscContents::Pub(registered)),
                 ),
             );
         }
@@ -780,7 +782,7 @@ impl Worker {
                 for channel in 0..2 {
                     self.announce(
                         channel,
-                        protocol::discovery(&self.process, Type::HEARTBEAT, None),
+                        protocol::discovery(&self.process, Type::Heartbeat, None),
                     );
                 }
                 for (p, active) in &self.advertisements {
@@ -811,7 +813,7 @@ impl Worker {
             thread::sleep(Duration::from_millis(2));
         }
         for channel in 0..2 {
-            self.announce(channel, protocol::discovery(&self.process, Type::BYE, None));
+            self.announce(channel, protocol::discovery(&self.process, Type::Bye, None));
         }
     }
     fn receive_publications(&self) {
@@ -870,11 +872,7 @@ impl Worker {
         for (channel, p) in removed {
             self.announce(
                 channel,
-                protocol::discovery(
-                    &self.process,
-                    Type::UNADVERTISE,
-                    Some(Disc_contents::Pub(p)),
-                ),
+                protocol::discovery(&self.process, Type::Unadvertise, Some(DiscContents::Pub(p))),
             );
         }
         let mut topics = Vec::new();
@@ -923,8 +921,7 @@ impl Worker {
                 let p = &service.publisher;
                 if service.active.load(Ordering::Acquire)
                     && f[1] == p.topic.as_bytes()
-                    && f[7] == p.srv_pub().request_type.as_bytes()
-                    && f[8] == p.srv_pub().response_type.as_bytes()
+                    && matches!(&p.pub_type,Some(PubType::SrvPub(types)) if f[7]==types.request_type.as_bytes() && f[8]==types.response_type.as_bytes())
                 {
                     let route = vec![
                         f[2].clone(),
@@ -973,9 +970,10 @@ impl Worker {
                 return true;
             }
             for (peer, _) in self.peers.values() {
-                if peer.topic == p.topic
-                    && peer.srv_pub().request_type == p.request_type
-                    && peer.srv_pub().response_type == p.response_type
+                if let Some(PubType::SrvPub(types)) = &peer.pub_type
+                    && peer.topic == p.topic
+                    && types.request_type == p.request_type
+                    && types.response_type == p.response_type
                 {
                     if self.connected.insert(peer.address.clone()) {
                         self.sender
@@ -985,7 +983,7 @@ impl Worker {
                     // Mandatory routing reports EHOSTUNREACH until ZMTP is ready.
                     p.sent = self.sender.counters.sent(self.requester.send_multipart(
                         [
-                            peer.srv_pub().socket_id.as_bytes(),
+                            types.socket_id.as_bytes(),
                             p.topic.as_bytes(),
                             self.response_address.as_bytes(),
                             self.response_id.as_bytes(),
