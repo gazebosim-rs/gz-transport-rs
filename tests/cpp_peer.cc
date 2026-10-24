@@ -5,6 +5,7 @@
 #include <gz/transport/Node.hh>
 #include <gz/transport/NodeShared.hh>
 #include <gz/transport/TopicUtils.hh>
+#include <gz/transport/TopicStorage.hh>
 #include <gz/msgs/stringmsg.pb.h>
 #include <gz/msgs/empty.pb.h>
 #include <chrono>
@@ -16,10 +17,45 @@
 #include <thread>
 #include <algorithm>
 #include <iterator>
+#include <map>
+
+template<typename Publisher>
+std::size_t Count(const gz::transport::TopicStorage<Publisher> &storage,
+                  const std::string &topic) {
+  std::map<std::string,std::vector<Publisher>> entries;
+  if (!storage.Publishers(topic,entries)) return 0;
+  std::size_t count=0;
+  for (const auto &entry : entries) count+=entry.second.size();
+  return count;
+}
 
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "peer-storage") {
+    using namespace gz::transport;
+    TopicStorage<MessagePublisher> messages;
+    TopicStorage<ServicePublisher> services;
+    MessagePublisher publication(topic,"tcp://127.0.0.1:45000","","remote-process","remote-node",value,AdvertiseMessageOptions());
+    ServicePublisher service(topic,"tcp://127.0.0.1:45001","service","remote-process","remote-node",value,value,AdvertiseServiceOptions());
+    if (!messages.AddPublisher(publication) || !services.AddPublisher(service)) return 16;
+    std::cout << Count(messages,topic)+Count(services,topic) << ' ';
+    auto other=publication; other.SetAddr("tcp://127.0.0.1:45002");
+    if (!messages.AddPublisher(other)) return 17;
+    std::cout << Count(messages,topic)+Count(services,topic) << ' ';
+    auto duplicate=publication; duplicate.SetMsgTypeName("changed-descriptor");
+    if (messages.AddPublisher(duplicate)) return 18;
+    std::map<std::string,std::vector<MessagePublisher>> entries;
+    if (!messages.Publishers(topic,entries)) return 19;
+    for (const auto &entry : entries) for (const auto &p : entry.second)
+      if (p.MsgTypeName()!=value) return 20;
+    std::cout << Count(messages,topic)+Count(services,topic) << ' ';
+    if (!messages.DelPublisherByNode(topic,"remote-process","remote-node")) return 21;
+    std::cout << Count(messages,topic)+Count(services,topic) << ' ';
+    if (!services.DelPublisherByNode(topic,"remote-process","remote-node")) return 22;
+    std::cout << Count(messages,topic)+Count(services,topic) << std::endl;
+    return 0;
+  }
   if (mode == "valid-topic" || mode == "valid-topic-bytes") {
     const auto input=mode == "valid-topic-bytes" ?
       std::string(std::istreambuf_iterator<char>(std::cin), {}) : topic;
@@ -63,6 +99,29 @@ int main(int argc, char **argv) {
     if (!std::getline(std::cin, command) || command != "KEEP" || !observed(true)) return 13;
     std::cout << "KEPT" << std::endl;
     if (!std::getline(std::cin, command) || command != "GONE" || !wait(false)) return 14;
+  } else if (mode == "dual") {
+    struct State { std::mutex mutex; std::condition_variable cv; bool requested=false; };
+    auto state=std::make_shared<State>();
+    std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> callback = [state,value](const auto &request,auto &response) {
+      response.set_data(request.data()+value);
+      std::lock_guard<std::mutex> lock(state->mutex);
+      state->requested=true; state->cv.notify_all(); return true;
+    };
+    auto publisher=node.Advertise<gz::msgs::StringMsg>(topic);
+    if (!publisher || !node.Advertise(topic,callback)) return 23;
+    std::cout << "READY" << std::endl;
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(8);
+    gz::msgs::StringMsg message; message.set_data(value);
+    std::unique_lock<std::mutex> lock(state->mutex);
+    while (!state->requested) {
+      lock.unlock(); publisher.Publish(message); lock.lock();
+      state->cv.wait_for(lock,std::chrono::milliseconds(10),[&]{return state->requested;});
+      if (std::chrono::steady_clock::now()>=deadline) return 24;
+    }
+    lock.unlock();
+    // The Rust side signals only after the actual RPC reply arrives.
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 25;
   } else if (mode == "publish" || mode == "publish-unknown") {
     auto publisher=node.Advertise<gz::msgs::StringMsg>(topic);
     if (!publisher) return 3;

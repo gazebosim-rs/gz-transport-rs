@@ -1189,3 +1189,317 @@ fn upstream_as_valid_topic_preserves_all_original_inputs_and_assertions() {
         assert!(result.is_empty() || !crate::names::valid(&result));
     }
 }
+
+#[test]
+fn message_and_service_discovery_keep_separate_native_namespaces() {
+    let (mut worker, _) = state(4);
+    let mut publication = worker.wire_publisher(
+        "/dual".into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "gz.msgs.StringMsg".into(),
+            ..Default::default()
+        }),
+    );
+    publication.process_uuid = "remote-process".into();
+    publication.node_uuid = "remote-node".into();
+    let mut service = publication.clone();
+    service.address = "tcp://127.0.0.1:45001".into();
+    service.pub_type = Some(PubType::SrvPub(ServicePublisher {
+        request_type: "gz.msgs.StringMsg".into(),
+        response_type: "gz.msgs.StringMsg".into(),
+        ..Default::default()
+    }));
+    worker.discovered(
+        0,
+        protocol::advertisement("remote-process", publication.clone()),
+    );
+    worker.discovered(
+        1,
+        protocol::advertisement("remote-process", service.clone()),
+    );
+    assert_eq!(
+        worker.peers.len(),
+        2,
+        "native discovery stores message and service publishers independently"
+    );
+    let mut other_address = publication.clone();
+    other_address.address = "tcp://127.0.0.1:45002".into();
+    worker.discovered(0, protocol::advertisement("remote-process", other_address));
+    assert_eq!(worker.peers.len(), 3);
+    let mut duplicate = publication.clone();
+    duplicate.pub_type = Some(PubType::MsgPub(MessagePublisher {
+        msg_type: "changed-descriptor".into(),
+        ..Default::default()
+    }));
+    worker.discovered(0, protocol::advertisement("remote-process", duplicate));
+    assert_eq!(worker.peers.len(), 3);
+    let original_types = worker.peers.values().filter(|(p, _)| {
+        matches!(&p.pub_type, Some(PubType::MsgPub(m)) if m.msg_type == "gz.msgs.StringMsg")
+    }).count();
+    assert_eq!(original_types, 2);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(publication)),
+        ),
+    );
+    assert_eq!(worker.peers.len(), 1); // Native withdrawal removes every address for this node/topic on its channel.
+    assert_eq!(worker.peers.values().next().unwrap().0, service);
+    worker.discovered(
+        1,
+        protocol::discovery(
+            "remote-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(service)),
+        ),
+    );
+    assert!(worker.peers.is_empty());
+}
+
+#[test]
+fn peer_activity_and_bye_only_affect_their_native_discovery_channel() {
+    let (mut worker, _) = state(4);
+    for channel in 0..2 {
+        let mut p = worker.wire_publisher(
+            "/shared".into(),
+            if channel == 0 {
+                PubType::MsgPub(MessagePublisher::default())
+            } else {
+                PubType::SrvPub(ServicePublisher::default())
+            },
+        );
+        p.process_uuid = "remote".into();
+        worker.discovered(channel, protocol::advertisement("remote", p));
+    }
+    let mut unrelated = worker.wire_publisher(
+        "/shared".into(),
+        PubType::MsgPub(MessagePublisher::default()),
+    );
+    unrelated.process_uuid = "unrelated-process".into();
+    worker.discovered(0, protocol::advertisement("unrelated-process", unrelated));
+    assert_eq!(worker.peers.len(), 3);
+    for kind in [
+        Type::Heartbeat,
+        Type::Subscribe,
+        Type::SubscribersReq,
+        Type::NewConnection,
+        Type::EndConnection,
+    ] {
+        for channel in 0..2 {
+            let old = Instant::now() - Duration::from_secs(5);
+            for (_, stamp) in worker.peers.values_mut() {
+                *stamp = old;
+            }
+            worker.discovered(channel, protocol::discovery("remote", kind, None));
+            for (key, (_, stamp)) in &worker.peers {
+                assert_eq!(
+                    *stamp > old,
+                    key.channel == channel && key.process == "remote"
+                );
+            }
+        }
+    }
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
+    assert_eq!(worker.peers.len(), 2);
+    assert!(
+        worker
+            .peers
+            .keys()
+            .any(|key| key.channel == 1 && key.process == "remote")
+    );
+    worker.discovered(1, protocol::discovery("remote", Type::Bye, None));
+    assert_eq!(worker.peers.len(), 1);
+    assert_eq!(
+        worker.peers.keys().next().unwrap().process,
+        "unrelated-process"
+    );
+    worker.discovered(0, protocol::discovery("unrelated-process", Type::Bye, None));
+    assert!(worker.peers.is_empty());
+}
+
+#[test]
+fn discovered_endpoints_only_connect_and_stay_alive_on_their_native_channel() {
+    let (mut worker, _) = state(4);
+    let mut service = worker.wire_publisher(
+        "/service".into(),
+        PubType::SrvPub(ServicePublisher {
+            socket_id: worker.router_id.clone(),
+            request_type: "req".into(),
+            response_type: "rep".into(),
+        }),
+    );
+    service.process_uuid = "remote".into();
+    worker.discovered(0, protocol::advertisement("remote", service.clone()));
+    let (request, _) = pending(Instant::now() + Duration::from_secs(5));
+    worker.command(Command::Request(request));
+    worker.send_requests();
+    assert!(worker.connected.is_empty());
+    worker.discovered(1, protocol::advertisement("remote", service.clone()));
+    worker.send_requests();
+    assert_eq!(worker.connected.len(), 1);
+    let mut publication = worker.wire_publisher(
+        "/message".into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "type".into(),
+            ..Default::default()
+        }),
+    );
+    publication.process_uuid = "remote".into();
+    worker.discovered(1, protocol::advertisement("remote", publication.clone()));
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        "/message".into(),
+        "type".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    assert!(worker.subscriptions_connected.is_empty());
+    worker.discovered(0, protocol::advertisement("remote", publication.clone()));
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    worker.discovered(
+        1,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(service)),
+        ),
+    );
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(publication)),
+        ),
+    );
+    worker.cleanup();
+    assert_eq!(worker.peers.len(), 2); // Wrong-channel metadata cannot retain either native connection.
+    assert!(worker.connected.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+}
+
+#[test]
+fn withdrawal_preserves_other_process_node_and_topic_identities() {
+    let (mut worker, _) = state(4);
+    let mut publication = worker.wire_publisher(
+        "/original".into(),
+        PubType::MsgPub(MessagePublisher::default()),
+    );
+    publication.process_uuid = "remote".into();
+    publication.node_uuid = "original-node".into();
+    for p in [
+        publication.clone(),
+        WirePublisher {
+            process_uuid: "unrelated-process".into(),
+            ..publication.clone()
+        },
+        WirePublisher {
+            node_uuid: "unrelated-node".into(),
+            ..publication.clone()
+        },
+        WirePublisher {
+            topic: "/unrelated-topic".into(),
+            ..publication.clone()
+        },
+    ] {
+        worker.discovered(0, protocol::advertisement(&p.process_uuid.clone(), p));
+    }
+    assert_eq!(worker.peers.len(), 4);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(publication)),
+        ),
+    );
+    assert_eq!(worker.peers.len(), 3);
+    assert!(worker.peers.keys().all(|key| key.process != "remote"
+        || key.node != "original-node"
+        || key.topic != "/original"));
+}
+
+#[test]
+fn unsupported_discovery_opcode_refreshes_activity_without_admitting_a_publisher() {
+    let (mut worker, _) = state(2);
+    let mut p = worker.wire_publisher(
+        "/known".into(),
+        PubType::MsgPub(MessagePublisher::default()),
+    );
+    p.process_uuid = "remote".into();
+    worker.discovered(0, protocol::advertisement("remote", p.clone()));
+    p.topic = "/must-not-admit".into();
+    let mut unsupported = protocol::advertisement("remote", p);
+    unsupported.r#type = i32::MAX;
+    for channel in 0..2 {
+        let old = Instant::now() - Duration::from_secs(5);
+        worker.peers.values_mut().next().unwrap().1 = old;
+        worker.discovered(channel, unsupported.clone());
+        assert_eq!(worker.peers.len(), 1);
+        let (known, stamp) = worker.peers.values().next().unwrap();
+        assert_eq!(known.topic, "/known");
+        assert_eq!(*stamp > old, channel == 0);
+    }
+}
+
+#[test]
+fn duplicate_or_capacity_rejected_advertisements_cannot_register_new_metadata() {
+    let (mut worker, _) = state(1);
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        "/topic".into(),
+        "correct".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let mut first = worker.wire_publisher(
+        "/topic".into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "wrong".into(),
+            ..Default::default()
+        }),
+    );
+    first.process_uuid = "remote".into();
+    worker.discovered(0, protocol::advertisement("remote", first.clone()));
+    let mut corrected = first.clone();
+    corrected.pub_type = Some(PubType::MsgPub(MessagePublisher {
+        msg_type: "correct".into(),
+        ..Default::default()
+    }));
+    worker.discovered(0, protocol::advertisement("remote", corrected.clone()));
+    assert!(worker.subscriptions_connected.is_empty());
+    assert_eq!(worker.peers.values().next().unwrap().0, first);
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    assert!(receiver.recv(&mut buffer).is_err());
+    let mut rejected = corrected.clone();
+    rejected.node_uuid = "capacity-rejected".into();
+    worker.discovered(0, protocol::advertisement("remote", rejected));
+    assert_eq!(worker.peers.len(), 1);
+    assert!(worker.subscriptions_connected.is_empty());
+    assert!(receiver.recv(&mut buffer).is_err());
+    worker.discovered(
+        0,
+        protocol::discovery("remote", Type::Unadvertise, Some(DiscContents::Pub(first))),
+    );
+    worker.discovered(0, protocol::advertisement("remote", corrected));
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    let len = receiver.recv(&mut buffer).unwrap();
+    let registration = protocol::decode(&buffer[..len]).unwrap();
+    assert_eq!(registration.r#type, Type::NewConnection as i32);
+    let Some(DiscContents::Pub(p)) = registration.disc_contents else {
+        panic!("missing registration")
+    };
+    let Some(PubType::MsgPub(m)) = p.pub_type else {
+        panic!("wrong publisher kind")
+    };
+    assert_eq!(m.msg_type, "correct");
+    assert!(receiver.recv(&mut buffer).is_err());
+}

@@ -344,6 +344,14 @@ struct ServiceState {
     tx: SyncSender<Request>,
     active: Arc<AtomicBool>,
 }
+#[derive(Hash, PartialEq, Eq)]
+struct PeerKey {
+    channel: usize,
+    process: String,
+    node: String,
+    topic: String,
+    address: String,
+}
 struct Worker {
     config: Config,
     host_interfaces: Vec<Ipv4Addr>,
@@ -364,7 +372,7 @@ struct Worker {
     advertisements: Vec<(WirePublisher, Arc<AtomicBool>)>,
     subscriptions: Vec<SubscriberState>,
     services: Vec<ServiceState>,
-    peers: HashMap<String, (WirePublisher, Instant)>,
+    peers: HashMap<PeerKey, (WirePublisher, Instant)>,
     connected: HashSet<String>,
     subscriptions_connected: HashSet<String>,
     response_connections: HashMap<String, Instant>,
@@ -641,8 +649,9 @@ impl Worker {
                 });
                 for peer in self
                     .peers
-                    .values()
-                    .map(|(p, _)| p.clone())
+                    .iter()
+                    .filter(|(key, _)| key.channel == 0)
+                    .map(|(_, (p, _))| p.clone())
                     .collect::<Vec<_>>()
                 {
                     self.register_subscriber(&peer);
@@ -785,7 +794,15 @@ impl Worker {
         if message.process_uuid == self.process {
             return;
         }
-        let kind = Type::try_from(message.r#type).unwrap_or_default();
+        // Native Discovery tracks process activity per channel for every packet.
+        for (key, (p, stamp)) in &mut self.peers {
+            if key.channel == channel && p.process_uuid == message.process_uuid {
+                *stamp = Instant::now();
+            }
+        }
+        let Ok(kind) = Type::try_from(message.r#type) else {
+            return;
+        };
         if channel == 0 && kind == Type::SubscribersReq {
             for s in &self.subscriptions {
                 if s.active.load(Ordering::Acquire) {
@@ -804,15 +821,9 @@ impl Worker {
             return;
         }
         if kind == Type::Bye {
-            self.peers
-                .retain(|_, (p, _)| p.process_uuid != message.process_uuid);
-        }
-        if kind == Type::Heartbeat {
-            for (p, stamp) in self.peers.values_mut() {
-                if p.process_uuid == message.process_uuid {
-                    *stamp = Instant::now();
-                }
-            }
+            self.peers.retain(|key, (p, _)| {
+                key.channel != channel || p.process_uuid != message.process_uuid
+            });
         }
         let local = matches!(source, IpAddr::V4(ip) if ip.is_loopback() || self.host_interfaces.contains(&ip));
         if matches!(&message.disc_contents, Some(DiscContents::Pub(p))
@@ -827,17 +838,27 @@ impl Worker {
         }
         match message.disc_contents {
             Some(DiscContents::Pub(p)) if kind == Type::Advertise => {
-                if channel == 0 && matches!(p.pub_type, Some(PubType::MsgPub(_))) {
-                    self.register_subscriber(&p);
-                }
-                let key = format!("{}:{}:{}", p.process_uuid, p.node_uuid, p.topic);
-                if self.peers.contains_key(&key) || self.peers.len() < self.config.capacity {
+                let key = PeerKey {
+                    channel,
+                    process: p.process_uuid.clone(),
+                    node: p.node_uuid.clone(),
+                    topic: p.topic.clone(),
+                    address: p.address.clone(),
+                };
+                if !self.peers.contains_key(&key) && self.peers.len() < self.config.capacity {
+                    if channel == 0 && matches!(p.pub_type, Some(PubType::MsgPub(_))) {
+                        self.register_subscriber(&p);
+                    }
                     self.peers.insert(key, (p, Instant::now()));
                 }
             }
             Some(DiscContents::Pub(p)) if kind == Type::Unadvertise => {
-                self.peers
-                    .remove(&format!("{}:{}:{}", p.process_uuid, p.node_uuid, p.topic));
+                self.peers.retain(|key, _| {
+                    key.channel != channel
+                        || key.process != p.process_uuid
+                        || key.node != p.node_uuid
+                        || key.topic != p.topic
+                });
             }
             Some(DiscContents::Sub(s)) if kind == Type::Subscribe => {
                 let publishers: Vec<_> = if channel == 0 {
@@ -1051,15 +1072,20 @@ impl Worker {
             }
         }
         self.connected.retain(|address| {
-            let keep = self.peers.values().any(|(p, _)| &p.address == address);
+            let keep = self
+                .peers
+                .iter()
+                .any(|(key, (p, _))| key.channel == 1 && &p.address == address);
             if !keep {
                 let _ = self.requester.disconnect(address);
             }
             keep
         });
         self.subscriptions_connected.retain(|address| {
-            let keep = self.peers.values().any(|(p, _)| {
-                &p.address == address && self.subscriptions.iter().any(|s| s.topic == p.topic)
+            let keep = self.peers.iter().any(|(key, (p, _))| {
+                key.channel == 0
+                    && &p.address == address
+                    && self.subscriptions.iter().any(|s| s.topic == p.topic)
             });
             if !keep {
                 let _ = self.subscriber.disconnect(address);
@@ -1139,8 +1165,9 @@ impl Worker {
             if p.sent {
                 return true;
             }
-            for (peer, _) in self.peers.values() {
-                if let Some(PubType::SrvPub(types)) = &peer.pub_type
+            for (key, (peer, _)) in &self.peers {
+                if key.channel == 1
+                    && let Some(PubType::SrvPub(types)) = &peer.pub_type
                     && peer.topic == p.topic
                     && types.request_type == p.request_type
                     && types.response_type == p.response_type

@@ -553,3 +553,37 @@ fn native_as_valid_topic_preserves_scan_order_utf8_and_byte_boundaries() {
         assert_eq!(output.stdout, expected.as_bytes());
     }
 }
+
+#[test]
+fn native_peer_storage_confirms_address_and_channel_identity() {
+    let peer = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    let output = Command::new(peer)
+        .args(["peer-storage", "/dual", TYPE])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(output.stdout, b"2 3 3 1 0\n");
+}
+
+#[test]
+fn cpp_same_node_publishes_and_serves_the_same_topic() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let subscription = node.subscribe("/dual", TYPE).unwrap();
+    let mut peer = Peer::start(&config, "dual", "/dual", "-dual");
+    assert_eq!(
+        subscription
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap()
+            .data,
+        data("-dual")
+    );
+    assert_eq!(
+        node.request("/dual", TYPE, TYPE, data("rust"), Duration::from_secs(5))
+            .unwrap(),
+        (data("rust-dual"), true)
+    );
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+}

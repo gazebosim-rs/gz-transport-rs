@@ -6685,10 +6685,10 @@
       "id": "UNIT_TopicStorage_TEST:TopicStorageTest.TopicStorageAPI",
       "target": "UNIT_TopicStorage_TEST",
       "case": "TopicStorageTest.TopicStorageAPI",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
-      "review": "pending",
+      "review": "/root/msgs; 2026-10-24; native identity/activity/admission subset and new conformance tests reviewed; original native case independently passed1/1. Entire Rust storage/query assertion port still pending; no full retirement.",
       "source": [
         {
           "path": "src/TopicStorage_TEST.cc",
@@ -6698,7 +6698,8 @@
       ],
       "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-peer-identity.md; mandatory original native case; new identity conformance covers a subset only, no full Rust port claimed"
     },
     {
       "id": "UNIT_TopicStorage_TEST:TopicStorageTest.TopicList",

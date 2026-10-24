@@ -32,6 +32,16 @@ no publisher exists. This removes native subscriber-list entries while the Rust
 process remains alive. Service-channel list requests receive no reply. Receiving
 and querying remote subscriber lists from Rust remains pending.
 
+Peer identity separates message/service channels and includes address alongside
+process/node/topic, matching the native independent TopicStorage instances.
+Duplicate advertisements retain first metadata and cannot trigger new connection
+or registration side effects; capacity-rejected peers cannot register either. Each decoded discovery packet
+refreshes known process activity on its own channel. Unknown opcodes are ignored
+after that activity update instead of being treated as advertisements. Withdrawal removes all
+addresses for the matching process/node/topic on that channel; BYE removes that
+channel's process entries. Pub/sub connections use only message discovery and
+RPC connections only service discovery. The global peer capacity remains bounded.
+
 Ordinary pub/sub ZeroMQ frames (`NodeShared::Publish`, RecvMsgUpdate):
 
 1. Fully qualified topic bytes (`@/partition@/namespace/topic`, or `@@/topic`).
