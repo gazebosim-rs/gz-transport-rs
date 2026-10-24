@@ -3,7 +3,7 @@
 use crate::Error;
 
 // Gazebo TopicUtils.cc: byte lengths, ASCII space, and ':=' are intentional.
-fn valid(name: &str) -> bool {
+pub(crate) fn valid(name: &str) -> bool {
     name.len() <= 65535
         && name != "/"
         && !["~", " ", "//", "@", ":="].iter().any(|s| name.contains(s))

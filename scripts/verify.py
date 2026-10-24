@@ -244,7 +244,7 @@ def verify(profile):
     run(['git', '-C', str(reference), 'diff', '--exit-code', 'HEAD'])
     run([str(reference / 'build/bin/UNIT_TopicUtils_TEST'), '--gtest_filter=TopicUtilsTest.testFullyQualifiedName'], env=env)
     run([str(reference / 'build/bin/UNIT_Node_TEST'), '--gtest_filter=NodeTest.ServiceWithoutOutputCallAsync'], env=env)
-    run([str(reference / 'build/bin/UNIT_NodeOptions_TEST'), '--gtest_filter=NodeOptionsTest.accessors'], env=env)
+    run([str(reference / 'build/bin/UNIT_NodeOptions_TEST'), '--gtest_filter=NodeOptionsTest.accessors:NodeOptionsTest.ignPartition'], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
     shutil.rmtree(profiles, ignore_errors=True)

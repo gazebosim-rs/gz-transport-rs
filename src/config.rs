@@ -41,6 +41,23 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Validate the native component grammar and preserve state on rejection.
+    /// Full qualified-topic length is checked separately by Node/topic creation.
+    pub fn set_partition(&mut self, partition: &str) -> Result<(), Error> {
+        if !crate::names::valid(partition) {
+            return Err(Error::InvalidName);
+        }
+        self.partition = partition.into();
+        Ok(())
+    }
+    /// Validate a namespace without modifying other configuration fields.
+    pub fn set_namespace(&mut self, namespace: &str) -> Result<(), Error> {
+        if !crate::names::valid(namespace) {
+            return Err(Error::InvalidName);
+        }
+        self.namespace = namespace.into();
+        Ok(())
+    }
     pub(crate) fn validate(&self) -> Result<(), Error> {
         qualified_name(&self.partition, &self.namespace, "validation")?;
         if self.capacity == 0

@@ -44,8 +44,13 @@ Default identity validation includes real C++ child-process comparisons for
 present/empty/absent USER, explicit partition precedence and no process-global
 environment mutation in the test runner. Pure injected lookup cases verify host
 and account errors, no account, invalid Unicode, and USER bypass of NSS. The
-original NodeOptionsTest.accessors is mandatory, with only its default-partition
-assertion mapped as a partial port; its setter/state assertions remain retained.
+original NodeOptionsTest.accessors and ignPartition are mandatory. Validated
+set_partition/set_namespace preserve old state on invalid input and store valid
+component strings unchanged, independently of final qualified-topic size. Tests
+retain every original getter, invalid/valid setter, rejected state, explicit
+partition-over-environment and copy assertion using isolated child processes.
+Boundary supplements cover the native65535-byte component limit. Public fields
+remain available; Node still validates the final configuration before startup.
 
 Initial explicit-settings slice validation:27 Rust tests passed, including child-process environment capture,
 non-Unicode input, integer edge/fallback cases, unsupported settings, native C++

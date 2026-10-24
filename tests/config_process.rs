@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
+// NodeOptions assertion source: Copyright (C) 2015 Open Source Robotics Foundation.
 use gz_transport::{Config, Error};
 use std::process::Command;
 #[test]
@@ -15,7 +16,7 @@ fn config_environment_child() {
             );
         }
         Ok("identity") => {
-            let config = Config::from_env().unwrap();
+            let mut config = Config::from_env().unwrap();
             let peer = std::env::var("GZ_CPP_PEER")
                 .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
             let output = Command::new(peer)
@@ -34,6 +35,22 @@ fn config_environment_child() {
                 output.split_whitespace().nth(1),
                 Some(config.partition.as_str())
             );
+            let default_partition = config.partition.clone();
+            assert!(config.namespace.is_empty());
+            assert_eq!(
+                config.set_namespace("invalid namespace"),
+                Err(Error::InvalidName)
+            );
+            assert_eq!(config.namespace, "");
+            config.set_namespace("validNamespace").unwrap();
+            assert_eq!(config.namespace, "validNamespace");
+            assert_eq!(
+                config.set_partition("invalid partition"),
+                Err(Error::InvalidName)
+            );
+            assert_eq!(config.partition, default_partition);
+            config.set_partition("validPartition").unwrap();
+            assert_eq!(config.partition, "validPartition");
             assert_eq!(Config::default().partition, "");
             assert_eq!(
                 Config {
@@ -45,6 +62,17 @@ fn config_environment_child() {
                 .partition,
                 "explicit-base"
             );
+        }
+        Ok("partition-override") => {
+            let mut config = Config::from_env().unwrap();
+            assert_eq!(config.partition, "customPartition");
+            config.set_partition("userPartition").unwrap();
+            assert_eq!(config.partition, "userPartition");
+            let mut copy = config.clone();
+            assert_eq!(copy.partition, config.partition);
+            assert_eq!(copy.namespace, config.namespace);
+            assert_eq!(copy.set_partition("/"), Err(Error::InvalidName));
+            assert_eq!(copy.partition, config.partition);
         }
         Ok("non-unicode-user") => assert!(matches!(Config::from_env(), Err(Error::InvalidConfig))),
         Ok("non-unicode") => assert!(matches!(Config::from_env(), Err(Error::InvalidConfig))),
@@ -75,6 +103,10 @@ fn explicit_process_environment_capture() {
         .env("GZ_DISCOVERY_SRV_PORT", "11518")
         .env("GZ_TRANSPORT_SNDHWM", "9")
         .env("GZ_TRANSPORT_RCVHWM", "8");
+    child_success(&mut child);
+    child
+        .env("GZ_CONFIG_FIXTURE", "partition-override")
+        .env("GZ_PARTITION", "customPartition");
     child_success(&mut child);
     #[cfg(unix)]
     {

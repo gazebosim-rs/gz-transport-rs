@@ -228,3 +228,34 @@ fn nss_lossy_names_cannot_silently_change_partition_identity() {
         Ok("host:user\u{fffd}".into())
     );
 }
+
+#[test]
+fn component_setter_limits_and_rejected_state_match_native() {
+    let mut config = Config {
+        partition: "original".into(),
+        namespace: "namespace".into(),
+        ..Default::default()
+    };
+    for invalid in ["/", "bad name", "~", "a//b", "@", "a:=b"] {
+        assert_eq!(config.set_partition(invalid), Err(Error::InvalidName));
+        assert_eq!(config.partition, "original");
+        assert_eq!(config.set_namespace(invalid), Err(Error::InvalidName));
+        assert_eq!(config.namespace, "namespace");
+    }
+    let limit = "a".repeat(65535);
+    config.set_partition(&limit).unwrap();
+    config.set_namespace(&limit).unwrap();
+    assert_eq!(config.partition, limit);
+    assert_eq!(config.namespace, limit);
+    let long = "b".repeat(65536);
+    assert_eq!(config.set_partition(&long), Err(Error::InvalidName));
+    assert_eq!(config.set_namespace(&long), Err(Error::InvalidName));
+    assert_eq!(config.partition, limit);
+    assert_eq!(config.namespace, limit);
+    config.set_partition("").unwrap();
+    config.set_namespace("").unwrap();
+    assert_eq!(
+        (config.partition, config.namespace),
+        (String::new(), String::new())
+    );
+}
