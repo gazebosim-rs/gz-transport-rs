@@ -67,7 +67,9 @@ registration permits, retained peers, response connections, and delayed replies
 are bounded by `capacity`; native queues use the explicit positive send/receive
 high water marks. Message frames are bounded by `max_message_bytes`.
 Multipart decoding drains malformed messages while retaining only the expected
-frame count. Publishers report command queue saturation. Slow subscription/service
+frame count and checks cancellation before each native frame. Cancellation is
+terminal: unread multipart tails are discarded when the worker closes its
+sockets, and cancellation itself is not counted as a malformed wire message. Publishers report command queue saturation. Slow subscription/service
 receivers drop new arrivals when full; ZeroMQ high water marks can also drop
 publications as in the reference. Service overload can yield QueueFull or timeout.
 Applications choose their own response execution context. Request.respond reports

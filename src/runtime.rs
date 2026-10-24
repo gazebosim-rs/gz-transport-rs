@@ -396,11 +396,20 @@ fn bind(socket: &zmq::Socket, config: &Config) -> Result<String, Error> {
     socket.bind(&format!("tcp://{}:*", config.interface))?;
     socket.get_last_endpoint()?.map_err(|_| Error::InvalidFrame)
 }
-// Drain malformed multipart messages while retaining at most the expected frames.
-fn receive(socket: &zmq::Socket, expected: usize, counters: &Counters) -> Option<Vec<Vec<u8>>> {
+// Keep message boundaries by draining malformed multipart input. Cancellation
+// abandons the socket's remaining frames only when its owner is tearing it down.
+fn receive(
+    socket: &zmq::Socket,
+    expected: usize,
+    counters: &Counters,
+    mut cancelled: impl FnMut() -> bool,
+) -> Option<Vec<Vec<u8>>> {
     let mut frames = Vec::with_capacity(expected);
     let mut count = 0;
     loop {
+        if cancelled() {
+            return None;
+        }
         let frame = socket.recv_msg(zmq::DONTWAIT).ok()?;
         count += 1;
         if count <= expected {
@@ -856,7 +865,9 @@ impl Worker {
     }
     fn receive_publications(&self) {
         for _ in 0..self.config.capacity {
-            let Some(frames) = receive(&self.subscriber, 4, &self.sender.counters) else {
+            let Some(frames) = receive(&self.subscriber, 4, &self.sender.counters, || {
+                self.sender.stop.load(Ordering::Acquire)
+            }) else {
                 break;
             };
             if let (Ok(topic), Ok(type_name)) =
@@ -952,7 +963,9 @@ impl Worker {
     }
     fn receive_requests(&mut self) {
         for _ in 0..self.config.capacity {
-            let Some(f) = receive(&self.router, 9, &self.sender.counters) else {
+            let Some(f) = receive(&self.router, 9, &self.sender.counters, || {
+                self.sender.stop.load(Ordering::Acquire)
+            }) else {
                 break;
             };
             for service in &self.services {
@@ -985,7 +998,9 @@ impl Worker {
     }
     fn receive_responses(&mut self) {
         for _ in 0..self.config.capacity {
-            let Some(f) = receive(&self.responses, 6, &self.sender.counters) else {
+            let Some(f) = receive(&self.responses, 6, &self.sender.counters, || {
+                self.sender.stop.load(Ordering::Acquire)
+            }) else {
                 break;
             };
             if f[2] != self.node.as_bytes() {

@@ -382,14 +382,14 @@ fn malformed_multipart_is_drained_and_bounded() {
     let address = format!("inproc://{}", Uuid::new_v4());
     receiver.bind(&address).unwrap();
     sender.connect(&address).unwrap();
-    assert!(receive(&receiver, 4, &Counters::default()).is_none());
+    assert!(receive(&receiver, 4, &Counters::default(), || false).is_none());
     for count in [1, 3, 5, 1000] {
         sender.send_multipart(vec!["x"; count], 0).unwrap();
-        assert!(receive(&receiver, 4, &Counters::default()).is_none());
+        assert!(receive(&receiver, 4, &Counters::default(), || false).is_none());
     }
     sender.send_multipart(["a", "b", "c", "d"], 0).unwrap();
     assert_eq!(
-        receive(&receiver, 4, &Counters::default()).unwrap(),
+        receive(&receiver, 4, &Counters::default(), || false).unwrap(),
         [b"a", b"b", b"c", b"d"]
     );
 }
@@ -747,7 +747,7 @@ fn queue_saturation_is_observable_in_local_counters() {
     receiver.bind(&address).unwrap();
     sender.connect(&address).unwrap();
     sender.send_multipart(["bad"], 0).unwrap();
-    assert!(receive(&receiver, 4, &counters).is_none());
+    assert!(receive(&receiver, 4, &counters, || false).is_none());
     assert_eq!(counters.snapshot().malformed_frames, 1);
     let node = Node::new(Config::default()).unwrap();
     assert_eq!(node.statistics(), Statistics::default());
@@ -928,5 +928,36 @@ fn expired_local_requests_never_enter_the_service_queue() {
         assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
         assert!(worker.pending.is_empty());
         assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+    }
+}
+
+#[test]
+fn cancellation_interrupts_malformed_multipart_without_counting_a_wire_error() {
+    let context = zmq::Context::new();
+    let sender = context.socket(zmq::PAIR).unwrap();
+    let receiver = context.socket(zmq::PAIR).unwrap();
+    let address = format!("inproc://{}", Uuid::new_v4());
+    receiver.bind(&address).unwrap();
+    sender.connect(&address).unwrap();
+    for consumed in [0, 2, 5] {
+        let counters = Counters::default();
+        sender.send_multipart(vec!["part"; 1000], 0).unwrap();
+        assert_ne!(receiver.poll(zmq::POLLIN, 1000).unwrap(), 0);
+        let mut checks = 0;
+        assert!(
+            receive(&receiver, 4, &counters, || {
+                checks += 1;
+                checks > consumed
+            })
+            .is_none()
+        );
+        assert_eq!(checks, consumed + 1);
+        assert_eq!(counters.snapshot(), Statistics::default());
+        // The production owner now closes its socket. Inspect the unread tail
+        // here to prove cancellation did not drain an arbitrarily long message.
+        assert_eq!(
+            receiver.recv_multipart(zmq::DONTWAIT).unwrap().len(),
+            1000 - consumed
+        );
     }
 }
