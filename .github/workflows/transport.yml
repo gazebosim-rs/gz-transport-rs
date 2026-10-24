@@ -1,0 +1,16 @@
+name: transport
+on: [push, pull_request]
+jobs:
+  policy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 -m unittest discover -s scripts -p test_quality.py
+  native-parity-and-coverage:
+    runs-on: [self-hosted, linux, x64, gazebo-transport-reference]
+    env:
+      GZ_REFERENCE_SOURCE: /opt/gazebo-reference/gz-transport
+      GZ_REFERENCE_PREFIX: /opt/gazebo-reference/install
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 scripts/verify.py verify --profile zeromq-linux

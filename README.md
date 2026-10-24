@@ -1,22 +1,43 @@
 # Gazebo Transport in Rust
 
-Independent interoperable Gazebo discovery, pub/sub, services, logging, and transport tooling.
+An independent Gazebo ZeroMQ transport implementation with an owned IO worker,
+bounded queues, explicit cancellation, and canonical protobuf discovery.
 
-This public repository is a planning shell. No Rust implementation, passing
-migration test suite, or coverage result is claimed yet.
+The first NET-01 slice interoperates with the pinned real C++ Gazebo Transport
+main reference in both directions for pub/sub and request/reply. It includes
+partition/namespace qualification, delayed startup, reconnect, raw typed bytes,
+request correlation/timeouts, local delivery, dropped-handle withdrawal, and
+shutdown. Local counters expose drops and wire errors; service replies retry
+mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
+relay/all-interface discovery, the full CLI and other retained behaviors remain
+listed in [the protocol contract](docs/PROTOCOL.md) and the 418-case
+[upstream ledger](docs/upstream-tests.json).
 
-The architecture and dependency-ordered work packets live in
-[gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md). Read this repository's
-[implementation contract](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/EXTERNAL_REPOS.md#gz-transport-rs),
-[test and coverage policy](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/TESTING.md), and
-[decision register](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/DECISIONS.md) before implementation.
+```rust,no_run
+use gz_transport::{Config, Node};
+let node = Node::new(Config { partition: "example".into(), ..Config::default() })?;
+let publisher = node.advertise("/greeting", "gz.msgs.StringMsg")?;
+// Canonical StringMsg field 2; applications normally encode with gz-msgs.
+publisher.publish(vec![0x12, 0x02, b'o', b'k'])?;
+# Ok::<(), gz_transport::Error>(())
+```
 
-The owner selected the upstream Gazebo main branches, behavior/file-format/protocol
-compatibility with new Rust APIs, faithful ports of existing tests verified against
-C++ reference runs, and Linux first. Handwritten production Rust must have coverage
-strictly above 95%, enforced through pre-commit and CI as implementation begins.
+Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
+not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies
+are pinned. `zmq` uses native libzmq; this is intentional wire compatibility.
+Default configuration binds loopback, with an explicit IPv4 interface for remote
+use. There is no hidden async runtime or implicit environment capture.
 
-This repository remains independent of the gz-sim-rs Cargo workspace. Publish a
-versioned Rust API and test it with the pinned cross-repository integration set.
+Run `scripts/bootstrap.sh`, then
+`python3 scripts/verify.py verify --profile zeromq-linux` on the native reference
+runner. The same authoritative runner verifies an isolated staged snapshot in
+the pre-commit hook and CI. It requires strictly >95% handwritten production
+line **and** region coverage, no missing files, a real C++ peer, and original
+mapped assertions. Missing native infrastructure fails the gate.
+See [testing and evidence](docs/TESTING.md).
 
-License: Apache-2.0. Preserve upstream notices and fixture provenance when porting.
+The canonical cross-repository plan, test policy and compatibility contract live
+in [gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md).
+New Rust APIs preserve observable Gazebo wire behavior; no C++ ABI is claimed.
+
+License: Apache-2.0. Ported assertion provenance and fixture hashes are retained.

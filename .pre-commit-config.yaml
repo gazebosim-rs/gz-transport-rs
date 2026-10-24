@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: transport-verify
+        name: Exact staged transport tree and native parity
+        entry: python3 scripts/verify.py verify --staged
+        language: system
+        pass_filenames: false
+        always_run: true

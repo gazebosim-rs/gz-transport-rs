@@ -1,0 +1,11 @@
+{
+  "upstream_repository": "https://github.com/gazebosim/gz-transport",
+  "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+  "cpp_transport_version": "16.0.0~pre2",
+  "cpp_libzmq": "4.3.5",
+  "rust_libzmq": "4.3.4 (zmq 0.10.0 / zmq-sys 0.12.0)",
+  "rust_toolchain": "1.94.1",
+  "platform": "Linux x86_64",
+  "reference_prefix_environment": "GZ_REFERENCE_PREFIX",
+  "reference_source_environment": "GZ_REFERENCE_SOURCE"
+}

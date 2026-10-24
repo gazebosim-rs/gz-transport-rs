@@ -1,0 +1,16 @@
+[package]
+name = "gz-transport"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "Apache-2.0"
+description = "Interoperable Gazebo transport with explicit IO ownership"
+
+[dependencies]
+zmq = "=0.10.0"
+socket2 = { version = "=0.6.2", features = ["all"] }
+uuid = { version = "=1.23.1", features = ["v4"] }
+gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "94e6c618dfbd25b1b43bb32aa28db3f8d9a9a3af" }
+
+[lints.rust]
+unsafe_code = "forbid"
