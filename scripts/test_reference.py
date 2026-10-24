@@ -53,3 +53,12 @@ class RetainedMappings(unittest.TestCase):
         for output in ['', 'test assertions::ported ... ignored\n', 'test assertions::ported ... FAILED\n']:
             with self.assertRaises(ValueError):
                 check_mapped_tests(ledger,output)
+
+
+class RuntimeEnumeration(unittest.TestCase):
+    def test_structured_listing_counts_and_duplicate_ids_are_checked(self):
+        from inventory import listed_cases
+        report={'tests':2,'testsuites':[{'name':'Suite','tests':2,'testsuite':[{'name':'First'},{'name':'Second/0'}]}]}
+        self.assertEqual(listed_cases(report),['Suite.First','Suite.Second/0'])
+        for bad in [dict(report,tests=3),{'tests':2,'testsuites':[{'name':'Suite','tests':3,'testsuite':[{'name':'First'},{'name':'First'}]}]}, {'tests':2,'testsuites':[{'name':'Suite','tests':2,'testsuite':[{'name':'First'},{'name':'First'}]}]}]:
+            with self.assertRaises(ValueError):listed_cases(bad)

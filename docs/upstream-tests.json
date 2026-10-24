@@ -1,6 +1,6 @@
 {
   "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
-  "expansion": "runtime --gtest_list_tests",
+  "expansion": "runtime --gtest_list_tests --gtest_output=json",
   "entries": [
     {
       "id": "INTEGRATION_authPubSub:authPubSub.InvalidAuth",

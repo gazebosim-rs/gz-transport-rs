@@ -48,3 +48,4 @@ jobs:
             artifacts/cpp-linkage.txt
             artifacts/reference/environment.json
             artifacts/reference/logs/
+            artifacts/reference-enumeration/

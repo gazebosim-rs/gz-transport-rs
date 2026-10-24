@@ -8,25 +8,46 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 
-def collect(upstream):
+def listed_cases(report):
+    cases=[]
+    for suite in report['testsuites']:
+        if suite['tests'] != len(suite['testsuite']):
+            raise ValueError('Incomplete suite enumeration')
+        for case in suite['testsuite']:
+            if not suite['name'] or not case['name']:
+                raise ValueError('Empty runtime test name')
+            cases.append(suite['name']+'.'+case['name'])
+    if report['tests'] != len(cases) or len(cases) != len(set(cases)):
+        raise ValueError('Incomplete or duplicate runtime enumeration')
+    return cases
+
+
+def collect(upstream, diagnostics=None):
     sha = subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip()
     entries, unavailable = [], []
-    for executable in sorted((upstream / 'build/bin').iterdir()):
-        if not executable.name.startswith(('UNIT_', 'INTEGRATION_', 'REGRESSION_')):
-            continue
-        result = subprocess.run([str(executable), '--gtest_list_tests'], capture_output=True, text=True, timeout=30)
-        if result.returncode:
-            unavailable.append({'target': executable.name, 'returncode': result.returncode, 'stderr': result.stderr})
-            continue
-        suite = None
-        for line in result.stdout.splitlines():
-            if re.match(r'^\S.*\.\s*(#.*)?$', line):
-                suite = line.split('#')[0].strip()
-            elif line.startswith('  ') and suite:
-                case = line.strip().split('#')[0].strip()
-                if case:
-                    entries.append({'id': f'{executable.name}:{suite}{case}', 'target': executable.name, 'case': suite + case, 'baseline': 'not_run', 'disposition': 'pending', 'replacement': [], 'review': 'pending'})
+    with tempfile.TemporaryDirectory(prefix='gz-transport-enumeration-') as directory:
+        output = Path(diagnostics) if diagnostics is not None else Path(directory)
+        output.mkdir(parents=True, exist_ok=True)
+        for executable in sorted((upstream / 'build/bin').iterdir()):
+            if not executable.name.startswith(('UNIT_', 'INTEGRATION_', 'REGRESSION_')):
+                continue
+            listing=output / f'{executable.name}.json'
+            listing.unlink(missing_ok=True)
+            result = subprocess.run([str(executable), '--gtest_list_tests', '--gtest_filter=*', '--gtest_color=no', f'--gtest_output=json:{listing}'], capture_output=True, text=True, timeout=30)
+            if diagnostics is not None:
+                (output/f'{executable.name}.stdout').write_text(result.stdout)
+                (output/f'{executable.name}.stderr').write_text(result.stderr)
+            try:
+                if result.returncode:
+                    raise ValueError(f'Native enumeration exit {result.returncode}')
+                cases=listed_cases(json.loads(listing.read_text()))
+            except (ValueError,KeyError,OSError,TypeError) as error:
+                unavailable.append({'target':executable.name,'error':str(error),'stderr':result.stderr})
+                continue
+            for case in cases:
+                entries.append({'id': f'{executable.name}:{case}', 'target': executable.name, 'case':case, 'baseline': 'not_run', 'disposition': 'pending', 'replacement': [], 'review': 'pending'})
     sources = {}
     for directory in ('src', 'test', 'log', 'parameters', 'python/test'):
         for path in sorted((upstream / directory).rglob('*')):
@@ -50,7 +71,7 @@ def collect(upstream):
         entry['reference_features'] = ['zenoh'] if zenoh else []
         entry['contract'] = 'Retained original assertions; detailed per-case contract audit pending.'
         entry['configuration'] = 'Expanded on Linux x86_64; backend/environment conditions remain pending audit.'
-    record = {'upstream_sha': sha, 'expansion': 'runtime --gtest_list_tests', 'entries': entries, 'unavailable_targets': unavailable, 'source_fixture_sha256': sources, 'non_gtest_scope': 'Ruby/CLI/Python/example workflows remain pending inventory; not retired.'}
+    record = {'upstream_sha': sha, 'expansion': 'runtime --gtest_list_tests --gtest_output=json', 'entries': entries, 'unavailable_targets': unavailable, 'source_fixture_sha256': sources, 'non_gtest_scope': 'Ruby/CLI/Python/example workflows remain pending inventory; not retired.'}
     return record
 
 
