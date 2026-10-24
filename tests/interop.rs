@@ -458,3 +458,45 @@ fn cpp_inspects_subscriber_only_topics_until_the_last_lease_is_dropped() {
         peer.success();
     }
 }
+
+#[test]
+fn original_oneway_int32_five_dispatches_once_and_rejects_invalid_service() {
+    // Node_TEST.cc ServiceWithoutOutputCallAsync / srvWithoutOutput assertions.
+    let node = Node::new(config()).unwrap();
+    let type_name = "gz.msgs.Int32";
+    assert!(matches!(
+        node.serve("invalid service", type_name, "gz.msgs.Empty"),
+        Err(Error::InvalidName)
+    ));
+    let service = node.serve("/foo", type_name, "gz.msgs.Empty").unwrap();
+    let request = gz_msgs::int32::Int32 {
+        data: 5,
+        ..Default::default()
+    }
+    .encode_to_vec();
+    assert_eq!(
+        node.request_oneway(
+            "invalid service",
+            type_name,
+            request.clone(),
+            Duration::from_secs(1)
+        ),
+        Err(Error::InvalidName)
+    );
+    node.request_oneway("/foo", type_name, request, Duration::from_secs(1))
+        .unwrap();
+    // A successful local handoff has queued the event, so draining now observes
+    // actual delivered requests without a sleep or a fabricated callback count.
+    let mut counter = 0;
+    while let Ok(request) = service.recv_timeout(Duration::ZERO) {
+        assert_eq!(
+            gz_msgs::int32::Int32::decode(request.data.as_slice())
+                .unwrap()
+                .data,
+            5
+        );
+        assert!(!request.expects_response());
+        counter += 1;
+    }
+    assert_eq!(counter, 1);
+}

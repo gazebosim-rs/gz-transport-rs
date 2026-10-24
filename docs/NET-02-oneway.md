@@ -12,8 +12,13 @@ ignores unused response data. Ordinary response-bearing requests keep their
 existing behavior. Empty request descriptors remain ordinary raw-byte inputs.
 
 The original `NodeTest.ServiceWithoutOutputCallAsync` is executed by the mandatory
-gate. Its callback execution, invalid request name and successful local dispatch
-assertions are partially represented by `oneway_local_handoff_bounds_and_matching`.
+gate. The original /foo service, Int32 payload5, invalid advertise/request names and
+single execution count1 are represented by
+`original_oneway_int32_five_dispatches_once_and_rejects_invalid_service`. The Rust
+API polls actual queued requests instead of registering a callback; each polled
+event executes the original payload assertion and increments the observed count.
+`oneway_local_handoff_bounds_and_matching` supplements those exact assertions
+with queue saturation, type and lifecycle bounds.
 Full case equivalence remains pending: advertised-service enumeration and explicit
 UnadvertiseSrv API assertions are retained and are not claimed as ported. Native
 source and fixture hashes remain in the unchanged retained catalog.
@@ -24,3 +29,10 @@ command, delayed reply or connection is created and no reply frame arrives. Loca
 checks exceed pending capacity across sequential handoffs, fill the service queue,
 verify exact overload counters, wrong-type timeout, invalid name, payload limit,
 and shutdown. No legacy async callback/CLI API parity is claimed.
+
+Independent /root/msgs review compared the original /foo/Int32(5)/counter1 and
+invalid-name assertions, reran the exact native original and supplemental Rust
+test, and approved this partial mapping. AdvertisedServices and explicit
+unadvertise observations remain unported. The independent reviewer also approved
+the complete400-row TopicUtils mapping after source comparison and exact native
+and Rust reruns; no runtime behavior or production coverage policy changed.

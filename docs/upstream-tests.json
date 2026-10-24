@@ -4226,9 +4226,10 @@
       "baseline": "passed",
       "disposition": "partial_port",
       "replacement": [
-        "oneway_local_handoff_bounds_and_matching"
+        "oneway_local_handoff_bounds_and_matching",
+        "original_oneway_int32_five_dispatches_once_and_rejects_invalid_service"
       ],
-      "review": "pending independent assertion review",
+      "review": "/root/msgs; 2026-10-24; partial source/assertion mapping and literal supplement approved; exact native original1/1, supplemental Rust literal1/1 and broader local one-way1/1 independently passed. Enumeration/unadvertise remain pending; no full retirement.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4237,7 +4238,7 @@
         }
       ],
       "reference_features": [],
-      "contract": "Partial: local one-way callback dispatch, invalid request name; advertised-service enumeration and explicit unadvertise assertions remain pending.",
+      "contract": "Partial: exact original /foo, Int32 data5, actual one-delivery count1, invalid service advertise and invalid request names retained through bounded Rust queue handoff and receipt polling instead of callback registration. AdvertisedServices enumeration, invalid UnadvertiseSrv, explicit valid UnadvertiseSrv and resulting empty enumeration remain pending. Supplemental StringMsg bounds/type tests do not replace original literals.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
       "evidence": "docs/NET-02-oneway.md: mandatory native original plus bounded local and real C++ supplemental tests"
     },
@@ -6898,7 +6899,7 @@
       "replacement": [
         "runtime::tests::upstream_fully_qualified_name_cross_product"
       ],
-      "review": "pending external assertion equivalence review",
+      "review": "/root/msgs; 2026-10-24; all400 source inputs, transforms, 65532/65536-byte values, validity conjunction and final65535-byte bound independently compared; exact Rust table and native original reruns passed1 test each",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6907,7 +6908,7 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
+      "contract": "All400 original8x5x10 partition/namespace/topic input rows and expected validity/transforms retained; absolute topics omit namespace as native, full name length bound65535 bytes preserved.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
       "evidence": "docs/TESTING.md: mandatory original executable + Rust cross-product table"
     },
