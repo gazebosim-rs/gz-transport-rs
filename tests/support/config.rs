@@ -165,3 +165,66 @@ fn unsupported_and_invalid_configuration_are_explicit() {
     }
     assert!(configured(&[("GZ_TRANSPORT_PASSWORD", "partial")]).is_ok());
 }
+
+#[cfg(unix)]
+#[test]
+fn native_partition_identity_precedence_and_failures() {
+    use nix::errno::Errno;
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    assert_eq!(
+        partition_identity(Ok("host".into()), Some("user".into()), || panic!(
+            "USER must bypass NSS"
+        )),
+        Ok("host:user".into())
+    );
+    assert_eq!(
+        partition_identity(Ok("host".into()), Some("".into()), || panic!(
+            "empty USER is present"
+        )),
+        Ok("host:".into())
+    );
+    assert_eq!(
+        partition_identity(Ok("host".into()), None, || Ok(Some("system".into()))),
+        Ok("host:system".into())
+    );
+    assert_eq!(
+        partition_identity(Ok("host".into()), None, || Ok(None)),
+        Err(Error::InvalidConfig)
+    );
+    assert!(matches!(
+        partition_identity(Err(Errno::EIO), None, || panic!(
+            "hostname failure must stop lookup"
+        )),
+        Err(Error::Native(_))
+    ));
+    assert!(matches!(
+        partition_identity(Ok("host".into()), None, || Err(Errno::EIO)),
+        Err(Error::Native(_))
+    ));
+    let invalid = OsString::from_vec(vec![255]);
+    assert_eq!(
+        partition_identity(Ok(invalid.clone()), Some("user".into()), || unreachable!()),
+        Err(Error::InvalidConfig)
+    );
+    assert_eq!(
+        partition_identity(Ok("host".into()), Some(invalid), || unreachable!()),
+        Err(Error::InvalidConfig)
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn nss_lossy_names_cannot_silently_change_partition_identity() {
+    assert_eq!(
+        partition_identity(Ok("host".into()), None, || Ok(Some("user\u{fffd}".into()))),
+        Err(Error::Unsupported("ambiguous NSS username encoding"))
+    );
+    assert_eq!(
+        partition_identity(
+            Ok("host".into()),
+            Some("user\u{fffd}".into()),
+            || unreachable!()
+        ),
+        Ok("host:user\u{fffd}".into())
+    );
+}

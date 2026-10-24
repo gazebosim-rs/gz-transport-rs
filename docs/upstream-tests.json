@@ -3235,10 +3235,12 @@
       "id": "UNIT_NodeOptions_TEST:NodeOptionsTest.accessors",
       "target": "UNIT_NodeOptions_TEST",
       "case": "NodeOptionsTest.accessors",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial_port",
+      "replacement": [
+        "explicit_process_environment_capture"
+      ],
+      "review": "pending independent default-identity assertion review",
       "source": [
         {
           "path": "src/NodeOptions_TEST.cc",
@@ -3247,8 +3249,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Partial: default hostname:username partition. Namespace/partition setter and state preservation assertions remain retained pending API parity.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-config.md: mandatory NodeOptionsTest.accessors plus native default identity differential child processes"
     },
     {
       "id": "UNIT_NodeShared_TEST:ZenohConfigTest.LoadFromEnvVariable",

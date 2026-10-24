@@ -20,12 +20,34 @@ queue. Ports0 and values beyond uint16 are invalid. These are explicit bounds of
 the current Rust API, not parity claims for legacy invalid/wrapping port handling.
 Non-Unicode recognized environment values return InvalidConfig.
 
-`Config::default()` remains the documented explicit Rust choice: empty partition
-and loopback interface. Legacy hostname:username defaults and automatic interface
-selection remain pending; callers can supply a base partition/interface before
-applying settings. Topic namespace remains an API setting, as in upstream.
+`Config::default()` remains the explicit Rust choice: empty partition and loopback
+interface. On Unix, `Config::from_env()` now defaults to the native
+`hostname:username` partition when GZ_PARTITION is absent. USER takes precedence,
+including an empty value; otherwise a UID account lookup supplies the name. Safe
+nix0.31.3 bindings perform these system calls before worker startup. This explicit
+constructor performs synchronous system identity lookup in its caller; applications
+can use an explicit Config to avoid it. GZ_PARTITION, including an empty value,
+bypasses identity lookup. `with_environment` preserves its explicit base.
 
-Validation:27 Rust tests pass, including child-process environment capture,
+Non-Unicode hostname/USER, absent UID account and failed system lookups return
+explicit errors. This does not claim the native exceptional NSS behavior: its
+fixed201-byte passwd buffer, ten retries and random error-UUID fallback remain
+pending. nix's User API decodes NSS names lossily, so a replacement character in
+an NSS result returns Unsupported instead of silently selecting a changed
+identity; this includes a literal replacement character from an otherwise valid
+NSS name. Raw-byte NSS fidelity remains pending. An explicit UTF8 USER is preserved.
+Automatic interface selection and Windows identity are also pending;
+non-Unix automatic identity returns Unsupported. Topic namespace remains an API
+setting, as in upstream.
+
+Default identity validation includes real C++ child-process comparisons for
+present/empty/absent USER, explicit partition precedence and no process-global
+environment mutation in the test runner. Pure injected lookup cases verify host
+and account errors, no account, invalid Unicode, and USER bypass of NSS. The
+original NodeOptionsTest.accessors is mandatory, with only its default-partition
+assertion mapped as a partial port; its setter/state assertions remain retained.
+
+Initial explicit-settings slice validation:27 Rust tests passed, including child-process environment capture,
 non-Unicode input, integer edge/fallback cases, unsupported settings, native C++
 NodeShared differential checks for SND/RCV HWM and discovery ports, and actual
 C++→Rust custom multicast/ports/partition/namespace publication. Rustfmt, Clippy,
@@ -36,5 +58,5 @@ exact index export.
 
 Quality correction: changed-line accounting now explicitly includes new source
 files and carries staged changed-line ranges into the isolated snapshot. CI uses
-the committed parent diff. Unstaged edits cannot substitute for staged changes;
+the full push/PR base range. Unstaged edits cannot substitute for staged changes;
 coverage is generated afresh and input hashes are checked again after execution.

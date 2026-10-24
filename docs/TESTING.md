@@ -16,13 +16,14 @@ socket failures, absent LLVM tools, or unavailable reference runners are failure
 
 The runner checks format, Clippy with warnings denied, quality-tool regressions,
 builds a genuine C++ peer linked to libgz-transport, executes the original
-TopicUtilsTest.testFullyQualifiedName and NodeTest.ServiceWithoutOutputCallAsync assertions, and runs Rust unit/integration
+TopicUtilsTest.testFullyQualifiedName, NodeTest.ServiceWithoutOutputCallAsync and
+NodeOptionsTest.accessors assertions, and runs Rust unit/integration
 cases with LLVM instrumentation of owned workspace packages only. LLVM warnings
 are fatal; unmodified dependencies do not enter the production denominator. Each of five handwritten production files must
 appear in the report with a nonempty denominator. Integer comparisons enforce
 strictly >95% lines and regions for the sole crate and repository independently;
 no production exclusions exist. Changed executable lines also require >95%.
-Generated messages and unmodified ZeroMQ are dependencies, not added to this
+Generated messages, unmodified ZeroMQ and nix system bindings are dependencies, not added to this
 repository's denominator. Reports, source hashes, runner details and test output
 are written under artifacts/. No cached coverage evidence is accepted.
 

@@ -49,7 +49,8 @@ handoff, not callback execution; no application-level acknowledgement exists.
 The library uses zmq 0.10.0 / zmq-sys 0.12.0, which builds unmodified libzmq 4.3.4.
 The independently built C++ reference links system libzmq 4.3.5. Native dependency
 code is outside handwritten Rust coverage; no owned Rust FFI or unsafe code is
-used. Preserving native ZeroMQ is deliberate: replacing it with an unrelated
+used. Unix identity lookup uses unmodified nix0.31.3 safe system bindings.
+Preserving native ZeroMQ is deliberate: replacing it with an unrelated
 Rust-only messaging bus would break existing clients.
 
 # Ownership, cancellation and overload
@@ -86,7 +87,8 @@ pending reply senders so blocked callers receive Shutdown.
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
 HOST scope across multiple hosts; process-wide multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
-IPv6 and all-interface routing; legacy default host/user/interface selection; topic throttling and
+IPv6 and all-interface routing; automatic interface selection, exceptional NSS
+fallback and Windows default identity; topic throttling and
 wire statistics version 110; authentication; complete
 legacy CLI grammar; SQLite log record/read/replay and performance qualification.
 Each remains retained in the 418-case runtime ledger and non-gtest inventory.

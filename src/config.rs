@@ -82,6 +82,8 @@ const VARIABLES: &[&str] = &[
 
 impl Config {
     /// Capture recognized process configuration explicitly, before worker startup.
+    /// Without GZ_PARTITION, Unix uses hostname:USER (UID account lookup if USER
+    /// is absent). System identity lookup runs synchronously in the caller.
     pub fn from_env() -> Result<Self, Error> {
         let values = VARIABLES
             .iter()
@@ -94,7 +96,11 @@ impl Config {
                 })
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
-        Self::default().with_environment(|key| values.get(key).cloned())
+        let mut config = Self::default();
+        if !values.contains_key("GZ_PARTITION") {
+            config.partition = default_partition()?;
+        }
+        config.with_environment(|key| values.get(key).cloned())
     }
     /// Apply Gazebo environment settings to an explicit base configuration.
     /// Unsupported wire modes are errors, so configuration cannot silently fall back.
@@ -159,6 +165,47 @@ impl Config {
         self.validate()?;
         Ok(self)
     }
+}
+
+#[cfg(unix)]
+fn default_partition() -> Result<String, Error> {
+    use nix::unistd::{User, gethostname, getuid};
+    partition_identity(gethostname(), std::env::var_os("USER"), || {
+        User::from_uid(getuid()).map(|user| user.map(|user| user.name))
+    })
+}
+
+#[cfg(not(unix))]
+fn default_partition() -> Result<String, Error> {
+    Err(Error::Unsupported(
+        "automatic partition identity on this platform",
+    ))
+}
+
+#[cfg(unix)]
+fn partition_identity(
+    hostname: nix::Result<std::ffi::OsString>,
+    user: Option<std::ffi::OsString>,
+    system_user: impl FnOnce() -> nix::Result<Option<String>>,
+) -> Result<String, Error> {
+    let hostname = hostname
+        .map_err(|error| Error::Native(error.to_string()))?
+        .into_string()
+        .map_err(|_| Error::InvalidConfig)?;
+    let username = if let Some(user) = user {
+        user.into_string().map_err(|_| Error::InvalidConfig)?
+    } else {
+        let username = system_user()
+            .map_err(|error| Error::Native(error.to_string()))?
+            .ok_or(Error::InvalidConfig)?;
+        // nix decodes NSS bytes lossily. Reject ambiguous replacement characters
+        // rather than silently selecting a partition with a changed identity.
+        if username.contains('\u{fffd}') {
+            return Err(Error::Unsupported("ambiguous NSS username encoding"));
+        }
+        username
+    };
+    Ok(format!("{hostname}:{username}"))
 }
 
 // Preserve std::stoi's decimal prefix, ASCII leading whitespace and fallback.

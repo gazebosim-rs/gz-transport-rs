@@ -14,9 +14,51 @@ fn config_environment_child() {
                 (9, 8)
             );
         }
+        Ok("identity") => {
+            let config = Config::from_env().unwrap();
+            let peer = std::env::var("GZ_CPP_PEER")
+                .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+            let output = Command::new(peer)
+                .args(["config", "/unused", ""])
+                .env("GZ_IP", "127.0.0.1")
+                .env("GZ_TRANSPORT_IMPLEMENTATION", "zeromq")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let output = String::from_utf8(output.stdout).unwrap();
+            assert_eq!(
+                output.split_whitespace().nth(1),
+                Some(config.partition.as_str())
+            );
+            assert_eq!(Config::default().partition, "");
+            assert_eq!(
+                Config {
+                    partition: "explicit-base".into(),
+                    ..Default::default()
+                }
+                .with_environment(|_| None)
+                .unwrap()
+                .partition,
+                "explicit-base"
+            );
+        }
+        Ok("non-unicode-user") => assert!(matches!(Config::from_env(), Err(Error::InvalidConfig))),
         Ok("non-unicode") => assert!(matches!(Config::from_env(), Err(Error::InvalidConfig))),
         _ => {}
     }
+}
+fn child_success(child: &mut Command) {
+    let output = child.output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success() && stdout.contains("test config_environment_child ... ok"),
+        "stdout={stdout}; stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 #[test]
 fn explicit_process_environment_capture() {
@@ -33,13 +75,33 @@ fn explicit_process_environment_capture() {
         .env("GZ_DISCOVERY_SRV_PORT", "11518")
         .env("GZ_TRANSPORT_SNDHWM", "9")
         .env("GZ_TRANSPORT_RCVHWM", "8");
-    assert!(child.status().unwrap().success());
+    child_success(&mut child);
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStringExt;
         child
             .env("GZ_CONFIG_FIXTURE", "non-unicode")
             .env("GZ_PARTITION", std::ffi::OsString::from_vec(vec![255]));
-        assert!(child.status().unwrap().success());
+        child_success(&mut child);
+        child
+            .env_remove("GZ_PARTITION")
+            .env("GZ_CONFIG_FIXTURE", "identity");
+        for user in [Some("gazebo-native-user"), Some(""), None] {
+            if let Some(user) = user {
+                child.env("USER", user);
+            } else {
+                child.env_remove("USER");
+            }
+            child_success(&mut child);
+        }
+        child
+            .env("GZ_CONFIG_FIXTURE", "non-unicode-user")
+            .env("USER", std::ffi::OsString::from_vec(vec![255]));
+        child_success(&mut child);
+        // An explicit partition does not depend on the system/user identity.
+        child
+            .env("GZ_CONFIG_FIXTURE", "valid")
+            .env("GZ_PARTITION", "from-child");
+        child_success(&mut child);
     }
 }

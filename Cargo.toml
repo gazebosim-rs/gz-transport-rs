@@ -12,5 +12,8 @@ socket2 = { version = "=0.6.2", features = ["all"] }
 uuid = { version = "=1.23.1", features = ["v4"] }
 gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "e1800c3e8d058ce7358b393e5f7aba6dd912920f" }
 
+[target.'cfg(unix)'.dependencies]
+nix = { version = "=0.31.3", default-features = false, features = ["hostname", "user"] }
+
 [lints.rust]
 unsafe_code = "forbid"
