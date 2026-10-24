@@ -8,7 +8,15 @@ RecvDiscoveryUpdate) uses IPv4 UDP multicast 239.255.0.7, message port 10317,
 service port 10318. Datagrams contain a native-endian uint16 body length followed
 by canonical `gz.msgs.Discovery` protobuf bytes. Maximum datagram size is 65507.
 Version 10 is ordinary ZeroMQ; statistics-enabled peers use 110. Mismatched
-versions and malformed delimiters/protobuf are discarded. Heartbeats are 1000ms;
+versions and malformed delimiters/protobuf are discarded. Unix HOST-scoped
+advertisements and withdrawals are accepted only from an eligible local IPv4
+interface or any127.* address, matching native Discovery.hh. Interface inventory
+is captured before worker startup using safe nix bindings, preserving native
+index deduplication, IPv4/up/multicast filters and loopback fallback. No system
+interface query runs while publishing or processing a simulation step. Ambiguous
+lossy interface names return Unsupported. Other platforms currently recognize
+only the configured interface and loopback; full topology qualification remains
+pending. Heartbeats are 1000ms;
 peers expire after 3000ms. ADVERTISE/SUBSCRIBE/UNADVERTISE/HEARTBEAT/BYE are
 implemented. Delayed subscribers elicit advertisement responses. Rust subscribers
 register with NEW_CONNECTION: their process/node UUID replaces the advertised
@@ -85,7 +93,8 @@ pending reply senders so blocked callers receive Shutdown.
 # Remaining retained scope
 
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
-HOST scope across multiple hosts; process-wide multi-node discovery identity;
+HOST advertisement controls and actual multi-host qualification; process-wide
+multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
 IPv6 and all-interface routing; automatic interface selection, exceptional NSS
 fallback and Windows default identity; topic throttling and

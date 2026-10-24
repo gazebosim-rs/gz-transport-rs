@@ -44,11 +44,13 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::unique_lock<std::mutex> lock(state->mutex);
     if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->received;})) return 5;
-  } else if (mode == "serve") {
+  } else if (mode == "serve" || mode == "serve-host") {
     std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> callback = [value](const auto &request,auto &response) {
       response.set_data(request.data()+value); return true;
     };
-    if (!node.Advertise(topic,callback)) return 6;
+    gz::transport::AdvertiseServiceOptions options;
+    if (mode == "serve-host") options.SetScope(gz::transport::Scope_t::HOST);
+    if (!node.Advertise(topic,callback,options)) return 6;
     std::cout << "READY" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(8));
   } else if (mode == "serve-oneway") {

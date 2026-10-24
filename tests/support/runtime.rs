@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // TopicUtils assertion tables: Copyright (C) 2014 Open Source Robotics Foundation.
 use super::*;
+trait TestDiscovery {
+    fn discovered(&mut self, channel: usize, message: Discovery);
+}
+impl TestDiscovery for Worker {
+    fn discovered(&mut self, channel: usize, message: Discovery) {
+        self.discovery(channel, message, self.config.interface.into());
+    }
+}
 
 fn state(capacity: usize) -> (Worker, Receiver<Command>) {
     let config = Config {
@@ -279,19 +287,19 @@ fn discovery_lifecycle_and_capacity() {
     publisher.process_uuid = "remote".into();
     publisher.node_uuid = "remote-node".into();
     let advertise = protocol::advertisement("remote", publisher.clone());
-    worker.discovery(
+    worker.discovered(
         0,
         protocol::advertisement(&worker.process, publisher.clone()),
     );
     assert!(worker.peers.is_empty());
     let mut process = publisher.clone();
     process.scope = Scope::Process.into();
-    worker.discovery(0, protocol::advertisement("remote", process));
+    worker.discovered(0, protocol::advertisement("remote", process));
     assert!(worker.peers.is_empty());
-    worker.discovery(0, advertise.clone());
+    worker.discovered(0, advertise.clone());
     assert_eq!(worker.peers.len(), 1);
-    worker.discovery(0, protocol::discovery("remote", Type::Heartbeat, None));
-    worker.discovery(
+    worker.discovered(0, protocol::discovery("remote", Type::Heartbeat, None));
+    worker.discovered(
         0,
         protocol::discovery(
             "remote",
@@ -300,14 +308,14 @@ fn discovery_lifecycle_and_capacity() {
         ),
     );
     assert!(worker.peers.is_empty());
-    worker.discovery(0, advertise.clone());
-    worker.discovery(0, protocol::discovery("remote", Type::Bye, None));
+    worker.discovered(0, advertise.clone());
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
     assert!(worker.peers.is_empty());
-    worker.discovery(0, advertise);
+    worker.discovered(0, advertise);
     for i in 0..10 {
         let mut p = publisher.clone();
         p.node_uuid = i.to_string();
-        worker.discovery(0, protocol::advertisement("remote", p));
+        worker.discovered(0, protocol::advertisement("remote", p));
     }
     assert_eq!(worker.peers.len(), 2);
     let active = Arc::new(AtomicBool::new(true));
@@ -334,7 +342,7 @@ fn discovery_lifecycle_and_capacity() {
     ));
     for channel in 0..2 {
         for topic in ["/topic", "/service", "/missing"] {
-            worker.discovery(
+            worker.discovered(
                 channel,
                 protocol::discovery(
                     "remote",
@@ -861,7 +869,7 @@ fn typed_discovery_rejects_wrong_publisher_kind_and_unknown_scope() {
     worker.register_subscriber(&service);
     assert!(worker.subscriptions_connected.is_empty());
     service.scope = 500;
-    worker.discovery(1, protocol::advertisement("remote", service));
+    worker.discovered(1, protocol::advertisement("remote", service));
     assert!(worker.peers.is_empty());
 }
 
@@ -960,4 +968,83 @@ fn cancellation_interrupts_malformed_multipart_without_counting_a_wire_error() {
             1000 - consumed
         );
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn native_local_interface_order_flags_deduplication_and_fallback() {
+    fn record(index: Option<u32>, address: &str, multicast: bool, up: bool) -> LocalInterface {
+        LocalInterface {
+            index,
+            address: address.parse().unwrap(),
+            multicast,
+            up,
+        }
+    }
+    assert_eq!(eligible_interfaces(vec![]), vec![Ipv4Addr::LOCALHOST]);
+    let selected = eligible_interfaces(vec![
+        record(None, "192.0.2.1", true, true),
+        record(Some(1), "::1", true, true),
+        record(Some(1), "192.0.2.2", true, true),
+        record(Some(2), "127.0.0.1", true, true),
+        record(Some(3), "192.0.2.3", false, true),
+        record(Some(4), "192.0.2.4", true, false),
+        record(Some(5), "192.0.2.5", true, true),
+        record(Some(6), "192.0.2.5", true, true),
+        record(Some(7), "192.0.2.7", true, true),
+    ]);
+    assert_eq!(
+        selected,
+        vec![
+            "192.0.2.5".parse::<Ipv4Addr>().unwrap(),
+            "192.0.2.7".parse().unwrap()
+        ]
+    );
+    assert!(!local_interfaces().unwrap().is_empty());
+}
+
+#[test]
+fn host_discovery_advertise_and_withdraw_follow_native_source_membership() {
+    let (mut worker, _) = state(10);
+    worker.host_interfaces = vec!["192.0.2.5".parse().unwrap()];
+    let mut publisher = worker.wire_publisher(
+        "/host".into(),
+        PubType::SrvPub(ServicePublisher {
+            socket_id: "server".into(),
+            request_type: "req".into(),
+            response_type: "rep".into(),
+        }),
+    );
+    publisher.process_uuid = "remote".into();
+    publisher.scope = Scope::Host.into();
+    for (source, expected) in [
+        ("203.0.113.8", false),
+        ("::1", false),
+        ("127.0.0.2", true),
+        ("192.0.2.5", true),
+    ] {
+        worker.peers.clear();
+        worker.discovery(
+            1,
+            protocol::advertisement("remote", publisher.clone()),
+            source.parse().unwrap(),
+        );
+        assert_eq!(!worker.peers.is_empty(), expected);
+    }
+    let withdrawal = protocol::discovery(
+        "remote",
+        Type::Unadvertise,
+        Some(DiscContents::Pub(publisher.clone())),
+    );
+    worker.discovery(1, withdrawal.clone(), "203.0.113.8".parse().unwrap());
+    assert_eq!(worker.peers.len(), 1);
+    worker.discovery(1, withdrawal, "127.10.0.8".parse().unwrap());
+    assert!(worker.peers.is_empty());
+    publisher.scope = Scope::All.into();
+    worker.discovery(
+        1,
+        protocol::advertisement("remote", publisher),
+        "203.0.113.8".parse().unwrap(),
+    );
+    assert_eq!(worker.peers.len(), 1);
 }

@@ -405,3 +405,24 @@ fn oneway_local_handoff_bounds_and_matching() {
         Err(Error::Shutdown)
     );
 }
+
+#[test]
+fn native_host_service_accepts_other_loopback_aliases() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let peer_config = Config {
+        interface: "127.0.0.2".parse().unwrap(),
+        ..config
+    };
+    let _peer = Peer::start(&peer_config, "serve-host", "/host_echo", "-host");
+    assert_eq!(
+        node.request(
+            "/host_echo",
+            TYPE,
+            TYPE,
+            data("rust"),
+            Duration::from_secs(5)
+        ),
+        Ok((data("rust-host"), true))
+    );
+}

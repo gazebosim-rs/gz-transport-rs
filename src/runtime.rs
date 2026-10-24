@@ -11,7 +11,7 @@ use gz_msgs::discovery::{
 use socket2::{Domain, Protocol, Socket, Type as SocketType};
 use std::{
     collections::{HashMap, HashSet},
-    net::{Ipv4Addr, SocketAddrV4, UdpSocket},
+    net::{IpAddr, Ipv4Addr, SocketAddrV4, UdpSocket},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -346,6 +346,7 @@ struct ServiceState {
 }
 struct Worker {
     config: Config,
+    host_interfaces: Vec<Ipv4Addr>,
     sender: Sender,
     process: String,
     node: String,
@@ -423,8 +424,73 @@ fn receive(
         }
     }
 }
+#[cfg(unix)]
+struct LocalInterface {
+    index: Option<u32>,
+    address: IpAddr,
+    multicast: bool,
+    up: bool,
+}
+
+#[cfg(unix)]
+fn eligible_interfaces(records: Vec<LocalInterface>) -> Vec<Ipv4Addr> {
+    let mut seen = HashSet::new();
+    let mut addresses = Vec::new();
+    for record in records {
+        let Some(index) = record.index else { continue };
+        // Native deduplicates interface indices before family/flag filtering.
+        if !seen.insert(index) {
+            continue;
+        }
+        if let IpAddr::V4(ip) = record.address
+            && ip != Ipv4Addr::LOCALHOST
+            && record.multicast
+            && record.up
+            && !addresses.contains(&ip)
+        {
+            addresses.push(ip);
+        }
+    }
+    if addresses.is_empty() {
+        addresses.push(Ipv4Addr::LOCALHOST);
+    }
+    addresses
+}
+
+#[cfg(unix)]
+fn local_interfaces() -> Result<Vec<Ipv4Addr>, Error> {
+    use nix::{
+        ifaddrs::getifaddrs,
+        net::if_::{InterfaceFlags, if_nametoindex},
+    };
+    let mut records = Vec::new();
+    for interface in getifaddrs().map_err(|error| Error::Native(error.to_string()))? {
+        let address = interface.address.and_then(|address| {
+            address
+                .as_sockaddr_in()
+                .map(|v4| IpAddr::V4(v4.ip()))
+                .or_else(|| address.as_sockaddr_in6().map(|v6| IpAddr::V6(v6.ip())))
+        });
+        let Some(address) = address else { continue };
+        if interface.interface_name.contains('\u{fffd}') {
+            return Err(Error::Unsupported("ambiguous interface name encoding"));
+        }
+        records.push(LocalInterface {
+            index: if_nametoindex(interface.interface_name.as_str()).ok(),
+            address,
+            multicast: interface.flags.contains(InterfaceFlags::IFF_MULTICAST),
+            up: interface.flags.contains(InterfaceFlags::IFF_UP),
+        });
+    }
+    Ok(eligible_interfaces(records))
+}
+
 impl Worker {
     fn new(config: Config, sender: Sender) -> Result<Self, Error> {
+        #[cfg(unix)]
+        let host_interfaces = local_interfaces()?;
+        #[cfg(not(unix))]
+        let host_interfaces = vec![config.interface];
         let context = zmq::Context::new();
         let publisher = socket(&context, zmq::PUB, &config)?;
         let subscriber = socket(&context, zmq::SUB, &config)?;
@@ -446,6 +512,7 @@ impl Worker {
         ];
         Ok(Self {
             config,
+            host_interfaces,
             sender,
             process: Uuid::new_v4().to_string(),
             node: Uuid::new_v4().to_string(),
@@ -701,7 +768,7 @@ impl Worker {
             }
         }
     }
-    fn discovery(&mut self, channel: usize, message: Discovery) {
+    fn discovery(&mut self, channel: usize, message: Discovery, source: IpAddr) {
         if message.process_uuid == self.process {
             return;
         }
@@ -717,11 +784,19 @@ impl Worker {
                 }
             }
         }
+        let local = matches!(source, IpAddr::V4(ip) if ip.is_loopback() || self.host_interfaces.contains(&ip));
+        if matches!(&message.disc_contents, Some(DiscContents::Pub(p))
+        if matches!(kind, Type::Advertise | Type::Unadvertise)
+            && match Scope::try_from(p.scope).unwrap_or(Scope::Process) {
+                Scope::Process => true,
+                Scope::Host => !local,
+                Scope::All => false,
+            })
+        {
+            return;
+        }
         match message.disc_contents {
             Some(DiscContents::Pub(p)) if kind == Type::Advertise => {
-                if Scope::try_from(p.scope).unwrap_or(Scope::Process) == Scope::Process {
-                    return;
-                }
                 if channel == 0 && matches!(p.pub_type, Some(PubType::MsgPub(_))) {
                     self.register_subscriber(&p);
                 }
@@ -806,9 +881,9 @@ impl Worker {
             for channel in 0..2 {
                 for _ in 0..self.config.capacity {
                     match self.udp[channel].recv_from(&mut buffer) {
-                        Ok((len, _)) => {
+                        Ok((len, source)) => {
                             if let Ok(msg) = protocol::decode(&buffer[..len]) {
-                                self.discovery(channel, msg);
+                                self.discovery(channel, msg, source.ip());
                             } else {
                                 self.sender
                                     .counters
