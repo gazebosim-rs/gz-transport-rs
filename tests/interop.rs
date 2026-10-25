@@ -319,6 +319,43 @@ fn known_topic_info_observes_cpp_subscriber_descriptor_and_withdrawal() {
     }
     publisher.success();
 }
+
+// twoProcsPubSub.cc:twoProcPubSub.TopicInfo assertion provenance:
+// Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_two_process_topic_info() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut publisher = Peer::start(&config, "list-vector3d-publisher", "/foo", "unused");
+    // Native waitForTopic uses a ten-second deadline and 100ms polling.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if node
+            .known_publisher_topics()
+            .unwrap()
+            .iter()
+            .any(|topic| topic == "/foo")
+        {
+            break;
+        }
+        assert!(Instant::now() < deadline, "remote /foo was not discovered");
+        thread::sleep(Duration::from_millis(100));
+    }
+    assert_eq!(node.known_topic_info("@"), Err(Error::InvalidName));
+    let absent = node.known_topic_info("/bogus").unwrap();
+    assert_eq!(absent.publishers.len(), 0);
+    let found = node.known_topic_info("/foo").unwrap();
+    assert_eq!(found.publishers.len(), 1);
+    assert_eq!(found.publishers[0], "gz.msgs.Vector3d");
+    publisher
+        .0
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"QUIT\n")
+        .unwrap();
+    publisher.success();
+}
 #[test]
 fn cpp_publisher_rust_subscriber() {
     let config = config();

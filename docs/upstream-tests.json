@@ -886,10 +886,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicInfo",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.TopicInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_process_topic_info"
+      ],
+      "review": "docs/reviews/two-process-topic-info.json",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -898,8 +900,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned two-process Vector3d publisher discovery wait up to10s/poll100ms, invalid @ rejection, valid absent /bogus zero publishers and /foo one exact gz.msgs.Vector3d publisher map to Rust/C++ peer. C++ mutable output-vector state after invalid query and full MessagePublisher metadata remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-topic-info.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.AllTopicInfo",

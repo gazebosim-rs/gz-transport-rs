@@ -1,0 +1,46 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T15:04:40.761178+00:00",
+  "base": "47c4cc0565a0db2650baca5b1e7913cf1ec7f393",
+  "tree": "0f82376227f950953dda139e276e99f957907344",
+  "diff_sha256": "1a18e81ad7656050c967378e27a87cb6b8b4650a58ac32e416f37b0e657e4f8c",
+  "files": {
+    "docs/NET-02-two-process-topic-info.md": "82020625cb018bfbcf3846ba67df94e7163e6fc8c0243755a514dc4797626129",
+    "docs/TESTING.md": "fb0ea804086d7a1b194057e10a272f16342527380af5289d75f75c6a569108bc",
+    "docs/upstream-tests.json": "9663725b02b77a6645188b92610291be83c858aa46d1bea4b90ce66153409454",
+    "scripts/verify.py": "be8d5aba75be8ce339632c8bbdb6db41fe0a61ddf58a3c7d1227d788f2b5c57a",
+    "tests/cpp_peer.cc": "40e2e1ef0e1050fa7654c4ef00088acac0365cbbd342b024cc81aa1806603e81",
+    "tests/interop.rs": "1ae18efef69cbc3be09c6fe99d60d43faa45f46d9ee309dd0eb57fe46c68a3e5"
+  },
+  "scope": "Test/evidence-only partial port of pinned twoProcPubSub.TopicInfo: a real C++ Vector3d publisher on /foo, original up-to-10s discovery wait with 100ms polling, invalid @ rejection, valid absent /bogus with zero publishers, present /foo with exactly one gz.msgs.Vector3d publisher. Production src/API bytes unchanged.",
+  "native_reference": {
+    "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+    "source": "test/integration/twoProcsPubSub.cc:456-482",
+    "source_sha256": "9ca097a1a5231d67ffb9e0885a232204ef287801703d5b4b658dc0a17b882060",
+    "binary_sha256": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319",
+    "xml_sha256": "156f65d33212349b944ff1c642b6be52346e370dc8c8199d0f63f9c2e65a0150",
+    "log_sha256": "5e93ec747746f015f35aa34deeb20e7305a87b5bd37cf3432f8e49297e00d271",
+    "result": "Original exact test1/0/no skips; pinned source and WaitHelpers.hh/cc confirm 10s default and 100ms polling."
+  },
+  "independent_replay": {
+    "source": "Exact six-file tree/diff/hashes and no unstaged drift verified, raw Git archive used with exclusive Cargo target; no production source delta.",
+    "cpp_peer": "Private archived tests/cpp_peer.cc compiled with pinned installed gz-transport/gz-msgs libraries; binary SHA256 439caf16133367d721a9a4dde06c60fbb2c57ee2dccedcf5bda0d7d220f39e6c.",
+    "selected": "original_two_process_topic_info passed1/0 in private Rust/C++ replay with real network interfaces.",
+    "negative": "Separate private raw source and target changed only new C++ peer Vector3d advertisement to StringMsg; selected original port failed exact descriptor assertion, StringMsg vs Vector3d; reviewer log SHA256 ee92358d466efc69a8e7980425c27666fc2adc9287edb2150a22ca38a09715ab.",
+    "author_negative": "Author retained exact wrong-descriptor log SHA256 c3ad9fd267285b57d59346596ba709ba387c64260666ae0e0a0413dba0c5ba5e and one-line source diff under artifacts/two-process-topic-info-scope."
+  },
+  "gates": {
+    "author_exact_staged_log_sha256": "588bfa421d91f69818cda3776506d6304d9aa8fda04426362bd53a4bfc017dc9",
+    "status": "EXIT0; 154 Rust,22 tooling, strict 1814/1838 lines2750/2833 regions, zero new production lines; pinned native original and real C++ peer",
+    "ledger": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicInfo remains partial; exact original added to mandatory native gate without removing prior cases."
+  },
+  "findings": [],
+  "limits": [
+    "Rust Result API does not expose mutable output vector state after invalid query, so original zero-publisher-vector assertion at that point is unqualified.",
+    "Full native MessagePublisher metadata, process-global Node sharing, and timing beyond original bounded wait are unqualified.",
+    "Private reviewer ran focused original Rust/C++ port and separate negative control; author exact staged gate covers full strict suite.",
+    "Final metadata binding, normal hook, publication and hosted CI remain required."
+  ]
+}

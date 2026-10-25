@@ -210,3 +210,12 @@ and subscriber withdrawal. See [topic information scope](NET-02-topic-info.md).
 The [independent receipt](reviews/topic-info.json) approved this partial
 mapping. Native process-global endpoint ownership and full TopicInfo metadata
 remain open.
+
+The retained two-process `twoProcPubSub.TopicInfo` original additionally runs
+in the pinned native gate. A real C++ Vector3d advertiser and Rust assertion
+port preserve its discovery wait, invalid `@`, absent `/bogus`, and exact one
+`gz.msgs.Vector3d` publisher observations. See the
+[two-process topic information scope](NET-02-two-process-topic-info.md).
+The [independent receipt](reviews/two-process-topic-info.json) approved the
+bounded partial mapping. The C++ output-vector state after a failed query
+remains unqualified.
