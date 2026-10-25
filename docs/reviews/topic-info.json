@@ -1,0 +1,49 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T14:42:20.149360+00:00",
+  "base": "f9932d09a9e66f71e045b34365eeddd14a69e828",
+  "tree": "c82367ca2e8ef0651dcead822c9f7f916774021e",
+  "diff_sha256": "9c2e5ee7260138070802004ac1cdae2506c27e0fe5237b92cd65d343849ba2ac",
+  "files": {
+    "README.md": "d42a3bca9ddd4a62b2398b8b89f97fc480819f8f2a3c35bfa6fb92282bc09609",
+    "docs/NET-02-topic-info.md": "0a1971d833436be7ae50a3cae88e3804f2a574ef6fa235713477d609b9805a19",
+    "docs/TESTING.md": "90b99eaadc594a661bd66eeb11f293ad7dbead7df356fce708f90b8127bf0b66",
+    "docs/upstream-tests.json": "611d91b0e2645bfdb1fe18b67018cc64be8a01ade303dbccdbd2e821702bef27",
+    "scripts/verify.py": "f5c024fe5e611fd629e2547831626a57adc0a761a79fa4c3a451716cc4bb0b85",
+    "src/lib.rs": "96a7786e4d3207ff66b1d02baaf8407ddb90db4f9454880e158b2971d3f89b11",
+    "src/runtime.rs": "997fbac11e90ee2c0fbca874fd56b36cf0d1b1b02595b349985b4ca0ef39ae10",
+    "tests/interop.rs": "22b145f66d33b325ad35c7440e660bc698ef9a6101c6c7f8d3cf8f96a1651592",
+    "tests/support/runtime.rs": "923cad1b95753ee0ec7fa9ed54a027bf6f8c1108738279518dd71f28bf8328eb"
+  },
+  "scope": "Additive known_topic_info returns sorted descriptor-name vectors from one bounded worker snapshot, with local and fresh discovered message publishers plus local and fresh remote subscriber interests. Query qualifies the original topic without remap; registration/subscription remap remains at admission. Distinct endpoint identities can repeat type names; same-node duplicate subscriptions with identical type collapse.",
+  "native_reference": {
+    "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+    "original_case": "NodeTest.TopicInfoSubscriberOnly",
+    "binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "xml_sha256": "0a4dfa69e0f24a56a00d6e9e7e583fed4a2127bdbf14b6afcb6c76ee2d950d46",
+    "log_sha256": "098554a49122abc64de7bf04a2b2c0367a4cc6f628c65cc6fca6e3d6cdba8b14",
+    "result": "1 test, 0 failures, 0 skips; source Node_TEST.cc:2677 retains successful Subscribe and TopicInfo, zero publishers, one subscriber, exact gz.msgs.Int32 descriptor.",
+    "ancillary_duplicate_probe_provenance_sha256": "245a4dc067babf7125ceb2ffae678c6a74e2efb0b814a6b263f0fb0eb3afa6e4",
+    "ancillary_duplicate_probe": "Source/binary/output and pinned run-library hashes in provenance; reviewer independently replayed with isolated partition and observed 0 publishers, 2 subscribers, StringMsg and Int32. This is not an original gtest."
+  },
+  "independent_replay": {
+    "source": "Verified exact nine-file staged tree/diff/hashes and no unstaged diff, then used private raw Git archive with exclusive Cargo target.",
+    "cpp_peer": "Built from archived tests/cpp_peer.cc against pinned installed gz-transport; ldd resolves pinned gz-transport and gz-msgs libraries.",
+    "rust": "Private exact original port 1/0; two extra remap/multiplicity and real C++ endpoint tests 2/0; remote identity/freshness/END worker test 1/0. An initial --exact filter selected zero worker tests and was not counted; corrected filter selected one.",
+    "negative": "Separate private source/target disabling local subscriber collection fails exact original one-subscriber assertion with 0 vs 1; log SHA256 fd4ecf5eee34bdb4be1f64eec574a23a2f91d20ef2f4d7c60b4939e3eaa3d83f"
+  },
+  "gates": {
+    "author_exact_staged_log_sha256": "09da8fd1cae72ab7eaa957441e9e554cb3c3ca12158c750773d076d1219eeaad",
+    "status": "EXIT0; 153 Rust checks, 22 tooling checks, pinned originals, C++ peer, strict 1814/1838 lines, 2749/2833 regions, 61/61 changed executable lines",
+    "ledger": "NodeTest.TopicInfoSubscriberOnly remains partial; original test added to mandatory pinned native gate and no other original removed."
+  },
+  "findings": [],
+  "limits": [
+    "Descriptor-name projection omits native MessagePublisher address, control, options and process-global shared-node registry.",
+    "Remote discovery is eventual and the query does not wait for SUBSCRIBERS_REP; no native latency or complete TopicInfo/AllTopicInfo equivalence claim.",
+    "Private reviewer replay was four targeted Rust tests plus ancillary native duplicate probe; author exact staged gate covers full strict suite.",
+    "Final metadata binding, normal commit hook, public publication and hosted CI remain required."
+  ]
+}

@@ -200,3 +200,13 @@ eventual remote subscriber discovery and disappearance. See
 [subscriber-list scope](NET-02-subscriber-lists.md) and
 [independent receipt](reviews/subscriber-lists.json). Full original TopicList
 equivalence remains pending.
+
+The bounded topic information descriptor snapshot requires unchanged native
+NodeTest.TopicInfoSubscriberOnly in every gate. Its Rust assertion port checks
+query success, zero publishers, one subscriber and exact `gz.msgs.Int32` type.
+Additional controls cover original-name remap lookup, duplicate subscriber
+endpoint identity, fresh remote C++ subscriber and publisher descriptors,
+and subscriber withdrawal. See [topic information scope](NET-02-topic-info.md).
+The [independent receipt](reviews/topic-info.json) approved this partial
+mapping. Native process-global endpoint ownership and full TopicInfo metadata
+remain open.

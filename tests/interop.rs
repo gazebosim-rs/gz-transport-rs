@@ -242,6 +242,83 @@ fn original_topic_list_subscriber_only() {
     node.unsubscribe("/foo").unwrap();
     assert!(node.known_topics().unwrap().is_empty());
 }
+
+// Node_TEST.cc:NodeTest.TopicInfoSubscriberOnly, including every assertion.
+// Original assertion provenance: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_topic_info_subscriber_only() {
+    let node = Node::new(config()).unwrap();
+    let _subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let info = node.known_topic_info("/foo").unwrap();
+    assert!(info.publishers.is_empty());
+    assert_eq!(info.subscribers.len(), 1);
+    assert_eq!(info.subscribers[0], "gz.msgs.Int32");
+}
+
+#[test]
+fn known_topic_info_uses_original_query_and_endpoint_multiplicity() {
+    let mut config = config();
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let _first = node.subscribe("/foo", TYPE).unwrap();
+    let _duplicate = node.subscribe("/foo", TYPE).unwrap();
+    let _other_type = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let _wildcard = node.subscribe("/foo", "").unwrap();
+    let _publisher = node.advertise("/foo", TYPE).unwrap();
+    let unmapped = node.known_topic_info("/foo").unwrap();
+    assert!(unmapped.publishers.is_empty());
+    assert!(unmapped.subscribers.is_empty());
+    let mapped = node.known_topic_info("/bar").unwrap();
+    assert_eq!(mapped.publishers, [TYPE]);
+    assert_eq!(
+        mapped.subscribers,
+        ["google.protobuf.Message", "gz.msgs.Int32", TYPE]
+    );
+    assert_eq!(
+        node.known_topic_info("invalid topic"),
+        Err(Error::InvalidName)
+    );
+    node.cancel();
+    assert_eq!(node.known_topic_info("/bar"), Err(Error::Shutdown));
+}
+
+#[test]
+fn known_topic_info_observes_cpp_subscriber_descriptor_and_withdrawal() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut native = Peer::start(&config, "list-subscriber", "/remote-info", "unused");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let info = node.known_topic_info("/remote-info").unwrap();
+        if info.publishers.is_empty() && info.subscribers == [TYPE] {
+            break;
+        }
+        assert!(Instant::now() < deadline, "info={info:?}");
+        thread::sleep(Duration::from_millis(20));
+    }
+    native.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+    native.success();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let info = node.known_topic_info("/remote-info").unwrap();
+        if info.publishers.is_empty() && info.subscribers.is_empty() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "info={info:?}");
+        thread::sleep(Duration::from_millis(20));
+    }
+    let mut publisher = Peer::start(&config, "publish", "/remote-info", "wire");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let info = node.known_topic_info("/remote-info").unwrap();
+        if info.publishers == [TYPE] && info.subscribers.is_empty() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "info={info:?}");
+        thread::sleep(Duration::from_millis(20));
+    }
+    publisher.success();
+}
 #[test]
 fn cpp_publisher_rust_subscriber() {
     let config = config();

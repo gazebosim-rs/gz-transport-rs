@@ -89,6 +89,8 @@ fn subscriber_interest_replies_refresh_and_retire_by_identity() {
         process: "remote".into(),
         node: "node".into(),
         topic: name.clone(),
+        address: worker.address.clone(),
+        type_name: "gz.msgs.StringMsg".into(),
     };
     *worker.subscriber_interests.get_mut(&key).unwrap() = Instant::now() - Duration::from_secs(2);
     worker.discovered(0, first);
@@ -153,6 +155,53 @@ fn subscriber_interest_replies_refresh_and_retire_by_identity() {
     assert_eq!(worker.subscriber_interests.len(), 1);
     worker.discovered(0, protocol::discovery("second", Type::Bye, None));
     assert!(worker.known_topic_names().is_empty());
+}
+
+#[test]
+fn topic_info_remote_types_keep_endpoint_identity_and_end_all_variants() {
+    let (mut worker, _) = state(5);
+    let name = qualified_name(&worker.config.partition, "", "/types").unwrap();
+    let reply = |worker: &Worker, node: &str, type_name: &str| {
+        let mut publisher = worker.subscriber_publisher(&name, type_name);
+        publisher.process_uuid = "remote".into();
+        publisher.node_uuid = node.into();
+        protocol::discovery(
+            "remote",
+            Type::SubscribersRep,
+            Some(DiscContents::Pub(publisher)),
+        )
+    };
+    worker.discovered(0, reply(&worker, "first", "gz.msgs.Int32"));
+    worker.discovered(0, reply(&worker, "first", "gz.msgs.StringMsg"));
+    worker.discovered(0, reply(&worker, "second", "gz.msgs.Int32"));
+    assert_eq!(
+        worker.topic_endpoint_types(&name).subscribers,
+        ["gz.msgs.Int32", "gz.msgs.Int32", "gz.msgs.StringMsg"]
+    );
+    let first = SubscriberInterestKey {
+        process: "remote".into(),
+        node: "first".into(),
+        topic: name.clone(),
+        address: worker.address.clone(),
+        type_name: "gz.msgs.Int32".into(),
+    };
+    *worker.subscriber_interests.get_mut(&first).unwrap() = Instant::now() - Duration::from_secs(4);
+    assert_eq!(
+        worker.topic_endpoint_types(&name).subscribers,
+        ["gz.msgs.Int32", "gz.msgs.StringMsg"]
+    );
+    let mut end = worker.subscriber_publisher(&name, "");
+    end.process_uuid = "remote".into();
+    end.node_uuid = "first".into();
+    worker.discovered(
+        0,
+        protocol::discovery("remote", Type::EndConnection, Some(DiscContents::Pub(end))),
+    );
+    assert_eq!(
+        worker.topic_endpoint_types(&name).subscribers,
+        ["gz.msgs.Int32"]
+    );
+    assert_eq!(worker.subscriber_interests.len(), 1);
 }
 
 #[test]

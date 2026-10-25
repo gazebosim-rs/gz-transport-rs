@@ -4901,10 +4901,12 @@
       "id": "UNIT_Node_TEST:NodeTest.TopicInfoSubscriberOnly",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicInfoSubscriberOnly",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_topic_info_subscriber_only"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-25; exact nine-file source/API/assertion review approved on staged tree c82367ca; private original, remap/C++ and worker checks4/0 plus local-subscriber removal mutant failure; receipt docs/reviews/topic-info.json. Partial: full MessagePublisher metadata, process-global sharing and latency unqualified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4913,8 +4915,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original TopicInfo success, zero publishers, one subscriber and exact gz.msgs.Int32 descriptor preserved in Rust. Bounded worker descriptor snapshot and native query evidence; process-global shared-node ownership, full MessagePublisher metadata, immediate remote discovery and latency remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-topic-info.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AllTopicInfo",

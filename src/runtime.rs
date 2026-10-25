@@ -122,6 +122,12 @@ pub struct ServiceTypes {
     pub request_type: String,
     pub response_type: String,
 }
+/// Descriptor names from one bounded topic endpoint snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicEndpointTypes {
+    pub publishers: Vec<String>,
+    pub subscribers: Vec<String>,
+}
 /// Provider selection outcomes, separate from queue/runtime failures in [`Error`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceTypeResolution {
@@ -411,6 +417,16 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Snapshot message descriptor names for known endpoints on an original topic.
+    /// Equal names from distinct endpoints remain separate. The worker requests
+    /// subscriber interests without waiting for remote replies.
+    pub fn known_topic_info(&self, topic: &str) -> Result<TopicEndpointTypes, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::KnownTopicInfo(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// This Node's live subscription interests, including topics with no publisher.
     /// Duplicate receivers share one sorted entry; dropping the last removes it.
     pub fn subscribed_topics(&self) -> Result<Vec<String>, Error> {
@@ -655,6 +671,7 @@ enum Command {
     Advertise(String, String, Arc<AtomicBool>),
     KnownPublisherTopics(SyncSender<Vec<String>>),
     KnownTopics(SyncSender<Vec<String>>),
+    KnownTopicInfo(String, SyncSender<TopicEndpointTypes>),
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
     Unsubscribe(String),
@@ -701,6 +718,8 @@ struct SubscriberInterestKey {
     process: String,
     node: String,
     topic: String,
+    address: String,
+    type_name: String,
 }
 struct Worker {
     config: Config,
@@ -1036,6 +1055,54 @@ impl Worker {
         names.dedup();
         names
     }
+    fn topic_endpoint_types(&self, topic: &str) -> TopicEndpointTypes {
+        let mut publishers = Vec::new();
+        for (publisher, active) in &self.advertisements {
+            if active.load(Ordering::Acquire)
+                && publisher.topic == topic
+                && let Some(PubType::MsgPub(info)) = &publisher.pub_type
+            {
+                publishers.push(info.msg_type.clone());
+            }
+        }
+        for (key, (publisher, stamp)) in &self.peers {
+            if key.channel == 0
+                && stamp.elapsed() < Duration::from_secs(3)
+                && publisher.topic == topic
+                && let Some(PubType::MsgPub(info)) = &publisher.pub_type
+            {
+                publishers.push(info.msg_type.clone());
+            }
+        }
+        let mut subscribers = Vec::new();
+        let mut local_types = HashSet::new();
+        for subscriber in &self.subscriptions {
+            if subscriber.active.load(Ordering::Acquire) && subscriber.topic == topic {
+                let type_name = if subscriber.type_name.is_empty() {
+                    "google.protobuf.Message"
+                } else {
+                    &subscriber.type_name
+                };
+                if local_types.insert(type_name) {
+                    subscribers.push(type_name.to_owned());
+                }
+            }
+        }
+        subscribers.extend(
+            self.subscriber_interests
+                .iter()
+                .filter(|(key, stamp)| {
+                    key.topic == topic && stamp.elapsed() < Duration::from_secs(3)
+                })
+                .map(|(key, _)| key.type_name.clone()),
+        );
+        publishers.sort();
+        subscribers.sort();
+        TopicEndpointTypes {
+            publishers,
+            subscribers,
+        }
+    }
     fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
         let local = self.services.iter().filter_map(|service| {
             service
@@ -1098,6 +1165,13 @@ impl Worker {
                     protocol::discovery(&self.process, Type::SubscribersReq, None),
                 );
                 let _ = reply.try_send(self.known_topic_names());
+            }
+            Command::KnownTopicInfo(topic, reply) => {
+                self.announce(
+                    0,
+                    protocol::discovery(&self.process, Type::SubscribersReq, None),
+                );
+                let _ = reply.try_send(self.topic_endpoint_types(&topic));
             }
             Command::Publish(topic, type_name, data) => {
                 self.sender.counters.sent(self.publisher.send_multipart(
@@ -1392,8 +1466,10 @@ impl Worker {
         }
         match message.disc_contents {
             Some(DiscContents::Pub(p)) if channel == 0 && kind == Type::SubscribersRep => {
-                if !matches!(p.pub_type, Some(PubType::MsgPub(_)))
-                    || p.process_uuid.is_empty()
+                let Some(PubType::MsgPub(info)) = p.pub_type else {
+                    return;
+                };
+                if p.process_uuid.is_empty()
                     || p.node_uuid.is_empty()
                     || self.known_topic_path(&p.topic).is_none()
                 {
@@ -1405,6 +1481,8 @@ impl Worker {
                     process: p.process_uuid,
                     node: p.node_uuid,
                     topic: p.topic,
+                    address: p.address,
+                    type_name: info.msg_type,
                 };
                 if let Some(stamp) = self.subscriber_interests.get_mut(&key) {
                     *stamp = Instant::now();

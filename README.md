@@ -18,6 +18,8 @@ already-discovered remote advertisements in this partition; see the
 [bounded discovered listing contract](docs/NET-02-known-lists.md).
 `known_topics()` additionally snapshots local and eventually discovered remote
 subscriber-only interests; see the [bounded subscriber contract](docs/NET-02-subscriber-lists.md).
+`known_topic_info()` returns known publisher and subscriber descriptor names for
+one original topic path; see the [bounded topic information contract](docs/NET-02-topic-info.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.
