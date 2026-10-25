@@ -8,7 +8,7 @@ description = "Interoperable Gazebo transport with explicit IO ownership"
 
 [dependencies]
 zmq = "=0.10.0"
-socket2 = { version = "=0.6.2", features = ["all"] }
+socket2 = { version = "=0.6.5", features = ["all"] }
 uuid = { version = "=1.23.1", features = ["v4"] }
 gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "e2001a3bc5b54cb15ea1cc16deaefdf14719b2df" }
 

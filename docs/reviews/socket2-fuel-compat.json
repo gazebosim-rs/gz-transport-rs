@@ -1,0 +1,37 @@
+{
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T06:28:06.930531+00:00",
+  "decision": "approved for the bounded Linux dependency-integration correction",
+  "base": "befd9a7b417de265cb1dc2a292240e3be4ba248b",
+  "diff_sha256": "1c4627732b0af132ffcb7db1c9ed1b5fe013e4e2f4883d7145cf14b6cd522cf3",
+  "files": {
+    "Cargo.toml": "e24e6e779ee3ecfd244f5187073ed6577b12db0a0062cdef80e591cfeed13d44",
+    "Cargo.lock": "2bab4daa24f72b00c5c4bed6c94fe4457a7d85e5114f44d336931e77a11d4717"
+  },
+  "independent_checks": [
+    "Raw-exported and Git-blob/type/mode/path-set verified the public base, then applied exactly the two reviewed Cargo overrides; all 70 source SHA bindings remain unchanged. Builds used reviewer-owned source and fresh private targets.",
+    "Inspected socket2 0.6.2/0.6.5 cached crate manifests and archive checksums. MSRV 1.70 and all feature are unchanged. Used UDP wrapper bodies and Linux socket/bind/nonblocking/setsockopt implementations are unchanged; unrelated platform additions do not alter the inspected Linux paths.",
+    "Parsed lockfile package identities and dependency edges. Only socket2 is upgraded; its unused Windows 0.60/targets chain is removed. Existing Windows 0.61 package checksums/edges remain semantically unchanged; unambiguous dependency spelling changes do not repin those consumers.",
+    "Independent cargo check --locked --offline passes for public Fuel 3747086ed13b59d2f7701eedc11329ebd7c9df3a, exact Tokio 1.53.3 and msgs e2001a3bc5b54cb15ea1cc16deaefdf14719b2df. Fresh metadata proves exactly one socket2 0.6.5, one msgs package and the intended public revisions.",
+    "Compiled a fresh C++ peer from the verified source. All 116 Rust checks pass under the repository prescribed --test-threads=1 policy: 57 library, 2 process, 43 real peer/runtime interoperability and 14 service assertions. This includes all four native pub/sub/service directions; no source, assertion or tolerance was edited."
+  ],
+  "preserved_failures": [
+    "Initial reviewer invocations overwrote ambient shared-library paths and lost the ROS libzenohc loader path; native diagnosis identified the setup failure. The corrected invocation preserves prefix plus ambient paths.",
+    "An extra default-parallel test invocation, outside the verifier prescribed serial network policy, failed the shared-unicast malformed-discovery fixture and one scope deadline. Those logs remain retained. The exact prescribed serial replay passes all 116; no default-parallel qualification is claimed."
+  ],
+  "author_gate": {
+    "rust_tests": 116,
+    "tool_tests": 21,
+    "lines": [
+      1528,
+      1550
+    ],
+    "regions": [
+      2323,
+      2389
+    ],
+    "production_source_delta": 0,
+    "qualification": "Reported author full strict/native gate; independent full coverage/tooling/native-original baseline rerun is not claimed."
+  },
+  "limits": "Linux x86_64 dependency integration only. Windows graph pruning is inspected, not a Windows execution qualification. No Fuel/source/protocol/ledger/exclusion changes or original retirements. Exact final integration/metadata binding, normal mandatory staged hook and hosted qualification remain required."
+}
