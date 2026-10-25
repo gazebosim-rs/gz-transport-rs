@@ -254,7 +254,7 @@ def verify(profile):
     run([str(reference / 'build/bin/INTEGRATION_twoProcsPubSub'), '--gtest_filter=twoProcPubSub.TopicList:twoProcPubSub.TopicListSubscriberOnly:twoProcPubSub.TopicListRemovesUnsubscribed:twoProcPubSub.TopicInfo:twoProcPubSub.AllTopicInfo'], env=env)
     for suffix in ('', 'WithoutInput', 'WithoutOutput'):
         run([str(reference / ('build/bin/INTEGRATION_twoProcsSrvCall' + suffix)),
-             '--gtest_filter=twoProcSrvCall' + suffix + '.ServiceInfo'], env=env)
+             '--gtest_filter=twoProcSrvCall' + suffix + '.ServiceInfo:twoProcSrvCall' + suffix + '.ServiceList'], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
     shutil.rmtree(profiles, ignore_errors=True)

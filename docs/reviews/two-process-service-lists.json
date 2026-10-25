@@ -1,0 +1,49 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "cd8d76a2fa1858adc0d7e87335a0c74424665ff6",
+  "tree": "6c266db7da04c97fe06712dc4ed2b37625afb996",
+  "diff_sha256": "a4056062c403d4303a515fe3397554f567588c8b5a6cbf9975239ea8a5ff22d5",
+  "files": {
+    "docs/NET-02-two-process-service-lists.md": "1c617a357e9ca7a24e010288767c4604e9246890fe4811e077d73f094a9d7016",
+    "docs/TESTING.md": "9ebf3c76538393dcd1a773de42db27c574d10dcbcf1e8039a430d272cfec8542",
+    "docs/upstream-tests.json": "9136d89b208b2379207005df836613d4c34bab20c2bc5f8700a9dca4bce6a490",
+    "scripts/verify.py": "c4cb4405cb68cf95531658e0ca3c880b6a5f0a80ebfdba4d589b2051ca8aef12",
+    "tests/interop.rs": "58e7257ae38a36a212c8b278d9bef4fef30e9cdc00a4afcca7fd2affa9c94b0e"
+  },
+  "proposal_sha256": "c177523203b7e6d603788585364dcaa6da2dac111ccbeffad8fbec5137782d49",
+  "native_source": {
+    "test/integration/twoProcsSrvCall.cc": "c91a8488d433c30e6130c4cdcfdca52cafed4a3146b3df7cc5c4f612f2e63ddd",
+    "test/integration/twoProcsSrvCallWithoutInput.cc": "1349148fb5a374b8da0d9f5b7df49113ca27b72708ff531312333b8bbaf0e29f",
+    "test/integration/twoProcsSrvCallWithoutOutput.cc": "af5c6e4d37adfafb9ca68cff6f09452cf93964bf78c7b47b3062f1504dbbe5cf",
+    "src/WaitHelpers.cc": "192e8fa72d3d5127d8e28c0679d76e6678a3e4a7454894683ae4bfee304e6f54",
+    "include/gz/transport/WaitHelpers.hh": "5b021b7c26b9ac2cfc5c05b6bbc1042e0dde2ed66f5b5567119f5446b09861bd"
+  },
+  "native_binary": {
+    "build/bin/INTEGRATION_twoProcsSrvCall": "162f9b0ff1edbc69a48cee0be0f9ac25af80585cc93bed9bfde10019e54a6189",
+    "build/bin/INTEGRATION_twoProcsSrvCallWithoutInput": "b712b8c18775798bcfbfca84cd3fa3827b2786f8c72b971962b554bb63a3618f",
+    "build/bin/INTEGRATION_twoProcsSrvCallWithoutOutput": "0be9728ca618f019e37f1df97fd07540a4957e3c9ba0b5332388fc9f7d17fbbe"
+  },
+  "cpp_peer_source_sha256": "05bb43f71cad673c8ede90fb6b5d841552932e4e30e339b9c733560bc44b7a97",
+  "cpp_peer_binary_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+  "reviewer_evidence": {
+    "reviewer-mutant.log": "8cfa2a30792cc6f530a3434f6d9e02289c97d523e418d658b756e9fbd71e2aa8",
+    "reviewer-native-WithoutInput.log": "fe2bf48ccf3a03903368e380b013cff69638b4c1dec16f7d57e0c55b64e17c84",
+    "reviewer-native-WithoutOutput.log": "fff711d649e6ef8ccd95c89fff2fb5bcefda1d5a9cf52035527b8d6caf659eb8",
+    "reviewer-native-ordinary.log": "eea91be1d3dc6d827463de6672176488fd787de17bc55ffc6347f98cfcaaf72b",
+    "reviewer-peer-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reviewer-selected-corrected.log": "1a527824e10f57a6258368eccf211a9f331bfdccc973f5e656040be2b46d2bc6",
+    "reviewer-selected.log": "1b3edae3786746796bd29cd0af6412d891bf47e4e41b0f2f93079d60fd0c3981",
+    "reviewer-mutant.diff": "cff99ea4a83a2c02dfa15962dba8f9ab9baa885917047a8bb1e2ff5139c32f81"
+  },
+  "reviewer_checks": [
+    "Exact five-file raw Git archive and exclusive Cargo target; private C++ peer rebuilt byte-identical to author binary. Selected three two-process Rust ServiceList ports pass 3/0 with matching ordinary, inputless and outputless real native signatures.",
+    "All three pinned C++ ServiceList originals independently replay 1/0/no skip each on immutable source and binary hashes.",
+    "Private source-only old-worker 2ms idle-sleep mutant makes each exact second-call <2ms assertion fail at 2.07-2.08ms; reviewed source restored. First reviewer selected run failed before test setup because LD_LIBRARY_PATH override omitted libzenohc.so; retained and excluded, corrected inherited SDK path passes.",
+    "Original C++ waitForService uses ServiceInfo with 100ms polls and default 10s timeout; Rust uses service_type_signatures then known_services with the same observed single-provider name/count/clear/second-call timing assertions."
+  ],
+  "author_gate_log_sha256": "a9d3e042d0ce3c9d8ed3f3006138dfde63b4f3d1da65185e346c07daf4a1c2c2",
+  "scope": "Three pinned two-process ServiceList originals map to a single discovered remote /foo provider per signature. The selected Rust tests preserve first and second size1/index0 /foo, clear, and integer-truncated native <2ms second-call bound; C++ peer stays alive through an explicit QUIT barrier.",
+  "limits": "Worker snapshot is not a process-global registry; no arbitrary service cardinality, cross-process timing guarantee, handler call, output-vector mutation parity, or complete NET-02 acceptance. Ledger remains partial until metadata review. No production/API/dependency/gate/coverage-exclusion change; normal hook/hosted pending."
+}

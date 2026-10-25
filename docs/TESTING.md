@@ -247,3 +247,13 @@ the handler live through both queries; see the
 [service-list assertion scope](NET-02-service-list-latency.md). Its independent
 [review](reviews/service-list-latency.json) approved the one-Node mapping;
 the ledger remains partial and the final hook and hosted check remain pending.
+
+Three pinned `twoProcSrvCall*.ServiceList` originals each wait for a separate
+Int32/Empty service, require two single-entry `/foo` lists separated by a
+clear, and bound the second call below two milliseconds. Their exact C++
+originals now run in the mandatory gate. The proposed Rust assertion ports
+use the real C++ service peer and the existing discovery and list APIs; see
+the [two-process service-list scope](NET-02-two-process-service-lists.md).
+The independent [review](reviews/two-process-service-lists.json) approved
+the three bounded mappings; the ledger remains partial. Final staged
+verification, normal hook and hosted CI remain pending.

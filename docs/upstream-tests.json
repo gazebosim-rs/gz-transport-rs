@@ -1142,10 +1142,12 @@
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.ServiceList",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.ServiceList",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_proc_service_list"
+      ],
+      "review": "docs/reviews/two-process-service-lists.json",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCall.cc",
@@ -1154,8 +1156,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned two-process Int32-to-Int32 native original and real C++ peer: ServiceInfo discovery wait up to 10s at 100ms polls, first and cleared second size1/index0 /foo list, second-call integer-truncated <2ms. Rust known_services() is a bounded worker snapshot; arbitrary provider cardinality, process-global sharing, handler calls and general latency remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-service-lists.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.ServiceInfo",
@@ -1297,10 +1300,12 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.ServiceList",
       "target": "INTEGRATION_twoProcsSrvCallWithoutInput",
       "case": "twoProcSrvCallWithoutInput.ServiceList",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_proc_service_list_without_input"
+      ],
+      "review": "docs/reviews/two-process-service-lists.json",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutInput.cc",
@@ -1309,8 +1314,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned two-process Empty-to-Int32 native original and real C++ peer: ServiceInfo discovery wait up to 10s at 100ms polls, first and cleared second size1/index0 /foo list, second-call integer-truncated <2ms. Rust known_services() is a bounded worker snapshot; arbitrary provider cardinality, process-global sharing, handler calls and general latency remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-service-lists.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.ServiceInfo",
@@ -1395,10 +1401,12 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutOutput:twoProcSrvCallWithoutOutput.ServiceList",
       "target": "INTEGRATION_twoProcsSrvCallWithoutOutput",
       "case": "twoProcSrvCallWithoutOutput.ServiceList",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_proc_service_list_without_output"
+      ],
+      "review": "docs/reviews/two-process-service-lists.json",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutOutput.cc",
@@ -1407,8 +1415,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned two-process Int32-to-Empty native original and real C++ peer: ServiceInfo discovery wait up to 10s at 100ms polls, first and cleared second size1/index0 /foo list, second-call integer-truncated <2ms. Rust known_services() is a bounded worker snapshot; arbitrary provider cardinality, process-global sharing, handler calls and general latency remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-service-lists.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutOutput:twoProcSrvCallWithoutOutput.ServiceInfo",

@@ -131,6 +131,53 @@ impl Drop for Peer {
         let _ = self.0.wait();
     }
 }
+
+// Original twoProcsSrvCall*.cc assertions: Copyright (C) 2014 Open Source Robotics Foundation.
+// The three twoProcsSrvCall*.ServiceList originals differ only in callback
+// signature. Each peer is a separate native process with the matching types.
+fn original_two_process_service_list(signature: &str) {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut native = Peer::start(&config, "service-info-reference", "/foo", signature);
+
+    // Native waitForService polls ServiceInfo at 100 ms for up to ten seconds.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while node.service_type_signatures("/foo").unwrap().is_empty() {
+        assert!(Instant::now() < deadline, "service /foo was not discovered");
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    let mut services = node.known_services().unwrap();
+    assert_eq!(services.len(), 1);
+    assert_eq!(services[0], "/foo");
+    services.clear();
+
+    let start = Instant::now();
+    services = node.known_services().unwrap();
+    let elapsed = start.elapsed();
+    assert_eq!(services.len(), 1);
+    assert_eq!(services[0], "/foo");
+    assert!(elapsed < Duration::from_millis(2), "elapsed={elapsed:?}");
+
+    native.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+    native.success();
+}
+
+#[test]
+fn original_two_proc_service_list() {
+    original_two_process_service_list("ordinary");
+}
+
+#[test]
+fn original_two_proc_service_list_without_input() {
+    original_two_process_service_list("inputless");
+}
+
+#[test]
+fn original_two_proc_service_list_without_output() {
+    original_two_process_service_list("outputless");
+}
+
 #[test]
 fn known_lists_include_local_and_discovered_cpp_advertisements() {
     let mut config = config();
