@@ -1,0 +1,30 @@
+{
+  "decision": "approved",
+  "repository": "gz-transport-rs",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root",
+  "base": "778642ca49c2813f815d405b276686f463ceeca1",
+  "tree": "dd66856219edca83151933f5eddea6a96005a014",
+  "diff_sha256": "cb8015b46f0d87fc401c745421257750f4bd2f9e9569045129af6e90c46649f7",
+  "files": {
+    "docs/NET-01-name-validation.md": "5e330c329fbeb7db7da2a1c58ea0337c46586e04d1ed23841eab837674700cd9",
+    "docs/TESTING.md": "3f5cd6c0b6121ddaf3beaa9e235cd54685ab101b523fcbae238c4334fd1f5ffc",
+    "docs/upstream-tests.json": "b943fe7676eb432aff8e408c9647b2b646fb98d54a9791346aed51d0c3dae098",
+    "scripts/verify.py": "7a8de67191c826d7223ff713fef5ec9b2dfc85d719a304942cbe709fbc2573b3",
+    "src/names.rs": "4d8582ceda6a97fb9d0bbcf28b337f8286466353615a62868949fa7d49826528",
+    "tests/support/names.rs": "e7276105ee154e1293e6ddd0e5915b388db03a23d9b6c603fccdacd81347752c"
+  },
+  "mappings_approved": [
+    "TopicUtilsTest.testTopics",
+    "TopicUtilsTest.testNamespaces"
+  ],
+  "scope": "All21topic and18namespace original predicates; no publicC++ API facade promised. Topic empty row now invokes actual production qualified_name guard; other topic and namespace rows use production component validator. No existing predicate, tolerance or assertion weakened.",
+  "independent_checks": {
+    "source": "Raw staged tree export validated by Git object hashes; all6 frozen bytes/modes verified before/after. Original41913b9 test tables/source inspected;65,535/65,536-byte bounds and empty topic/namespace distinction preserved.",
+    "rust": "Fresh private source/target names::tests2/0 passed.",
+    "negative": "In separate private source, removal only of production ||topic.is_empty() makes topic port fail with Ok(@@/) versus InvalidName. Exact restored source2/0 pass; mutation/restored logs retained.",
+    "native": "Canonical sibling gz-transport/build/bin/UNIT_TopicUtils_TEST hash7b53b229508c954d66a1b1409ac53a9da9c4497ed5a6962234735d854a095749:2/0. Separate reference snapshot binary046b4cdcca71a991c8fed2cced8471263baa40d8178ac010a0cb21a9e2073b90:2/0, same pinned source41913b9. Distinct binary paths/builds and loader lineage retained; first wrong-path hash check stopped before run and was not treated as candidate failure.",
+    "coverage": "No independent full140/22 or coverage replay claimed. Production body unchanged; added #[cfg(test)] module only. Author normal+staged140/22/strict coverage acknowledged, not substituted for independent subset."
+  },
+  "qualification": "Selected two original mappings approved; broad TopicUtils/NET-01/NET-02 and process-global origin gaps remain open. Final metadata binding, normal required staged hook and hosted qualification remain required."
+}

@@ -152,3 +152,9 @@ the unchanged native RawPubSubSameThreadMessageInfo,
 RawPubRawSubSameThreadMessageInfo and PubRawSubSameThreadMessageInfo originals in
 every gate. Exact versus wildcard receive filters and raw versus typed
 publication remain distinct; see the [raw assertion contract](NET-01-raw-message-info.md).
+
+The reviewed topic/namespace validation assertion ports additionally require
+the unchanged native TopicUtilsTest.testTopics and testNamespaces originals in
+every gate. Their exact 21 and 18 predicates are retained in Rust; see the
+[validation assertion contract](NET-01-name-validation.md) and the
+[review receipt](reviews/name-validation.json). Both are faithful ports.

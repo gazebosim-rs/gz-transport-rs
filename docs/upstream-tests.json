@@ -6881,10 +6881,12 @@
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.testTopics",
       "target": "UNIT_TopicUtils_TEST",
       "case": "TopicUtilsTest.testTopics",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "names::tests::upstream_valid_topic_preserves_original_predicates"
+      ],
+      "review": "docs/reviews/name-validation.json",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6893,17 +6895,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All 21 original IsValidTopic true/false predicates retained, including empty, slash-only, forbidden token and 65535/65536-byte bounds. Test uses the same private predicate plus the nonempty topic rule applied by qualified_name.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-name-validation.md; native originals required by scripts/verify.py"
     },
     {
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.testNamespaces",
       "target": "UNIT_TopicUtils_TEST",
       "case": "TopicUtilsTest.testNamespaces",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "names::tests::upstream_valid_namespace_preserves_original_predicates"
+      ],
+      "review": "docs/reviews/name-validation.json",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6912,8 +6917,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All 18 original IsValidNamespace true/false predicates retained, including empty namespace, slash-only, forbidden token and 65535/65536-byte bounds. Test uses the same private namespace predicate applied by configuration.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-name-validation.md; native originals required by scripts/verify.py"
     },
     {
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.decomposeFullyQualifiedTopic",

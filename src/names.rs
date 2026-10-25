@@ -59,3 +59,7 @@ pub fn qualified_name(partition: &str, namespace: &str, topic: &str) -> Result<S
         Ok(name)
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/support/names.rs"]
+mod tests;
