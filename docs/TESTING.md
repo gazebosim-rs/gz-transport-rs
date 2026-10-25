@@ -184,3 +184,11 @@ one-entry `/bar` result is retained through local publisher inspection; see the
 [topic-list contract](NET-02-topic-list-remap.md) and
 [review receipt](reviews/topic-list-remap.json). Global discovery remains
 unqualified.
+
+The bounded known-list APIs additionally require the unchanged native
+NodeTest.TopicList and NodeTest.ServiceList originals as contextual controls.
+Rust native-peer tests exercise local and discovered remote publisher/service
+records, remapping, partition isolation and eventual disappearance; see
+[known-list scope](NET-02-known-lists.md) and independent
+[review receipt](reviews/known-lists.json). Full original list equivalence is
+pending.

@@ -132,6 +132,68 @@ impl Drop for Peer {
     }
 }
 #[test]
+fn known_lists_include_local_and_discovered_cpp_advertisements() {
+    let mut config = config();
+    let partition = config.partition.clone();
+    config.partition = format!("/{partition}/");
+    config
+        .add_topic_remap("/local-topic", "/mapped-topic")
+        .unwrap();
+    config
+        .add_topic_remap("/local-service", "/mapped-service")
+        .unwrap();
+    let node = Node::new(config.clone()).unwrap();
+    let publisher = node.advertise("/local-topic", TYPE).unwrap();
+    let service = node.serve("/local-service", TYPE, TYPE).unwrap();
+    assert_eq!(node.known_publisher_topics().unwrap(), ["/mapped-topic"]);
+    assert_eq!(node.known_services().unwrap(), ["/mapped-service"]);
+
+    let mut native_config = config.clone();
+    native_config.partition = partition;
+    let mut remote_topic = Peer::start(&native_config, "publish", "/remote-topic", "wire");
+    let mut remote_service = Peer::start(&native_config, "serve", "/remote-service", "wire");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let topics = node.known_publisher_topics().unwrap();
+        let services = node.known_services().unwrap();
+        if topics == ["/mapped-topic", "/remote-topic"]
+            && services == ["/mapped-service", "/remote-service"]
+        {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "topics={topics:?}; services={services:?}"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(node.advertised_topics().unwrap(), ["/mapped-topic"]);
+    assert_eq!(node.advertised_services().unwrap(), ["/mapped-service"]);
+
+    drop(publisher);
+    drop(service);
+    assert_eq!(node.known_publisher_topics().unwrap(), ["/remote-topic"]);
+    assert_eq!(node.known_services().unwrap(), ["/remote-service"]);
+    remote_topic.success();
+    remote_service.success();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let topics = node.known_publisher_topics().unwrap();
+        let services = node.known_services().unwrap();
+        if topics.is_empty() && services.is_empty() {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "topics={topics:?}; services={services:?}"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
+    node.cancel();
+    assert_eq!(node.known_publisher_topics(), Err(Error::Shutdown));
+    assert_eq!(node.known_services(), Err(Error::Shutdown));
+}
+#[test]
 fn cpp_publisher_rust_subscriber() {
     let config = config();
     let node = Node::new(config.clone()).unwrap();

@@ -4837,7 +4837,7 @@
       "id": "UNIT_Node_TEST:NodeTest.TopicList",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicList",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
       "review": "pending",
@@ -4849,8 +4849,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact native original runs in the required gate as a contextual control for the bounded known-list snapshot API; retained global subscriber/process and second-call latency assertions are not yet ported.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-known-lists.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicListRemap",
@@ -4935,7 +4936,7 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceList",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceList",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
       "review": "pending",
@@ -4947,8 +4948,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact native original runs in the required gate as a contextual control for the bounded known-service snapshot API; retained global process and second-call latency assertions are not yet ported.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-known-lists.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceListRemap",

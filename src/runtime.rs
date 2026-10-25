@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
-use crate::{Config, Error, protocol, qualified_name};
+use crate::{Config, Error, decompose_fully_qualified_topic, protocol, qualified_name};
 use gz_msgs::discovery::{
     Discovery,
     discovery::{
@@ -393,6 +393,15 @@ impl Node {
             .map_err(|_| Error::Native("publisher registry poisoned".into()))?;
         Ok(active_topics(topics.iter()))
     }
+    /// Sorted topic paths advertised locally or by discovered message peers.
+    /// This worker snapshot does not include subscriber-only topics or wait for
+    /// remote discovery. `advertised_topics` remains local handle inspection.
+    pub fn known_publisher_topics(&self) -> Result<Vec<String>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::KnownPublisherTopics(tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// This Node's live subscription interests, including topics with no publisher.
     /// Duplicate receivers share one sorted entry; dropping the last removes it.
     pub fn subscribed_topics(&self) -> Result<Vec<String>, Error> {
@@ -471,6 +480,15 @@ impl Node {
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
         Ok(active_topics(services.iter().map(|(t, a)| (t, a))))
+    }
+    /// Sorted service paths advertised locally or by discovered service peers.
+    /// This worker snapshot does not wait for remote discovery.
+    /// `advertised_services` remains local handle inspection.
+    pub fn known_services(&self) -> Result<Vec<String>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::KnownServices(tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
     }
     /// Withdraw all handlers for a local service. Valid absent topics also succeed.
     /// Already admitted requests may still be drained and completed.
@@ -626,10 +644,12 @@ impl Drop for Node {
 
 enum Command {
     Advertise(String, String, Arc<AtomicBool>),
+    KnownPublisherTopics(SyncSender<Vec<String>>),
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
     Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
+    KnownServices(SyncSender<Vec<String>>),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     HasConnections(String, String, SyncSender<bool>),
@@ -930,6 +950,53 @@ impl Worker {
         signatures.dedup();
         signatures
     }
+    fn known_names(&self, channel: usize) -> Vec<String> {
+        // Match the partition spelling produced by qualified_name, including
+        // its leading slash for a nonempty partition.
+        let partition = self.config.partition.trim_matches('/');
+        let partition = if partition.is_empty() {
+            String::new()
+        } else {
+            format!("/{partition}")
+        };
+        let mut names = Vec::new();
+        let mut collect = |publisher: &WirePublisher| {
+            let right_type = matches!(
+                (channel, &publisher.pub_type),
+                (0, Some(PubType::MsgPub(_))) | (1, Some(PubType::SrvPub(_)))
+            );
+            if !right_type {
+                return;
+            }
+            if let Ok((wire_partition, path)) = decompose_fully_qualified_topic(&publisher.topic)
+                && wire_partition == partition
+                && path.starts_with('/')
+            {
+                names.push(path.to_owned());
+            }
+        };
+        if channel == 0 {
+            for (publisher, active) in &self.advertisements {
+                if active.load(Ordering::Acquire) {
+                    collect(publisher);
+                }
+            }
+        } else {
+            for service in &self.services {
+                if service.active.load(Ordering::Acquire) {
+                    collect(&service.publisher);
+                }
+            }
+        }
+        for (key, (publisher, stamp)) in &self.peers {
+            if key.channel == channel && stamp.elapsed() < Duration::from_secs(3) {
+                collect(publisher);
+            }
+        }
+        names.sort();
+        names.dedup();
+        names
+    }
     fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
         let local = self.services.iter().filter_map(|service| {
             service
@@ -982,6 +1049,9 @@ impl Worker {
                 );
                 self.announce(0, protocol::advertisement(&self.process, p.clone()));
                 self.advertisements.push((p, active));
+            }
+            Command::KnownPublisherTopics(reply) => {
+                let _ = reply.try_send(self.known_names(0));
             }
             Command::Publish(topic, type_name, data) => {
                 self.sender.counters.sent(self.publisher.send_multipart(
@@ -1050,6 +1120,9 @@ impl Worker {
                     tx,
                     active,
                 });
+            }
+            Command::KnownServices(reply) => {
+                let _ = reply.try_send(self.known_names(1));
             }
             Command::Unsubscribe(topic) => {
                 // Even an absent or repeated native retirement refreshes END.

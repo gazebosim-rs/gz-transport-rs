@@ -13,6 +13,9 @@ the worker withdraws the old identity before advertising its replacement.
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).
+`known_publisher_topics()` and `known_services()` snapshot active local and
+already-discovered remote advertisements in this partition; see the
+[bounded discovered listing contract](docs/NET-02-known-lists.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.

@@ -7,6 +7,68 @@ trait TestDiscovery {
 }
 
 #[test]
+fn known_lists_filter_partition_kind_age_and_malformed_paths() {
+    let (mut worker, _) = state(16);
+    let partition = worker.config.partition.clone();
+    worker.config.partition = format!("/{partition}/");
+    let topic = |partition: &str, path: &str| qualified_name(partition, "", path).unwrap();
+    let message = || PubType::MsgPub(MessagePublisher::default());
+    let service = || {
+        PubType::SrvPub(ServicePublisher {
+            socket_id: "socket".into(),
+            request_type: "request".into(),
+            response_type: "response".into(),
+        })
+    };
+    let local_topic = worker.wire_publisher(topic(&partition, "/local"), message());
+    let local_service = worker.wire_publisher(topic(&partition, "/local-service"), service());
+    worker
+        .advertisements
+        .push((local_topic, Arc::new(AtomicBool::new(true))));
+    worker.services.push(ServiceState {
+        publisher: local_service,
+        tx: mpsc::sync_channel(1).0,
+        active: Arc::new(AtomicBool::new(true)),
+    });
+    {
+        let mut serial = 0;
+        let mut insert = |channel: usize, name: String, kind: PubType, stale: bool| {
+            serial += 1;
+            let mut publisher = worker.wire_publisher(name, kind);
+            publisher.process_uuid = format!("remote-{serial}");
+            publisher.node_uuid = format!("node-{serial}");
+            let key = PeerKey {
+                channel,
+                process: publisher.process_uuid.clone(),
+                node: publisher.node_uuid.clone(),
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+            };
+            let stamp = Instant::now() - Duration::from_secs(if stale { 4 } else { 0 });
+            worker.peers.insert(key, (publisher, stamp));
+        };
+        insert(0, topic(&partition, "/remote"), message(), false);
+        insert(0, topic(&partition, "/local"), message(), false);
+        insert(1, topic(&partition, "/remote-service"), service(), false);
+        insert(0, topic("other", "/foreign"), message(), false);
+        insert(1, topic("other", "/foreign-service"), service(), false);
+        insert(0, format!("@/{partition}@missing-slash"), message(), false);
+        insert(0, topic(&partition, "/stale"), message(), true);
+        insert(1, topic(&partition, "/wrong-kind"), message(), false);
+        insert(0, topic(&partition, "/wrong-kind"), service(), false);
+    }
+    assert_eq!(worker.known_names(0), ["/local", "/remote"]);
+    assert_eq!(worker.known_names(1), ["/local-service", "/remote-service"]);
+    worker.config.partition.clear();
+    let empty_partition = worker.wire_publisher(topic("", "/empty"), message());
+    worker
+        .advertisements
+        .push((empty_partition, Arc::new(AtomicBool::new(true))));
+    assert_eq!(worker.known_names(0), ["/empty"]);
+    assert!(worker.known_names(1).is_empty());
+}
+
+#[test]
 fn publisher_recreation_withdraws_old_before_new_advertisement() {
     let (mut worker, _) = state(3);
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();

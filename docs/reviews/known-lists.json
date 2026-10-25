@@ -1,0 +1,42 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T13:34:30.278865+00:00",
+  "base": "3ba34745b0914d3c250aab326f937a71f802bc0a",
+  "tree": "61e194c3805333aa87a1a1bb895fefa429f2dd36",
+  "diff_sha256": "896eb1cce2910ef6cc3634d17e4062c62fc574a4c0264bfc1a3f65b516079df8",
+  "files": {
+    "README.md": "0272a60015300b2d308827e3df808cc35037d55c720f843bbb6db88dd7a311ce",
+    "docs/NET-02-known-lists.md": "13e3ca3c66bcc1b758a05fb1672fe65fb6173777be44468d80edf204fb4be305",
+    "docs/TESTING.md": "9a0260809ffc9ab9d5128359743d30058f02085fcc97adc280fc76367665004d",
+    "docs/upstream-tests.json": "443cce705ff7a10377b0168010966b7f03d22c1f3feb4702cf30e1e12782f197",
+    "scripts/verify.py": "f51d43d9a08122dd07312704ce674a4bdb731127995338bf083b5f7b850f1a2a",
+    "src/runtime.rs": "c2ae65698f4266af89daf026a0e4f5ca9cbfb140befb1ad8fa302f7b1ebe477d",
+    "tests/interop.rs": "376558057108c4b7b7d66cef9a2903897b77c7ba7639bd82717c2c036d238f5c",
+    "tests/support/runtime.rs": "0b12b2a50f4d6e3b6ed85ea6c4362c472ff1cf8b095512600af7a3e96597978c"
+  },
+  "scope": "Additive Node::known_publisher_topics and Node::known_services worker snapshots of active local and already-discovered remote advertisements in the canonical partition. Sorted/deduplicated topic paths; no subscriber-only, process-global, convergence, native latency or complete original-list claim.",
+  "independent_checks": [
+    "Exact eight staged file hashes, tree and binary diff match frozen proposal; no unstaged diff. Pinned native Node_TEST source/binary, C++ peer source/binary, original XML, author mutation and staged gate logs hash-match.",
+    "Reviewed worker command/reply ordering, active local leases, channel-0 MsgPub versus channel-1 SrvPub, canonical partition decomposition and leading slash, remote stamp age <3 seconds, sort/dedup, and unchanged local advertised_topics/services APIs. Original NodeTest.TopicList and ServiceList retain pending ledger dispositions and unported size/latency/subscriber/process semantics.",
+    "Private raw Git tree archive and separate Cargo target: selected cross-process C++ publisher/service listing test passed1/0, worker partition/kind/age/malformed-path test passed1/0; full cargo test --locked --tests -- --test-threads=1 passed146 Rust tests/0 failures, with pinned C++ peer copied to the private archive for a child test that clears GZ_* variables.",
+    "Unchanged native NodeTest.TopicList and NodeTest.ServiceList independently replayed2/0/no skip as contextual controls; private XML SHA c4c612407f7a3c89c4a82f574e8168ccd6d1d1e51a2180ce3336ba37a4d48296.",
+    "Separate private source and Cargo target removed only wire_partition == partition; selected worker test failed by exposing /foreign. This is a negative control, not a production outcome.",
+    "Private cargo fmt --all -- --check and cargo clippy --locked --all-targets -- -D warnings pass. Author exact frozen staged gate EXIT0 SHA f74ccbd3950ee3cfda38c95d6a0d113610da69c2d26500f1668e91210b4c780c; 1698/1708 lines, 2562/2622 regions, all54 changed executable lines covered. No coverage/gate weakening."
+  ],
+  "reviewer_log_sha256": {
+    "selected_interop": "2e85e2dc6bc59c160033b1add5b2b78376b609911b7f027f1df154dea5a4c9a9",
+    "selected_worker": "0f211756257c863c5928ddc7c323a10e3a261875d6c520dfc84f8720527ccb4e",
+    "full_tests": "ae221b8f54077a36ce3b12e153ae619b633dd4990fe4cc47be9132414c324d71",
+    "native_originals": "5ee5c58583e66e99ed8ac5742ad4dfad578a48b96125ae49a07decf0defc1cf2",
+    "partition_mutant": "48a3ccb2169c3ae33e804ff47c72a72b6d649d70ff5047d4dce7c836a4c7300d",
+    "clippy": "d857cd10b707a0b052abf1d20a6f15269266a9143a74086b837fcbb333155a21"
+  },
+  "setup_disposition": "First private all-tests attempt lacked the pinned C++ helper inside the raw archive; config_process identity child cleared GZ_CPP_PEER and failed to exec the absent file. Copying the exact pinned binary into the private ignored artifacts path let the unchanged 146-test suite pass. The initial setup failure is retained and excluded as positive evidence.",
+  "findings": [],
+  "limits": [
+    "Two native list originals are contextual only and remain pending in the ledger. Complete native TopicList/ServiceList, subscriber-only topics, process-global registry and second-call latency are unqualified.",
+    "Final metadata binding, normal worktree hook and hosted CI remain."
+  ]
+}
