@@ -1971,3 +1971,57 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 1);
 }
+
+#[test]
+fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
+    let (worker, commands) = state(1);
+    let mut config = worker.config.clone();
+    config.namespace = "ns".into();
+    config.add_topic_remap("alias", "relative").unwrap();
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config,
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise("alias", "type").unwrap();
+    assert_eq!(
+        publisher.topic,
+        format!("@/{}@/ns/relative", node.config.partition)
+    );
+    assert!(matches!(
+        node.advertise("relative", "type"),
+        Err(Error::AlreadyAdvertised)
+    ));
+    drop(publisher);
+    assert!(matches!(
+        node.advertise("alias", "type"),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    drop(commands.recv().unwrap());
+    let publisher = node.advertise("alias", "type").unwrap();
+    drop(publisher);
+    drop(commands.recv().unwrap());
+    node.cancel();
+    assert!(matches!(
+        node.advertise("alias", "type"),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    let mut long = node.config.clone();
+    long.topic_remaps.clear();
+    long.add_topic_remap("alias", &"a".repeat(65535)).unwrap();
+    let long = Node {
+        sender: node.sender.clone(),
+        worker: None,
+        config: long,
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    assert!(matches!(
+        long.advertise("alias", "type"),
+        Err(Error::InvalidName)
+    ));
+}

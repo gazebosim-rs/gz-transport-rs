@@ -1,0 +1,13 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T03:02:14.185439+00:00",
+  "tracked_diff_sha256": "ff115633fbf66ad2ca41761db89190530b034a10093bf7ab364d97bd27ffab16",
+  "contract_sha256": "5ba4513e8f4a1aada42aaa6b5d0e97f620ba49d2f8eb8ff0adac73ebc20cec0b",
+  "scope": "Bounded exact raw-key single-hop topic remapping. Reviewed setter validation/duplicate/capacity ordering and atomic failed mutation, direct-map validation before worker creation, immutable per-Node configuration, namespace/partition qualification and publisher/service lease ownership. Registration/subscription/request call sites apply one map; inspection and explicit service withdrawal intentionally use the original argument, matching native source including unused remapped local in UnadvertiseSrv. No payload reencoding, recursive map chase or broader query/list/scope/performance claim.",
+  "independent_checks": "Compared original WrongTopicRemap and AdvertiseRemappedTopicTwice complete bodies and exact literals/types against Rust ports; all four setter assertions and both publisher validity assertions retained through typed errors. Verified pinned native source/binary hashes. Independently rebuilt strict C++ peer and ran all 8 remap-filtered Rust checks in a new msgs-owned target: 4 unit plus 4 interop, including 144 actual native option pairs, all 4 C++ pub/sub/service directions and native/Rust original-name inspection/withdrawal lifecycle. Independently reran both exact unchanged native originals with isolated partition and archived XML: 2 run, 0 failures. All source/contract diff hashes reverified afterward; no transport files edited.",
+  "original_mappings": "Both proposed complete mappings are faithful under the documented new Rust API; other original remapping/list/HasConnections/scope cases remain pending. Native unbounded map overload behavior is not a parity claim: the explicit Rust capacity bound remains documented.",
+  "author_reported": "Final full gate: 97 Rust checks and 21 tooling checks; 1391/1412 owned lines, 2104/2169 regions, and 33/33 changed executable lines, plus all mandatory native filters. Reported and inspected, not independently recomputed as a full gate. Earlier ledger-prefix rejection and corrected rerun remain recorded.",
+  "limits": "Finite Linux/ZeroMQ native profile; exact raw-key API requires UTF8 strings. Native console diagnostics, unrestricted C++ map capacity, all query/remapping/scope/list/performance contracts and whole NET acceptance unqualified. Matching normal staged/hosted gates and final receipt metadata binding required."
+}

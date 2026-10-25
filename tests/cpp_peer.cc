@@ -72,6 +72,31 @@ int main(int argc, char **argv) {
     std::cout << result;
     return mode == "valid-topic-bytes" || result == value ? 0 : 15;
   }
+  if (mode == "remap-options") {
+    gz::transport::NodeOptions options;
+    const bool added=options.AddTopicRemap(topic,value);
+    const bool duplicate=options.AddTopicRemap(topic,value);
+    std::string output="sentinel";
+    const bool found=options.TopicRemap(topic,output);
+    std::cout << added << ' ' << duplicate << ' ' << found << '\n' << output;
+    return 0;
+  }
+  if (mode == "remap-service-lifecycle") {
+    gz::transport::NodeOptions options;
+    if (!options.AddTopicRemap(topic,value) || !options.AddTopicRemap(value,"/third")) return 35;
+    gz::transport::Node mapped(options);
+    std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> cb=[](const auto&,auto&){return true;};
+    if (!mapped.Advertise(topic,cb) || mapped.AdvertisedServices()!=std::vector<std::string>{value}) return 36;
+    std::string request,response;
+    using Resolution=gz::transport::Node::ServiceTypeResolution;
+    if (mapped.ResolveServiceTypes(topic,request,response)!=Resolution::kNoProviders ||
+        mapped.ResolveServiceTypes(value,request,response)!=Resolution::kResolved ||
+        request!="gz.msgs.StringMsg" || response!="gz.msgs.StringMsg") return 37;
+    if (!mapped.UnadvertiseSrv(topic) || mapped.AdvertisedServices()!=std::vector<std::string>{value}) return 38;
+    if (!mapped.UnadvertiseSrv(value) || !mapped.AdvertisedServices().empty()) return 39;
+    std::cout << "READY" << std::endl;
+    return 0;
+  }
   gz::transport::Node node;
   if (mode == "inspect-service") {
     std::cout << "READY" << std::endl;

@@ -12,6 +12,8 @@ use std::{
 pub struct Config {
     pub partition: String,
     pub namespace: String,
+    /// Exact raw-topic substitutions, applied once before qualification.
+    pub topic_remaps: HashMap<String, String>,
     pub interface: Ipv4Addr,
     pub multicast: Ipv4Addr,
     pub message_port: u16,
@@ -27,6 +29,7 @@ impl Default for Config {
         Self {
             partition: String::new(),
             namespace: String::new(),
+            topic_remaps: HashMap::new(),
             interface: Ipv4Addr::LOCALHOST,
             multicast: Ipv4Addr::new(239, 255, 0, 7),
             message_port: 10317,
@@ -41,6 +44,27 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Add one native-style, single-hop substitution. Rejection preserves the map.
+    /// At most `capacity` mappings may be installed before creating a Node.
+    pub fn add_topic_remap(&mut self, from: &str, to: &str) -> Result<(), Error> {
+        for topic in [from, to] {
+            if topic.is_empty() || !crate::names::valid(topic) {
+                return Err(Error::InvalidName);
+            }
+        }
+        if self.topic_remaps.contains_key(from) {
+            return Err(Error::AlreadyRemapped);
+        }
+        if self.topic_remaps.len() >= self.capacity {
+            return Err(Error::QueueFull);
+        }
+        self.topic_remaps.insert(from.into(), to.into());
+        Ok(())
+    }
+    /// Look up an exact raw key without qualifying it or following another map.
+    pub fn topic_remap(&self, from: &str) -> Option<&str> {
+        self.topic_remaps.get(from).map(String::as_str)
+    }
     /// Validate the native component grammar and preserve state on rejection.
     /// Full qualified-topic length is checked separately by Node/topic creation.
     pub fn set_partition(&mut self, partition: &str) -> Result<(), Error> {
@@ -60,6 +84,16 @@ impl Config {
     }
     pub(crate) fn validate(&self) -> Result<(), Error> {
         qualified_name(&self.partition, &self.namespace, "validation")?;
+        if self.topic_remaps.len() > self.capacity {
+            return Err(Error::InvalidConfig);
+        }
+        for (from, to) in &self.topic_remaps {
+            for topic in [from, to] {
+                if topic.is_empty() || !crate::names::valid(topic) {
+                    return Err(Error::InvalidName);
+                }
+            }
+        }
         if self.capacity == 0
             || self.send_high_watermark == 0
             || self.send_high_watermark > i32::MAX as usize

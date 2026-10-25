@@ -3871,10 +3871,12 @@
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseRemappedTopicTwice",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AdvertiseRemappedTopicTwice",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_advertise_remapped_topic_twice"
+      ],
+      "review": "/root/msgs; compared every original assertion/literal/type, bounded setter/admission ownership and native single-hop/original-name behavior; independently replayed eight focused Rust checks including 144 native option pairs, all four real C++ communication directions and lifecycle, then both exact native originals XML two runs/zero failures. Receipt docs/reviews/topic-remapping.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3883,8 +3885,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /remap_from to /remap_to setup, successful Int32 publisher and failed duplicate on same remapped topic retained; invalid native publisher maps to AlreadyAdvertised.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-topic-remapping.md; mandatory exact native originals"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseNamespacedTopicTwice",
@@ -4921,10 +4924,12 @@
       "id": "UNIT_Node_TEST:NodeTest.WrongTopicRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.WrongTopicRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "config::tests::original_wrong_topic_remap"
+      ],
+      "review": "/root/msgs; compared every original assertion/literal/type, bounded setter/admission ownership and native single-hop/original-name behavior; independently replayed eight focused Rust checks including 144 native option pairs, all four real C++ communication directions and lifecycle, then both exact native originals XML two runs/zero failures. Receipt docs/reviews/topic-remapping.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4933,8 +4938,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original invalid source, invalid destination, successful /foo to /bar mapping and duplicate rejection retained. Native false maps to typed InvalidName or AlreadyRemapped; failed setters preserve the owned bounded map.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-topic-remapping.md; mandatory exact native originals"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.RcvHwm",

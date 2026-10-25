@@ -220,6 +220,11 @@ impl Node {
     fn topic(&self, topic: &str) -> Result<String, Error> {
         qualified_name(&self.config.partition, &self.config.namespace, topic)
     }
+    // Native inspection and explicit service withdrawal use the original name;
+    // only registration, subscription and requests apply the configured map.
+    fn remapped_topic(&self, topic: &str) -> Result<String, Error> {
+        self.topic(self.config.topic_remap(topic).unwrap_or(topic))
+    }
     fn reserve(&self) -> Result<Lease, Error> {
         self.sender
             .slots
@@ -235,7 +240,7 @@ impl Node {
     /// Reserve one publisher per qualified topic on this Node, as native Gazebo does.
     /// Dropping it immediately releases ownership; worker withdrawal precedes recreation.
     pub fn advertise(&self, topic: &str, type_name: &str) -> Result<Publisher, Error> {
-        let topic = self.topic(topic)?;
+        let topic = self.remapped_topic(topic)?;
         let mut topics = self
             .topics
             .lock()
@@ -263,7 +268,7 @@ impl Node {
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
         self.sender.send(Command::Subscribe(
-            self.topic(topic)?,
+            self.remapped_topic(topic)?,
             type_name.into(),
             tx,
             lease.active.clone(),
@@ -278,7 +283,7 @@ impl Node {
         request_type: &str,
         response_type: &str,
     ) -> Result<Service, Error> {
-        let topic = self.topic(topic)?;
+        let topic = self.remapped_topic(topic)?;
         let mut services = self
             .services
             .lock()
@@ -368,7 +373,7 @@ impl Node {
         }
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender.send(Command::Request(Pending {
-            topic: self.topic(topic)?,
+            topic: self.remapped_topic(topic)?,
             request_type: request_type.into(),
             response_type: response_type.into(),
             data,

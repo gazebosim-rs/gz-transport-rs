@@ -777,3 +777,97 @@ fn cpp_and_rust_inspect_real_service_signatures_without_execution() {
         Err(Error::Timeout)
     ));
 }
+
+// Node_TEST.cc assertion port: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_advertise_remapped_topic_twice() {
+    let mut config = config();
+    config.add_topic_remap("/remap_from", "/remap_to").unwrap();
+    let node = Node::new(config).unwrap();
+    let _first = node.advertise("/remap_from", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        node.advertise("/remap_from", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
+}
+
+#[test]
+fn remapped_subscription_and_request_use_native_destination() {
+    let mut config = config();
+    config.add_topic_remap("/alias", "/wire").unwrap();
+    let node = Node::new(config.clone()).unwrap();
+    let subscription = node.subscribe("/alias", TYPE).unwrap();
+    let mut peer = Peer::start(&config, "dual", "/wire", "-cpp");
+    let message = subscription.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_eq!(message.topic, format!("@/{}@/wire", config.partition));
+    assert_eq!(message.type_name, TYPE);
+    assert_eq!(message.data, data("-cpp"));
+    let (reply, success) = node
+        .request("/alias", TYPE, TYPE, data("rust"), Duration::from_secs(5))
+        .unwrap();
+    assert!(success);
+    assert_eq!(reply, data("rust-cpp"));
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+}
+
+#[test]
+fn remapped_publication_and_service_reach_native_clients() {
+    let mut config = config();
+    config.add_topic_remap("/alias", "/wire").unwrap();
+    let node = Node::new(config.clone()).unwrap();
+    let publication = node.advertise("/alias", TYPE).unwrap();
+    let service = node.serve("/alias", TYPE, TYPE).unwrap();
+    let mut subscriber = Peer::start(&config, "subscribe", "/wire", "rust");
+    let mut requester = Peer::start(&config, "request", "/wire", "client");
+    let request = service.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_eq!(request.data, data("client"));
+    request.respond(data("client-rust"), true).unwrap();
+    requester.success();
+    for _ in 0..100 {
+        publication.publish(data("rust")).unwrap();
+        if subscriber.0.try_wait().unwrap().is_some() {
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    subscriber.success();
+}
+
+#[test]
+fn remapping_inspection_and_explicit_withdrawal_retain_native_original_name() {
+    use gz_transport::{ServiceTypeResolution, ServiceTypes};
+    let mut config = config();
+    let mut native = Peer::start(&config, "remap-service-lifecycle", "/from", "/to");
+    native.success();
+    config.add_topic_remap("/from", "/to").unwrap();
+    config.add_topic_remap("/to", "/third").unwrap();
+    let node = Node::new(config).unwrap();
+    let service = node.serve("/from", TYPE, TYPE).unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/to"]);
+    assert_eq!(
+        node.resolve_service_types("/from", "", "", Duration::ZERO),
+        Ok(ServiceTypeResolution::NoProviders)
+    );
+    assert_eq!(
+        node.resolve_service_types("/to", "", "", Duration::ZERO),
+        Ok(ServiceTypeResolution::Resolved(ServiceTypes {
+            request_type: TYPE.into(),
+            response_type: TYPE.into()
+        }))
+    );
+    assert!(node.service_type_signatures("/from").unwrap().is_empty());
+    assert!(matches!(
+        service.recv_timeout(Duration::from_millis(5)),
+        Err(Error::Timeout)
+    ));
+    node.unadvertise_service("/from").unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/to"]);
+    assert!(matches!(
+        node.serve("/from", TYPE, TYPE),
+        Err(Error::AlreadyAdvertised)
+    ));
+    node.unadvertise_service("/to").unwrap();
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert!(node.service_type_signatures("/to").unwrap().is_empty());
+}

@@ -19,6 +19,7 @@ pub enum Error {
     InvalidName,
     InvalidConfig,
     AlreadyAdvertised,
+    AlreadyRemapped,
     Unsupported(&'static str),
     InvalidFrame,
     QueueFull,

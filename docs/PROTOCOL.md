@@ -124,6 +124,12 @@ C++'s inaccessible callback from a failed duplicate registration; see the
 
 # Remaining retained scope
 
+Owned topic remaps apply once by exact raw key before qualification for advertise,
+subscribe, serve and request. Inspection and explicit service withdrawal retain
+native original-name behavior; aliases are not resolved transitively. The options
+map is bounded by configuration capacity and validated before worker creation.
+See the [remapping contract](NET-02-topic-remapping.md).
+
 Service signature inspection and type resolution use bounded worker commands
 and service-channel discovery, with caller-side provider polling. They expose
 canonical type pairs and native selection outcomes, without provider addresses

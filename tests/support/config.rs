@@ -259,3 +259,127 @@ fn component_setter_limits_and_rejected_state_match_native() {
         (String::new(), String::new())
     );
 }
+
+#[test]
+// Node_TEST.cc assertions: Copyright (C) 2014 Open Source Robotics Foundation.
+fn original_wrong_topic_remap() {
+    let mut config = Config::default();
+    assert_eq!(
+        config.add_topic_remap("  ", "/bar"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(
+        config.add_topic_remap("/foo", "  "),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(config.add_topic_remap("/foo", "/bar"), Ok(()));
+    assert_eq!(
+        config.add_topic_remap("/foo", "/bar"),
+        Err(Error::AlreadyRemapped)
+    );
+}
+
+#[test]
+fn remapping_is_bounded_exact_and_validated_before_worker_creation() {
+    let mut config = Config {
+        capacity: 3,
+        ..Default::default()
+    };
+    config.add_topic_remap("from", "to").unwrap();
+    config.add_topic_remap("to", "from").unwrap();
+    config.add_topic_remap("self", "self").unwrap();
+    assert_eq!(config.topic_remap("from"), Some("to"));
+    assert_eq!(config.topic_remap("to"), Some("from"));
+    assert_eq!(config.topic_remap("self"), Some("self"));
+    for absent in ["/from", "from/", "FROM", "invalid topic", ""] {
+        assert_eq!(config.topic_remap(absent), None);
+    }
+    let saved = config.topic_remaps.clone();
+    assert_eq!(
+        config.add_topic_remap("from", "bad name"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(
+        config.add_topic_remap("new", "value"),
+        Err(Error::QueueFull)
+    );
+    assert_eq!(
+        config.add_topic_remap("from", "other"),
+        Err(Error::AlreadyRemapped)
+    );
+    for invalid in [
+        "",
+        "/",
+        "bad topic",
+        "~bad",
+        "bad:=name",
+        "bad@name",
+        "a//b",
+        &"a".repeat(65536),
+    ] {
+        assert_eq!(
+            config.add_topic_remap(invalid, "valid"),
+            Err(Error::InvalidName)
+        );
+        assert_eq!(
+            config.add_topic_remap("valid", invalid),
+            Err(Error::InvalidName)
+        );
+    }
+    assert_eq!(config.topic_remaps, saved);
+    config.validate().unwrap();
+    let mut cloned = config.clone();
+    cloned.topic_remaps.insert("extra".into(), "value".into());
+    assert_eq!(cloned.validate(), Err(Error::InvalidConfig));
+    for invalid in ["", "invalid name"] {
+        let mut cloned = config.clone();
+        cloned.topic_remaps.remove("self");
+        cloned.topic_remaps.insert(invalid.into(), "valid".into());
+        assert_eq!(cloned.validate(), Err(Error::InvalidName));
+        cloned.topic_remaps.remove(invalid);
+        cloned.topic_remaps.insert("valid".into(), invalid.into());
+        assert_eq!(cloned.validate(), Err(Error::InvalidName));
+    }
+    assert_eq!(config.topic_remaps, saved);
+}
+
+#[test]
+fn remapping_option_names_match_real_native_validation() {
+    let peer = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    let names = [
+        "",
+        "/",
+        "bad name",
+        "a//b",
+        "a:=b",
+        "~a",
+        "a@b",
+        "a\tb",
+        "snow☃",
+        "relative",
+        "/absolute",
+        "/trailing/",
+    ];
+    for from in names {
+        for to in names {
+            let output = std::process::Command::new(&peer)
+                .args(["remap-options", from, to])
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{from:?} -> {to:?}");
+            let mut config = Config::default();
+            let added = config.add_topic_remap(from, to).is_ok();
+            let duplicate = config.add_topic_remap(from, to).is_ok();
+            let mapped = config.topic_remap(from);
+            let expected = format!(
+                "{} {} {}\n{}",
+                u8::from(added),
+                u8::from(duplicate),
+                u8::from(mapped.is_some()),
+                mapped.unwrap_or("sentinel")
+            );
+            assert_eq!(output.stdout, expected.as_bytes(), "{from:?} -> {to:?}");
+        }
+    }
+}
