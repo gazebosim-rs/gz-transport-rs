@@ -3577,10 +3577,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubWithoutAdvertise",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubWithoutAdvertise",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_without_advertise"
+      ],
+      "review": "/root/msgs; independently compared every original/helper assertion and replayed all 57 library checks, five original publication ports, real C++ local inventory and three exact native originals XML 3/0 in a fresh private source/target. Reviewed one-filter-per-topic repair and actual XPUB final unsubscribe/no-delivery regression after preserving the original defect proof. Receipt docs/reviews/local-topics.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3589,17 +3591,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Invalid namespace setter preserves empty namespace; three initially empty local inventories, two valid Int32 publishers with exact /foo inventories, one actual subscription with exact /foo inventory, native 10000ms/10ms readiness, one publication by each owner, actual data 5 receipts, execution flag and exact counter 2. Callback condition-variable synchronization maps to bounded owned receipt; no new immediate process-global visibility assertion.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-local-topics.md; artifacts/local-topic-native-originals.xml; mandatory original filters"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThread",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubSameThread",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_same_thread"
+      ],
+      "review": "/root/msgs; independently compared every original/helper assertion and replayed all 57 library checks, five original publication ports, real C++ local inventory and three exact native originals XML 3/0 in a fresh private source/target. Reviewed one-filter-per-topic repair and actual XPUB final unsubscribe/no-delivery regression after preserving the original defect proof. Receipt docs/reviews/local-topics.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3608,17 +3613,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Invalid advertise/subscribe names reject; valid Int32 publisher/receiver, native 10000ms/10ms membership readiness, two independently reset single publications and actual data 5 receipts/execution flags. Owned receive replaces native callback dispatch without inventing success flags.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-local-topics.md; artifacts/local-topic-native-originals.xml; mandatory original filters"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadGenericCb",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubSameThreadGenericCb",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_same_thread_generic_cb"
+      ],
+      "review": "/root/msgs; independently compared every original/helper assertion and replayed all 57 library checks, five original publication ports, real C++ local inventory and three exact native originals XML 3/0 in a fresh private source/target. Reviewed one-filter-per-topic repair and actual XPUB final unsubscribe/no-delivery regression after preserving the original defect proof. Receipt docs/reviews/local-topics.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3627,8 +3635,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Valid Int32 publisher and wildcard subscription, native 10000ms/10ms membership readiness, two independently reset single publications, dynamic protobuf text conversion succeeds and contains 5, actual processing execution flag, and topic path has no partition marker. Maintained reflection text formatting supplies the selected generic helper assertion, not a complete native text-format compatibility claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-local-topics.md; artifacts/local-topic-native-originals.xml; mandatory original filters"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadMessageInfo",

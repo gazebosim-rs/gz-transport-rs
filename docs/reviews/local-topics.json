@@ -1,0 +1,28 @@
+{
+  "reviewer": "/root/msgs",
+  "decision": "approved within bounded local-topic inventory and filter-retirement scope",
+  "date": "2026-10-25T05:21:33.933329+00:00",
+  "base": "6a2800406358b312eb880bf843e0ef66449ce691",
+  "diff_sha256": "625469ecd81f3f14964b78e002afa97f536a24446557942e4d0d7edb7ffb4147",
+  "files": {
+    "README.md": "e71cc1e215c6e323e1d89fad2c68cc2774ae619d5c7da38580cc21cb28c099ea",
+    "docs/NET-01-local-topics.md": "3e955bdfc82825204c395cf62248d6134257419625e673d3c8289e4f6a282397",
+    "docs/PROTOCOL.md": "0ff1788c5080b50f17cf221eff7c0c4f44f4720c245e4c5bd47b4820d55dff30",
+    "docs/upstream-tests.json": "b0be3fb614bf201bcb837215706a9d77bc6a492ab3ab493a8ee4b9e7d537d6d6",
+    "scripts/verify.py": "475eae80494f4a78da69051f39a2f409b888b432531bdcace599286dded97feb",
+    "src/runtime.rs": "996ece6e0765aa8058f5c7970165fafddf76f059a91da7bf9e17126dbc34e2c7",
+    "tests/cpp_peer.cc": "a0e1430fdddd9e1847ea3b8677c2ab669ebf52bfaeaa6505d7daaa8889923911",
+    "tests/interop.rs": "5f44ebcba3360d04cfc5dc146fbd8055ca189c9892feb2c6aca1140b791899f3",
+    "tests/support/runtime.rs": "ab5998d47a2b531fa2829e4cfe5f43bffb8ceaf554c514ac3d21153333e9a821"
+  },
+  "independent_checks": [
+    "Raw-copied and SHA256-verified the initial and repaired 69-file source snapshots. Used fresh reviewer-owned targets; no producer Cargo target reused. Strict-warning C++ peer compiled from unchanged reviewed source.",
+    "All 57 final unit tests pass, including two-descriptor duplicate receiver lifecycle, XPUB unsubscribe acknowledgement, no fresh delivery after final retirement, local metadata admission/poison/bounds and retained shutdown trace.",
+    "Five original_pub assertion ports pass, including all three proposed originals and both existing threaded regressions. Real C++ namespaced/remapped local-inventory lifetime comparison also passes.",
+    "Three exact unchanged native originals independently pass with XML 3 run, 0 failures. Native Node_TEST source and binary hashes match the packet. Compared every original PubWithoutAdvertise/PubSubSameThread/PubSubSameThreadGenericCb and ordinary/generic helper assertion; real Int32 data 5, exact counters/flags, successful text conversion containing 5 and partition-free topic assertions retained.",
+    "Initial reviewer-only production-Worker XPUB probe demonstrated the concrete refcounted filter leak: two same-topic subscriptions, one final unsubscribe, empty receiver state but fresh raw socket delivery. Probe and log preserved. Repaired admission installs one filter for each retained topic while keeping all typed receivers/registrations; final unit regression independently verifies first-retirement delivery and final actual unsubscribe before a negative delivery check.",
+    "Shutdown fixture changes only setup to admit known filters before retiring leases; every original buffer/END/BYE trace assertion from the buffer declaration onward remains byte-identical. Failed-admission metadata/permit ownership and lock ordering were inspected."
+  ],
+  "assertion_review": "The three proposed mappings are faithful for their retained assertions with the documented polling-receipt API substitution. Invalid namespace preserves empty state; advertised/subscribed/services inventories, valid/invalid creation, single publications, both receipts/counter 2, repeated-reset execution and generic text/topic checks are retained. No full text-format or process-global runtime equivalence is claimed.",
+  "limits": "Author full 116 Rust/21 tooling coverage gate (1528/1550 lines, 2323/2389 regions, 51/51 changed) was not independently repeated. Global TopicList/ServiceList timing, remote TopicInfo cache lifetimes, explicit unsubscribe, scope controls, immediate multi-Node sharing and performance remain open. Final metadata binding, mandatory strict staged hook and hosted qualification required before publication."
+}

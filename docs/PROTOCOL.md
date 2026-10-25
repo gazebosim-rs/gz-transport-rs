@@ -124,6 +124,11 @@ C++'s inaccessible callback from a failed duplicate registration; see the
 
 # Remaining retained scope
 
+Local advertised/subscribed topic paths are inspected through bounded weak lease
+metadata. They include orphan subscription interests and expose the qualified
+remap destination; no discovery or worker round trip is involved. See the
+[local ownership contract](NET-01-local-topics.md).
+
 Publisher subscriber membership is available through a bounded control-plane
 snapshot. Native registration ctrl checks, keep-first identity and generic END
 projection are retained; process-only BYE and publication-peer expiry leave

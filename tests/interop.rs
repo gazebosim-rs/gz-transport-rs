@@ -1004,3 +1004,155 @@ fn graceful_subscriber_shutdown_with_live_lease_withdraws_membership() {
         thread::sleep(Duration::from_millis(10));
     }
 }
+
+#[test]
+fn local_inventory_matches_native_namespaced_alias_lifetimes() {
+    let mut config = config();
+    let mut native = Peer::start(&config, "local-inventory", "alias", "target");
+    native.success();
+    config.set_namespace("ns").unwrap();
+    config.add_topic_remap("alias", "target").unwrap();
+    let node = Node::new(config).unwrap();
+    let publication = node.advertise("alias", TYPE).unwrap();
+    let first = node.subscribe("alias", TYPE).unwrap();
+    let second = node.subscribe("/ns/target", TYPE).unwrap();
+    assert_eq!(node.advertised_topics().unwrap(), ["/ns/target"]);
+    assert_eq!(node.subscribed_topics().unwrap(), ["/ns/target"]);
+    drop(first);
+    assert_eq!(node.subscribed_topics().unwrap(), ["/ns/target"]);
+    drop(second);
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    drop(publication);
+    assert!(node.advertised_topics().unwrap().is_empty());
+    let orphan = node.subscribe("/orphan", TYPE).unwrap();
+    assert_eq!(node.subscribed_topics().unwrap(), ["/orphan"]);
+    drop(orphan);
+    assert!(node.subscribed_topics().unwrap().is_empty());
+}
+
+/*
+ * Copyright (C) 2014 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// Original Node_TEST.cc ordinary/generic callback assertions.
+fn received_int32_five(
+    subscription: &gz_transport::Subscription,
+    executed: &mut bool,
+    counter: &mut usize,
+) {
+    let message = subscription.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert_eq!(
+        gz_msgs::int32::Int32::decode(message.data.as_slice())
+            .unwrap()
+            .data,
+        5
+    );
+    *executed = true;
+    *counter += 1;
+}
+fn int32_five() -> Vec<u8> {
+    gz_msgs::int32::Int32 {
+        data: 5,
+        ..Default::default()
+    }
+    .encode_to_vec()
+}
+fn await_publication_membership(publication: &gz_transport::Publisher) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !publication.has_connections().unwrap() {
+        assert!(Instant::now() < deadline, "subscriber did not register");
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+#[test]
+fn original_pub_without_advertise() {
+    let mut config = config();
+    assert_eq!(
+        config.set_namespace("invalid namespace"),
+        Err(Error::InvalidName)
+    );
+    assert!(config.namespace.is_empty());
+    let first = Node::new(config.clone()).unwrap();
+    let second = Node::new(config).unwrap();
+    assert!(first.advertised_topics().unwrap().is_empty());
+    assert!(first.subscribed_topics().unwrap().is_empty());
+    assert!(first.advertised_services().unwrap().is_empty());
+    let publication1 = first.advertise("/foo", "gz.msgs.Int32").unwrap();
+    assert_eq!(first.advertised_topics().unwrap(), ["/foo"]);
+    let publication2 = second.advertise("/foo", "gz.msgs.Int32").unwrap();
+    assert_eq!(second.advertised_topics().unwrap(), ["/foo"]);
+    let subscription = second.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    assert_eq!(second.subscribed_topics().unwrap(), ["/foo"]);
+    await_publication_membership(&publication1);
+    let (mut executed, mut counter) = (false, 0);
+    publication1.publish(int32_five()).unwrap();
+    received_int32_five(&subscription, &mut executed, &mut counter);
+    publication2.publish(int32_five()).unwrap();
+    received_int32_five(&subscription, &mut executed, &mut counter);
+    assert!(executed);
+    assert_eq!(counter, 2);
+    second.service_type_signatures("/barrier").unwrap();
+    assert_eq!(
+        subscription.recv_timeout(Duration::ZERO),
+        Err(Error::Timeout)
+    );
+}
+#[test]
+fn original_pub_sub_same_thread() {
+    let node = Node::new(config()).unwrap();
+    assert!(matches!(
+        node.advertise("invalid topic", "gz.msgs.Int32"),
+        Err(Error::InvalidName)
+    ));
+    let publication = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    assert!(matches!(
+        node.subscribe("invalid topic", "gz.msgs.Int32"),
+        Err(Error::InvalidName)
+    ));
+    let subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    await_publication_membership(&publication);
+    for _ in 0..2 {
+        let (mut executed, mut counter) = (false, 0);
+        publication.publish(int32_five()).unwrap();
+        received_int32_five(&subscription, &mut executed, &mut counter);
+        assert!(executed);
+        assert_eq!(counter, 1);
+    }
+}
+#[test]
+fn original_pub_sub_same_thread_generic_cb() {
+    let node = Node::new(config()).unwrap();
+    let publication = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let subscription = node.subscribe("/foo", "").unwrap();
+    await_publication_membership(&publication);
+    for _ in 0..2 {
+        let mut executed = false;
+        publication.publish(int32_five()).unwrap();
+        received_generic_five(&subscription, &mut executed);
+        assert!(executed);
+    }
+}
+
+fn received_generic_five(subscription: &gz_transport::Subscription, executed: &mut bool) {
+    let message = subscription.recv_timeout(Duration::from_secs(10)).unwrap();
+    let descriptor = gz_msgs::descriptor(&message.type_name).unwrap();
+    let dynamic =
+        gz_msgs::prost_reflect::DynamicMessage::decode(descriptor, message.data.as_slice())
+            .unwrap();
+    let content = dynamic.to_text_format();
+    assert!(content.contains(&5.to_string()));
+    *executed = true;
+    assert!(!message.topic_path().contains('@'));
+    assert_eq!(message.topic_path(), "/foo");
+}

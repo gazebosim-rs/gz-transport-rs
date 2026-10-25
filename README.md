@@ -28,6 +28,8 @@ native behavior. See [topic remapping](docs/NET-02-topic-remapping.md).
 bounded worker coordination. Native remembered membership can outlive a process
 disconnect and does not acknowledge delivery; see [publisher inspection](docs/NET-01-publisher-inspection.md).
 Graceful Node shutdown withdraws its subscription topics before process BYE.
+`advertised_topics()` and `subscribed_topics()` inspect this Node's live lease
+ownership without network waits; see [local topic inventory](docs/NET-01-local-topics.md).
 Local counters expose drops and wire errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
 relay/all-interface discovery, the full CLI and other retained behaviors remain

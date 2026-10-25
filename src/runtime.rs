@@ -66,6 +66,12 @@ pub struct Message {
     pub type_name: String,
     pub data: Vec<u8>,
 }
+impl Message {
+    /// Topic path without its partition, as exposed by native MessageInfo::Topic.
+    pub fn topic_path(&self) -> &str {
+        self.topic.rsplit('@').next().unwrap_or(&self.topic)
+    }
+}
 /// Canonical protobuf names advertised for one service signature.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ServiceTypes {
@@ -198,6 +204,17 @@ fn receive_error(e: mpsc::RecvTimeoutError) -> Error {
         mpsc::RecvTimeoutError::Disconnected => Error::Shutdown,
     }
 }
+fn active_topics<'a>(
+    registrations: impl Iterator<Item = (&'a String, &'a Weak<AtomicBool>)>,
+) -> Vec<String> {
+    let mut topics: Vec<_> = registrations
+        .filter(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)))
+        .map(|(topic, _)| topic.rsplit('@').next().unwrap_or(topic).to_owned())
+        .collect();
+    topics.sort();
+    topics.dedup();
+    topics
+}
 
 /// Dropping the node cancels its worker and joins it. Handles never own sockets.
 pub struct Node {
@@ -205,6 +222,7 @@ pub struct Node {
     worker: Option<JoinHandle<()>>,
     config: Config,
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
+    subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
     services: Mutex<Vec<(String, Weak<AtomicBool>)>>,
 }
 impl Node {
@@ -228,6 +246,7 @@ impl Node {
             worker: Some(worker),
             config,
             topics: Mutex::new(HashMap::new()),
+            subscriptions: Mutex::new(Vec::new()),
             services: Mutex::new(Vec::new()),
         })
     }
@@ -282,13 +301,44 @@ impl Node {
     pub fn subscribe(&self, topic: &str, type_name: &str) -> Result<Subscription, Error> {
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
+        let topic = self.remapped_topic(topic)?;
+        let mut subscriptions = self
+            .subscriptions
+            .lock()
+            .map_err(|_| Error::Native("subscription registry poisoned".into()))?;
+        subscriptions.retain(|(_, a)| a.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
         self.sender.send(Command::Subscribe(
-            self.remapped_topic(topic)?,
+            topic.clone(),
             type_name.into(),
             tx,
             lease.active.clone(),
         ))?;
+        subscriptions.push((topic, Arc::downgrade(&lease.active)));
         Ok(Subscription { rx, _lease: lease })
+    }
+    /// This Node's live publisher topics, sorted without partition prefixes.
+    /// Local inspection performs no worker command or network operation.
+    pub fn advertised_topics(&self) -> Result<Vec<String>, Error> {
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        let topics = self
+            .topics
+            .lock()
+            .map_err(|_| Error::Native("publisher registry poisoned".into()))?;
+        Ok(active_topics(topics.iter()))
+    }
+    /// This Node's live subscription interests, including topics with no publisher.
+    /// Duplicate receivers share one sorted entry; dropping the last removes it.
+    pub fn subscribed_topics(&self) -> Result<Vec<String>, Error> {
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        let subscriptions = self
+            .subscriptions
+            .lock()
+            .map_err(|_| Error::Native("subscription registry poisoned".into()))?;
+        Ok(active_topics(subscriptions.iter().map(|(t, a)| (t, a))))
     }
     /// Register one service per qualified topic on this Node. A rejected duplicate
     /// leaves the original receiver authoritative, including for different types.
@@ -328,14 +378,7 @@ impl Node {
             .services
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
-        let mut topics: Vec<_> = services
-            .iter()
-            .filter(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)))
-            .map(|(topic, _)| topic.rsplit('@').next().unwrap_or(topic).to_owned())
-            .collect();
-        topics.sort();
-        topics.dedup();
-        Ok(topics)
+        Ok(active_topics(services.iter().map(|(t, a)| (t, a))))
     }
     /// Withdraw all handlers for a local service. Valid absent topics also succeed.
     /// Already admitted requests may still be drained and completed.
@@ -848,7 +891,17 @@ impl Worker {
                 });
             }
             Command::Subscribe(topic, type_name, tx, active) => {
-                let _ = self.subscriber.set_subscribe(topic.as_bytes());
+                // Retire old filters/registrations before a replacement. This
+                // also bounds inactive entries during continuous command traffic.
+                self.cleanup();
+                if !active.load(Ordering::Acquire) {
+                    return;
+                }
+                // ZeroMQ counts duplicate filters. Own one filter per topic,
+                // while retaining each receiver and descriptor registration.
+                if !self.subscriptions.iter().any(|s| s.topic == topic) {
+                    let _ = self.subscriber.set_subscribe(topic.as_bytes());
+                }
                 self.subscribe_message(0, &topic);
                 self.subscriptions.push(SubscriberState {
                     topic,

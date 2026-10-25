@@ -65,6 +65,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
@@ -108,6 +109,7 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_services().unwrap().is_empty());
@@ -153,6 +155,7 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
@@ -202,6 +205,7 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -312,6 +316,7 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let service = node.serve("/race", "req", "rep").unwrap();
@@ -1977,6 +1982,7 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
             ..worker.config.clone()
         },
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     assert_eq!(
@@ -2047,6 +2053,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         worker: None,
         config,
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("alias", "type").unwrap();
@@ -2082,6 +2089,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         worker: None,
         config: long,
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     assert!(matches!(
@@ -2378,6 +2386,7 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
             ..worker.config.clone()
         },
         topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
@@ -2413,14 +2422,23 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
         .unwrap();
     worker.config.multicast = Ipv4Addr::LOCALHOST;
     worker.config.message_port = receiver.local_addr().unwrap().port();
-    for (topic, active) in [("/one", true), ("/one", false), ("/two", false)] {
+    let mut retire = Vec::new();
+    for (topic, keep) in [("/one", true), ("/one", false), ("/two", false)] {
         let (tx, _) = mpsc::sync_channel(1);
+        let active = Arc::new(AtomicBool::new(true));
         worker.command(Command::Subscribe(
             topic.into(),
             "T".into(),
             tx,
-            Arc::new(AtomicBool::new(active)),
+            active.clone(),
         ));
+        if !keep {
+            retire.push(active);
+        }
+    }
+    // All topics were admitted; retire two leases immediately before shutdown.
+    for active in retire {
+        active.store(false, Ordering::Release);
     }
     let mut buffer = vec![0; protocol::MAX_DATAGRAM];
     while receiver.recv(&mut buffer).is_ok() {}
@@ -2448,4 +2466,229 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
             (Type::Bye as i32, String::new())
         ]
     );
+}
+
+#[test]
+fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
+    let (mut worker, commands) = state(3);
+    let mut config = worker.config.clone();
+    config.namespace = "ns".into();
+    config.add_topic_remap("alias", "mapped").unwrap();
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config,
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    assert!(node.advertised_topics().unwrap().is_empty());
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    let publication = node.advertise("alias", "T").unwrap();
+    assert_eq!(node.advertised_topics().unwrap(), ["/ns/mapped"]);
+    worker.command(commands.recv().unwrap());
+    let first = node.subscribe("alias", "T").unwrap();
+    worker.command(commands.recv().unwrap());
+    let second = node.subscribe("/ns/mapped", "different").unwrap();
+    worker.command(commands.recv().unwrap());
+    assert_eq!(node.subscribed_topics().unwrap(), ["/ns/mapped"]);
+    assert!(matches!(
+        node.subscribe("/full", "T"),
+        Err(Error::QueueFull)
+    ));
+    drop(first);
+    assert_eq!(node.subscribed_topics().unwrap(), ["/ns/mapped"]);
+    drop(second);
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    drop(publication);
+    assert!(node.advertised_topics().unwrap().is_empty());
+    for _ in 0..100 {
+        let subscription = node.subscribe("/stream", "T").unwrap();
+        worker.command(commands.recv().unwrap());
+        assert!(worker.subscriptions.len() <= node.config.capacity);
+        assert!(node.subscriptions.lock().unwrap().len() <= node.config.capacity);
+        drop(subscription);
+    }
+    worker.cleanup();
+    assert!(worker.subscriptions.is_empty());
+    let retired = node.subscribe("/retired", "T").unwrap();
+    drop(retired);
+    worker.command(commands.recv().unwrap());
+    assert!(worker.subscriptions.is_empty());
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    let mut publications = Vec::new();
+    for topic in ["/z", "/a", "/middle"] {
+        publications.push(node.advertise(topic, "T").unwrap());
+        drop(commands.recv().unwrap());
+    }
+    assert_eq!(node.advertised_topics().unwrap(), ["/a", "/middle", "/z"]);
+    node.cancel();
+    assert_eq!(node.advertised_topics(), Err(Error::Shutdown));
+    assert_eq!(node.subscribed_topics(), Err(Error::Shutdown));
+    drop(publications);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn subscription_admission_withdraws_old_before_new_control_registration() {
+    let (mut worker, _) = state(4);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let old = Arc::new(AtomicBool::new(true));
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        "/topic".into(),
+        "old".into(),
+        tx,
+        old.clone(),
+    ));
+    for (index, type_name) in [(0, "old"), (1, "new")] {
+        let mut p = worker.wire_publisher(
+            "/topic".into(),
+            PubType::MsgPub(MessagePublisher {
+                msg_type: type_name.into(),
+                ..Default::default()
+            }),
+        );
+        p.process_uuid = format!("remote-{index}");
+        p.address = format!("tcp://127.0.0.1:{}", 45000 + index);
+        worker.discovered(0, protocol::advertisement(&p.process_uuid.clone(), p));
+    }
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while receiver.recv(&mut buffer).is_ok() {}
+    old.store(false, Ordering::Release);
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        "/topic".into(),
+        "new".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    let mut trace = Vec::new();
+    while let Ok(len) = receiver.recv(&mut buffer) {
+        let m = protocol::decode(&buffer[..len]).unwrap();
+        if let Some(DiscContents::Pub(p)) = m.disc_contents {
+            let Some(PubType::MsgPub(t)) = p.pub_type else {
+                panic!("wrong kind")
+            };
+            trace.push((m.r#type, t.msg_type));
+        }
+    }
+    assert_eq!(
+        trace,
+        [
+            (Type::EndConnection as i32, "google.protobuf.Message".into()),
+            (Type::NewConnection as i32, "new".into())
+        ]
+    );
+    assert_eq!(worker.subscriptions.len(), 1);
+}
+
+#[test]
+fn local_inventory_registry_poison_and_rollback_are_explicit() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let subscription = node.subscribe("/one", "T").unwrap();
+    drop(subscription);
+    assert!(matches!(node.subscribe("/two", "T"), Err(Error::QueueFull)));
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    drop(commands.recv().unwrap());
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = node.subscriptions.lock().unwrap();
+                    panic!("poison")
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(
+        matches!(node.subscribed_topics(),Err(Error::Native(m)) if m=="subscription registry poisoned")
+    );
+    assert!(
+        matches!(node.subscribe("/two","T"),Err(Error::Native(m)) if m=="subscription registry poisoned")
+    );
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = node.topics.lock().unwrap();
+                    panic!("poison")
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(
+        matches!(node.advertised_topics(),Err(Error::Native(m)) if m=="publisher registry poisoned")
+    );
+}
+
+#[test]
+fn duplicate_receivers_share_one_socket_filter_until_final_retirement() {
+    let (mut worker, _) = state(4);
+    let context = zmq::Context::new();
+    let publisher = context.socket(zmq::XPUB).unwrap();
+    publisher.set_linger(0).unwrap();
+    publisher.bind("tcp://127.0.0.1:*").unwrap();
+    let endpoint = publisher.get_last_endpoint().unwrap().unwrap();
+    worker.subscriber.connect(&endpoint).unwrap();
+    let topic = "/filter_lifetime";
+    let control = |enabled| [vec![u8::from(enabled)], topic.as_bytes().to_vec()].concat();
+    let mut active = Vec::new();
+    for descriptor in ["First", "Second"] {
+        let flag = Arc::new(AtomicBool::new(true));
+        let (tx, _) = mpsc::sync_channel(1);
+        worker.command(Command::Subscribe(
+            topic.into(),
+            descriptor.into(),
+            tx,
+            flag.clone(),
+        ));
+        active.push(flag);
+    }
+    assert_eq!(worker.subscriptions.len(), 2);
+    assert_eq!(worker.subscriptions[0].type_name, "First");
+    assert_eq!(worker.subscriptions[1].type_name, "Second");
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
+    active[0].store(false, Ordering::Release);
+    worker.cleanup();
+    assert_eq!(worker.subscriptions.len(), 1);
+    assert_eq!(worker.subscriptions[0].type_name, "Second");
+    assert_eq!(publisher.poll(zmq::POLLIN, 100).unwrap(), 0);
+    publisher
+        .send_multipart([topic.as_bytes(), b"Second", b"still live"], 0)
+        .unwrap();
+    assert!(worker.subscriber.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(
+        worker.subscriber.recv_multipart(0).unwrap()[2],
+        b"still live"
+    );
+    active[1].store(false, Ordering::Release);
+    worker.cleanup();
+    assert!(worker.subscriptions.is_empty());
+    // XPUB acknowledges actual filter removal before the negative delivery check.
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(false));
+    publisher
+        .send_multipart([topic.as_bytes(), b"Second", b"retired"], 0)
+        .unwrap();
+    assert_eq!(worker.subscriber.poll(zmq::POLLIN, 100).unwrap(), 0);
 }

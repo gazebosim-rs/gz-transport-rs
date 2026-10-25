@@ -97,6 +97,24 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     return 0;
   }
+  if (mode == "local-inventory") {
+    gz::transport::NodeOptions options;
+    if (!options.SetNameSpace("ns") || !options.AddTopicRemap(topic,value)) return 60;
+    gz::transport::Node local(options);
+    if (!local.AdvertisedTopics().empty() || !local.SubscribedTopics().empty()) return 61;
+    auto publication=local.Advertise<gz::msgs::StringMsg>(topic);
+    std::string qualified;
+    if (!publication || !gz::transport::TopicUtils::FullyQualifiedName(options.Partition(),options.NameSpace(),value,qualified)) return 62;
+    const auto actual=qualified.substr(qualified.find_last_of('@')+1);
+    if (local.AdvertisedTopics()!=std::vector<std::string>{actual}) return 63;
+    std::function<void(const gz::msgs::StringMsg&)> cb=[](const auto&){};
+    if (!local.Subscribe(topic,cb) || !local.Subscribe(topic,cb) || local.SubscribedTopics()!=std::vector<std::string>{actual}) return 64;
+    if (!local.Unsubscribe(actual) || !local.SubscribedTopics().empty()) return 65;
+    publication=gz::transport::Node::Publisher();
+    if (!local.AdvertisedTopics().empty()) return 66;
+    std::cout << "READY" << std::endl;
+    return 0;
+  }
   gz::transport::Node node;
   if (mode == "publisher-membership") {
     auto publisher=node.Advertise(topic,value);
