@@ -175,3 +175,13 @@ name binding and maintained protobuf encoding. Descriptor mismatch or an
 over-limit encoded value returns InvalidFrame before command admission; existing
 raw publication remains available for opaque bytes. Typed values do not provide
 a lossless unknown-field relay. See [typed publication](NET-01-typed-publication.md).
+
+
+`recv_with_info_timeout` captures delivery origin alongside the existing raw
+message. Its borrowed view exposes the path without qualification markers, the
+partition segment exactly as qualified (including its leading slash), the wire
+or advertised type, and direct same-Node versus socket delivery. The existing
+raw `Message` fields, byte forwarding and receive method remain compatible.
+Independent Rust Nodes in the same process still use the socket path; native
+process-global delivery reports true there, so the broader origin contract is
+explicitly incomplete. See [received metadata](NET-01-message-info.md).

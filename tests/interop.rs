@@ -1311,3 +1311,217 @@ fn typed_publication_reaches_actual_cpp_subscriber() {
     }
     subscriber.success();
 }
+
+// Node_TEST.cc:PubSubSameThreadMessageInfo and cbInfo value observations.
+// The complete original 2014 Apache/OSRF notice is retained above.
+fn received_five_with_info(
+    subscription: &gz_transport::Subscription,
+    partition: &str,
+    executed: &mut bool,
+    counter: &mut usize,
+) {
+    let message = subscription
+        .recv_with_info_timeout(Duration::from_secs(10))
+        .unwrap();
+    let info = message.info();
+    assert_eq!(info.topic, "/foo");
+    assert_eq!(
+        gz_msgs::int32::Int32::decode(message.data.as_slice())
+            .unwrap()
+            .data,
+        5
+    );
+    assert_eq!(info.partition, format!("/{partition}"));
+    assert_eq!(
+        info.type_name,
+        <gz_msgs::int32::Int32 as gz_msgs::CanonicalMessage>::PROTOBUF_NAME
+    );
+    assert!(info.intra_process);
+    *executed = true;
+    *counter += 1;
+}
+#[test]
+fn original_pub_sub_same_thread_message_info() {
+    let config = config();
+    let partition = config.partition.clone();
+    let node = Node::new(config).unwrap();
+    let publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    await_publication_membership(&publisher);
+    let (mut executed, mut counter) = (false, 0);
+    for _ in 0..2 {
+        assert!(!executed);
+        assert_eq!(counter, 0);
+        publisher.publish(int32_five()).unwrap();
+        received_five_with_info(&subscription, &partition, &mut executed, &mut counter);
+        assert!(executed);
+        assert_eq!(counter, 1);
+        executed = false;
+        counter = 0;
+    }
+}
+
+#[test]
+fn same_process_two_node_origin_is_an_explicit_native_mismatch() {
+    let config = config();
+    let mut native = Peer::start(&config, "message-info-two-nodes", "/foo", "5");
+    let mut origin = String::new();
+    native.1.read_line(&mut origin).unwrap();
+    assert_eq!(origin.trim(), "true");
+    native.success();
+    let partition = config.partition.clone();
+    let publisher_node = Node::new(config.clone()).unwrap();
+    let subscriber_node = Node::new(config).unwrap();
+    let publisher = publisher_node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let subscription = subscriber_node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    // Actual delivery observes the per-Node wire path. This is not an added
+    // readiness barrier disguised as a complete native two-Node fixture port.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let message = loop {
+        publisher.publish(int32_five()).unwrap();
+        match subscription.recv_with_info_timeout(Duration::from_millis(100)) {
+            Ok(message) => break message,
+            Err(Error::Timeout) => assert!(Instant::now() < deadline),
+            other => panic!("unexpected receive: {other:?}"),
+        }
+    };
+    assert_eq!(message.info().topic, "/foo");
+    assert_eq!(message.info().partition, format!("/{partition}"));
+    assert_eq!(message.info().type_name, "gz.msgs.Int32");
+    assert_eq!(
+        gz_msgs::int32::Int32::decode(message.data.as_slice())
+            .unwrap()
+            .data,
+        5
+    );
+    assert!(!message.info().intra_process);
+}
+
+#[test]
+fn remote_message_info_survives_retirement_recreation_and_shutdown() {
+    let config = config();
+    let partition = config.partition.clone();
+    let first = {
+        let node = Node::new(config.clone()).unwrap();
+        let old = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+        let mut publisher = Peer::start(&config, "message-info-publisher", "/foo", "5");
+        let first = old.recv_with_info_timeout(Duration::from_secs(10)).unwrap();
+        assert_eq!(
+            gz_msgs::int32::Int32::decode(first.data.as_slice())
+                .unwrap()
+                .data,
+            5
+        );
+        assert!(!first.info().intra_process);
+        node.unsubscribe("/foo").unwrap();
+        let replacement = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+        writeln!(publisher.0.stdin.as_mut().unwrap(), "6").unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let message = replacement
+                .recv_with_info_timeout(Duration::from_secs(1))
+                .unwrap();
+            assert_eq!(message.info().topic, "/foo");
+            assert_eq!(message.info().partition, format!("/{partition}"));
+            assert_eq!(message.info().type_name, "gz.msgs.Int32");
+            assert!(!message.info().intra_process);
+            let data = gz_msgs::int32::Int32::decode(message.data.as_slice())
+                .unwrap()
+                .data;
+            if data == 6 {
+                break;
+            }
+            assert_eq!(data, 5);
+            assert!(Instant::now() < deadline);
+        }
+        loop {
+            match old.recv_with_info_timeout(Duration::ZERO) {
+                Ok(message) => {
+                    assert_eq!(
+                        gz_msgs::int32::Int32::decode(message.data.as_slice())
+                            .unwrap()
+                            .data,
+                        5
+                    );
+                    assert!(!message.info().intra_process);
+                }
+                Err(Error::Shutdown) => break,
+                other => panic!("retired sender survived replacement: {other:?}"),
+            }
+        }
+        writeln!(publisher.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+        publisher.success();
+        first
+    };
+    assert_eq!(first.info().topic, "/foo");
+    assert_eq!(first.info().partition, format!("/{partition}"));
+    assert_eq!(first.info().type_name, "gz.msgs.Int32");
+    assert!(!first.info().intra_process);
+    assert_eq!(
+        gz_msgs::int32::Int32::decode(first.into_message().data.as_slice())
+            .unwrap()
+            .data,
+        5
+    );
+}
+
+#[test]
+fn cpp_observes_rust_publication_as_remote_with_exact_metadata() {
+    let config = config();
+    let mut subscriber = Peer::start(&config, "message-info-subscribe", "/foo", "5");
+    let node = Node::new(config).unwrap();
+    let publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while subscriber.0.try_wait().unwrap().is_none() {
+        assert!(
+            Instant::now() < deadline,
+            "native metadata callback did not finish"
+        );
+        publisher.publish(int32_five()).unwrap();
+        thread::sleep(Duration::from_millis(20));
+    }
+    subscriber.success();
+}
+
+#[test]
+fn message_info_partition_spelling_matches_native() {
+    let peer = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    for (partition, expected) in [("", ""), ("/metadata/", "/metadata"), ("café", "/café")] {
+        let config = Config {
+            partition: partition.into(),
+            namespace: "/ns/".into(),
+            ..config()
+        };
+        let qualified = gz_transport::qualified_name(partition, "/ns/", "tóp").unwrap();
+        let native = Command::new(&peer)
+            .args(["message-info-decompose", &qualified, expected])
+            .output()
+            .unwrap();
+        assert!(native.status.success());
+        assert!(native.stderr.is_empty());
+        assert_eq!(
+            String::from_utf8(native.stdout).unwrap(),
+            format!("/ns/tóp\n{expected}\n")
+        );
+        let node = Node::new(config).unwrap();
+        let publisher = node.advertise("tóp", "opaque.Type").unwrap();
+        let subscription = node.subscribe("tóp", "opaque.Type").unwrap();
+        await_publication_membership(&publisher);
+        publisher.publish(vec![0, 255, 128]).unwrap();
+        let received = subscription
+            .recv_with_info_timeout(Duration::from_secs(10))
+            .unwrap();
+        assert_eq!(received.info().topic, "/ns/tóp");
+        assert_eq!(received.info().partition, expected);
+        assert_eq!(received.info().type_name, "opaque.Type");
+        assert!(received.info().intra_process);
+        assert_eq!(received.data, [0, 255, 128]);
+    }
+}

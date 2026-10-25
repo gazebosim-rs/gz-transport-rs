@@ -3652,10 +3652,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubSameThreadMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_same_thread_message_info"
+      ],
+      "review": "/root/msgs_recovery; 2026-10-25; independently raw-verified all eleven frozen inputs, reran all135 Rust checks with fresh native peer and target, and exact unchanged native original XML1run0fail. Selected same-Node owned-receive assertion/API mapping approved; native process-global origin remains explicitly incomplete. Receipt docs/reviews/message-info.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3664,8 +3666,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Reviewed same-Node owned receive mapping retains Int32 data 5, valid publisher/subscription, original 10000ms/10ms membership wait, two independently reset single publications and all cbInfo observations: /foo, data 5, normalized /partition, canonical type and intra-process true. Origin across independent Rust Nodes in the same OS process remains a measured native mismatch; no broader origin mapping is claimed.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-message-info.md; artifacts/message-info-probe/proof.json and original.xml; required unchanged native original filter. Independent assertion/API disposition approved in docs/reviews/message-info.json."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.RawPubSubSameThreadMessageInfo",

@@ -72,6 +72,50 @@ impl Message {
         self.topic.rsplit('@').next().unwrap_or(&self.topic)
     }
 }
+/// Borrowed metadata for an owned received message.
+/// `intra_process` records direct delivery within this Node's worker. Independent
+/// Rust Nodes still use the wire, even in one OS process; native process-global
+/// sharing and its broader origin semantics remain an explicit compatibility gap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MessageInfo<'a> {
+    pub topic: &'a str,
+    pub partition: &'a str,
+    pub type_name: &'a str,
+    pub intra_process: bool,
+}
+/// An unchanged raw message plus its captured delivery path. Dereferences to the
+/// raw value; moving it out preserves every payload byte without reencoding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReceivedMessage {
+    message: Message,
+    intra_process: bool,
+}
+impl ReceivedMessage {
+    pub fn into_message(self) -> Message {
+        self.message
+    }
+    pub fn info(&self) -> MessageInfo<'_> {
+        // Delivered topics match a validated subscription's qualified name.
+        let partition = self
+            .message
+            .topic
+            .strip_prefix('@')
+            .and_then(|topic| topic.split_once('@'))
+            .map_or("", |(partition, _)| partition);
+        MessageInfo {
+            topic: self.message.topic_path(),
+            partition,
+            type_name: &self.message.type_name,
+            intra_process: self.intra_process,
+        }
+    }
+}
+impl std::ops::Deref for ReceivedMessage {
+    type Target = Message;
+    fn deref(&self) -> &Message {
+        &self.message
+    }
+}
 /// Canonical protobuf names advertised for one service signature.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ServiceTypes {
@@ -165,11 +209,17 @@ impl Publisher {
     }
 }
 pub struct Subscription {
-    rx: Receiver<Message>,
+    rx: Receiver<ReceivedMessage>,
     _lease: Lease,
 }
 impl Subscription {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Message, Error> {
+        self.recv_with_info_timeout(timeout)
+            .map(ReceivedMessage::into_message)
+    }
+    /// Receive owned bytes with a borrowed metadata view, using the same bounded
+    /// queue, timeout and shutdown behavior as the raw receive method.
+    pub fn recv_with_info_timeout(&self, timeout: Duration) -> Result<ReceivedMessage, Error> {
         self.rx.recv_timeout(timeout).map_err(receive_error)
     }
 }
@@ -577,7 +627,7 @@ impl Drop for Node {
 enum Command {
     Advertise(String, String, Arc<AtomicBool>),
     Publish(String, String, Vec<u8>),
-    Subscribe(String, String, SyncSender<Message>, Arc<AtomicBool>),
+    Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
     Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
@@ -600,7 +650,7 @@ struct Pending {
 struct SubscriberState {
     topic: String,
     type_name: String,
-    tx: SyncSender<Message>,
+    tx: SyncSender<ReceivedMessage>,
     active: Arc<AtomicBool>,
 }
 struct ServiceState {
@@ -943,11 +993,14 @@ impl Worker {
                     ],
                     zmq::DONTWAIT,
                 ));
-                self.deliver(Message {
-                    topic,
-                    type_name,
-                    data,
-                });
+                self.deliver(
+                    Message {
+                        topic,
+                        type_name,
+                        data,
+                    },
+                    true,
+                );
             }
             Command::Subscribe(topic, type_name, tx, active) => {
                 // Retire old filters/registrations before a replacement. This
@@ -1128,13 +1181,16 @@ impl Worker {
             }
         }
     }
-    fn deliver(&self, message: Message) {
+    fn deliver(&self, message: Message, intra_process: bool) {
         for s in &self.subscriptions {
             if s.active.load(Ordering::Acquire)
                 && s.topic == message.topic
                 && (s.type_name.is_empty() || s.type_name == message.type_name)
             {
-                self.sender.counters.dropped(s.tx.try_send(message.clone()));
+                self.sender.counters.dropped(s.tx.try_send(ReceivedMessage {
+                    message: message.clone(),
+                    intra_process,
+                }));
             }
         }
     }
@@ -1417,11 +1473,14 @@ impl Worker {
             if let (Ok(topic), Ok(type_name)) =
                 (protocol::text(&frames[0]), protocol::text(&frames[3]))
             {
-                self.deliver(Message {
-                    topic: topic.into(),
-                    type_name: type_name.into(),
-                    data: frames[2].clone(),
-                });
+                self.deliver(
+                    Message {
+                        topic: topic.into(),
+                        type_name: type_name.into(),
+                        data: frames[2].clone(),
+                    },
+                    false,
+                );
             } else {
                 self.sender
                     .counters

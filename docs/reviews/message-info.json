@@ -1,0 +1,79 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_owner (frozen predecessor packet)",
+  "reviewer": "/root/msgs_recovery",
+  "reviewed_at": "2026-10-25T10:30:27.400254+00:00",
+  "base": "2f35102930f59c53b5f38de4bb07ee7bd49c1edc",
+  "diff_sha256": "770ed1ddf9e409aa52004b2b270d8b8b8dadbeef39fc6a5fb7bbecde2d9ceb70",
+  "files": {
+    "README.md": "67663abe2a1c6e16e41e4663298d559ecd0ff55b3ae09e8a885202408b3f5552",
+    "docs/NET-01-message-info.md": "9448140a53ec900856963741703c3e44dfa63c133ee8ffa2b532815d03f478c6",
+    "docs/PROTOCOL.md": "d82606c9c5a93b631a6e8cd50f40c7a80fd776cb038979ef9aed9e2624fe060f",
+    "docs/TESTING.md": "dd0561fa638e0baee0e86d7077cd643c81f32d6636c204aca00e65c3f32284e3",
+    "docs/upstream-tests.json": "9b884675d1c98d23fef9617e3665e6db11f30395ba173fcd1392b30d36c991d7",
+    "scripts/verify.py": "ef48923909efdb21be787f795c57decd3ff1410f5744cee2fa3d0e3d69310a07",
+    "src/lib.rs": "98d6618bce80874dfea92911dabfa1f19ebd2a8dc00e9b571a1536f0275e85ed",
+    "src/runtime.rs": "0fab7b0217cecf8364fa4d2c472dff63eca9d28ed419dbd9fafc8abb1b83231e",
+    "tests/cpp_peer.cc": "439ab7ea1c4e36ba5fe3dc4b777a7d56a31163d8a6b4d70ed94cc82c452b96ea",
+    "tests/interop.rs": "876096ba74e32fac2798eac1babbb41e30b0ac31df1f2e3f2b593ef28bc92ce7",
+    "tests/support/runtime.rs": "7989521999705e0b01ded066a7774dc7c145324255617a470b5ab09f90afb75a"
+  },
+  "scope": "Owned ReceivedMessage and borrowed metadata; selected PubSubSameThreadMessageInfo assertion/API adaptation only. Native process-global same-process two-Node origin remains explicitly incomplete.",
+  "independent_checks": [
+    {
+      "check": "Raw base export and exact frozen candidate binding",
+      "result": "79 baseline Git blobs hash/type/mode verified; patch applied in isolated source context; all 11 candidate SHA256 values match before/after tests. Separate reviewer target and fresh owned test artifact build JSON retained."
+    },
+    {
+      "check": "Fresh native peer compilation and cargo test --locked --offline from private source/target with local sockets",
+      "result": "All 135 Rust checks pass, including two metadata units, five new interop tests, same-process native true/Rust false mismatch, real C++ both directions, raw relay and existing lifecycle tests."
+    },
+    {
+      "check": "Unchanged pinned native original",
+      "result": "NodeTest.PubSubSameThreadMessageInfo reruns 1/1 with zero failures. Native SHA and every source/helper/binary hash match producer proof."
+    },
+    {
+      "check": "Supplementary reviewer test",
+      "result": "Wildcard exact advertised type, remapped qualified topic, shared queue alternating envelope/raw receives, opaque invalid protobuf bytes, metadata after Node drop, and into_message payload allocation identity pass."
+    },
+    {
+      "check": "Source and original assertion comparison",
+      "result": "Two single publications after original HasConnections predicate, 10000ms/10ms membership bound, reset independent execution state, /foo, Int32 data5, canonical type, normalized partition and intra_process true all preserved. Owned receive completion replaces callback polling; callback API/global state intentionally not ported."
+    }
+  ],
+  "findings": [],
+  "scope_judgments": [
+    "Approve selected UNIT_Node_TEST:NodeTest.PubSubSameThreadMessageInfo as an assertion-preserving owned-receive API mapping; no broader raw callback, MessageInfo mutation/construction or process-global delivery acceptance.",
+    "Private ReceivedMessage state and read-only Deref keep captured metadata immutable; raw Message struct/API and byte relay remain available. into_message moves the existing allocation.",
+    "Only direct publish and actual socket receive assign origin, before bounded queueing. Socket-origin remains false even for a local-looking address; independent Rust Nodes mismatch native process-global sharing and the maintained differential asserts that mismatch explicitly.",
+    "Envelope uses original queue and capacity, filtering, error mapping and retirement semantics. No additional executor, queue, unsafe code, protocol changes or descriptor inference.",
+    "Existing test assertions were mechanically adapted to received envelope representation without weakening payload/drop/lifecycle checks; original 2014 notice remains in assertion ports."
+  ],
+  "author_evidence_separate": {
+    "rust_tests": 135,
+    "tooling_tests": 22,
+    "lines": [
+      1641,
+      1645
+    ],
+    "regions": [
+      2460,
+      2509
+    ],
+    "changed_lines": [
+      45,
+      45
+    ],
+    "qualification": "Inspected exact author inputs/coverage evidence and strict gate output. Reviewer independently reran all Rust tests and native original, not full tooling/coverage gate."
+  },
+  "reviewer_setup_dispositions": [
+    "Initial executor cwd did not yet exist; retried after creating private review source.",
+    "Initial git apply inherited enclosing repository and skipped files; SHA256 validation caught unchanged baseline before any review tests. Corrected with GIT_CEILING_DIRECTORIES; initial baseline native build is not counted as candidate evidence.",
+    "Initial sandboxed ZeroMQ abort and native getifaddrs failure were environment failures. Local-socket execution approved and all135 checks passed.",
+    "First unsandboxed native run omitted required Zenoh library path and exited127. Corrected Gazebo+Zenoh LD_LIBRARY_PATH passed pinned original; failed logs retained."
+  ],
+  "limits": [
+    "Normal strict staged hook, final metadata-only binding and hosted qualification remain mandatory.",
+    "No process-global origin, callback executor/mutable MessageInfo/global query timing, wider original case disposition, complete NET-01/NET-02 or performance acceptance."
+  ]
+}

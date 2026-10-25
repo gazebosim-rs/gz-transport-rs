@@ -9,8 +9,8 @@ mod runtime;
 pub use config::Config;
 pub use names::{as_valid_topic, qualified_name};
 pub use runtime::{
-    Message, Node, Publisher, Request, Service, ServiceTypeResolution, ServiceTypes, Statistics,
-    Subscription,
+    Message, MessageInfo, Node, Publisher, ReceivedMessage, Request, Service,
+    ServiceTypeResolution, ServiceTypes, Statistics, Subscription,
 };
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.

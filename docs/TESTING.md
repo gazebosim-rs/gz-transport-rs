@@ -109,3 +109,11 @@ Canonical typed publication requires the unchanged native NodeTest.TypeMismatch
 original plus its exact Int32/Vector3d assertion port and real C++ typed-value
 delivery. Descriptor/size checks and existing queue/shutdown errors are tested
 without changing raw byte forwarding.
+
+
+Received metadata additionally requires the unchanged native
+NodeTest.PubSubSameThreadMessageInfo original. Its two single publications and
+cbInfo observations have an independently approved owned-receive adaptation;
+see the [review receipt](reviews/message-info.json). A separate native/Rust two-Node test asserts the known origin mismatch;
+actual C++ peers cover remote origin in both directions and retirement/recreation.
+Existing raw relay and receiver lifecycle assertions stay in the full gate.

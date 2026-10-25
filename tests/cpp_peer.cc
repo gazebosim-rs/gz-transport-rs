@@ -1,8 +1,24 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Differential peer for pinned Gazebo Transport; no replacement logic is linked.
-// Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
+// Native assertion controls retain the original Node_TEST.cc notice.
+/*
+ * Copyright (C) 2014 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <gz/transport/Node.hh>
+#include <gz/transport/MessageInfo.hh>
 #include <gz/transport/NodeShared.hh>
 #include <gz/transport/TopicUtils.hh>
 #include <gz/transport/TopicStorage.hh>
@@ -10,7 +26,9 @@
 #include <gz/msgs/int32.pb.h>
 #include <gz/msgs/empty.pb.h>
 #include <gz/msgs/discovery.pb.h>
+#include <atomic>
 #include <chrono>
+#include <optional>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
@@ -31,9 +49,34 @@ std::size_t Count(const gz::transport::TopicStorage<Publisher> &storage,
   return count;
 }
 
+struct MetadataState {
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool received=false, valid=false, intra=false;
+};
+static auto metadata_callback(const std::shared_ptr<MetadataState> &state,
+                              std::string topic,std::string partition) {
+  return std::function<void(const gz::msgs::Int32&,const gz::transport::MessageInfo&)>(
+    [state,topic,partition](const auto &message,const auto &info) {
+      std::lock_guard<std::mutex> guard(state->mutex);
+      state->valid=message.data()==5 && info.Topic()==topic && info.Partition()==partition && info.Type()=="gz.msgs.Int32";
+      state->intra=info.IntraProcess();state->received=true;state->cv.notify_all();
+    });
+}
+static std::optional<bool> wait_metadata(const std::shared_ptr<MetadataState> &state) {
+  std::unique_lock<std::mutex> lock(state->mutex);
+  if (!state->cv.wait_for(lock,std::chrono::seconds(5),[&]{return state->received;}) || !state->valid) return std::nullopt;
+  return state->intra;
+}
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "message-info-decompose") {
+    gz::transport::MessageInfo info;
+    if (!info.SetTopicAndPartition(topic)) return 107;
+    std::cout << info.Topic() << '\n' << info.Partition() << '\n';
+    return info.Partition()==value ? 0 : 108;
+  }
   if (mode == "decode-discovery") {
     const std::string input(std::istreambuf_iterator<char>(std::cin), {});
     gz::msgs::Discovery message;
@@ -117,7 +160,33 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
-  if (mode == "unsubscribe-reference") {
+  if (mode == "message-info-two-nodes" || mode == "message-info-subscribe") {
+    auto state=std::make_shared<MetadataState>();
+    std::string qualified;
+    gz::transport::MessageInfo expected;
+    if (!gz::transport::TopicUtils::FullyQualifiedName(node.Options().Partition(),node.Options().NameSpace(),topic,qualified) || !expected.SetTopicAndPartition(qualified)) return 100;
+    if (mode == "message-info-two-nodes") {
+      gz::transport::Node other;
+      auto publisher=node.Advertise<gz::msgs::Int32>(topic);
+      if (!publisher || !other.Subscribe(topic,metadata_callback(state,expected.Topic(),expected.Partition())) || !publisher.HasConnections()) return 101;
+      gz::msgs::Int32 message;message.set_data(5);
+      if (!publisher.Publish(message)) return 102;
+      auto intra=wait_metadata(state);if (!intra) return 103;
+      std::cout << "READY" << std::endl << (*intra?"true":"false") << std::endl;
+    } else {
+      if (!node.Subscribe(topic,metadata_callback(state,expected.Topic(),expected.Partition()))) return 104;
+      std::cout << "READY" << std::endl;
+      auto intra=wait_metadata(state);if (!intra || *intra) return 105;
+    }
+  } else if (mode == "message-info-publisher") {
+    auto publisher=node.Advertise<gz::msgs::Int32>(topic);if(!publisher)return 106;
+    std::atomic<bool> running{true};std::atomic<int> current{5};
+    std::thread publishing([&]{while(running.load()){gz::msgs::Int32 message;message.set_data(current.load());publisher.Publish(message);std::this_thread::sleep_for(std::chrono::milliseconds(20));}});
+    std::cout << "READY" << std::endl;
+    std::string command;
+    while(std::getline(std::cin,command) && command!="QUIT") {if(command=="6")current.store(6);}
+    running.store(false);publishing.join();
+  } else if (mode == "unsubscribe-reference") {
     gz::transport::NodeOptions options;
     if (!options.AddTopicRemap(topic,value)) return 90;
     gz::transport::Node first(options),second(options);

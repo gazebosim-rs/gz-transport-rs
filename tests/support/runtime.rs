@@ -1110,9 +1110,9 @@ fn queue_saturation_is_observable_in_local_counters() {
         type_name: "type".into(),
         data: vec![1],
     };
-    worker.deliver(message.clone());
-    worker.deliver(message.clone());
-    assert_eq!(rx.try_recv().unwrap(), message);
+    worker.deliver(message.clone(), true);
+    worker.deliver(message.clone(), true);
+    assert_eq!(rx.try_recv().unwrap().into_message(), message);
     assert!(rx.try_recv().is_err());
     assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
     let counters = Counters::default();
@@ -1205,11 +1205,14 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
     });
     worker.cleanup();
     assert_eq!(worker.subscriptions.len(), 1);
-    worker.deliver(Message {
-        topic: "topic".into(),
-        type_name: "type".into(),
-        data: vec![7],
-    });
+    worker.deliver(
+        Message {
+            topic: "topic".into(),
+            type_name: "type".into(),
+            data: vec![7],
+        },
+        true,
+    );
     assert_eq!(rx.try_recv().unwrap().data, vec![7]);
     for timeout in [Duration::ZERO, Duration::MAX] {
         assert!(matches!(
@@ -2828,17 +2831,23 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     let control = |enabled| [vec![u8::from(enabled)], topic.as_bytes().to_vec()].concat();
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
-    worker.deliver(Message {
-        topic: topic.clone(),
-        type_name: "old".into(),
-        data: vec![1],
-    });
+    worker.deliver(
+        Message {
+            topic: topic.clone(),
+            type_name: "old".into(),
+            data: vec![1],
+        },
+        true,
+    );
     node.unsubscribe("/topic").unwrap();
-    worker.deliver(Message {
-        topic: topic.clone(),
-        type_name: "old".into(),
-        data: vec![2],
-    });
+    worker.deliver(
+        Message {
+            topic: topic.clone(),
+            type_name: "old".into(),
+            data: vec![2],
+        },
+        true,
+    );
     assert_eq!(first.recv_timeout(Duration::ZERO).unwrap().data, [1]);
     assert!(matches!(
         first.recv_timeout(Duration::ZERO),
@@ -2870,11 +2879,14 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     ));
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
-    worker.deliver(Message {
-        topic: topic.clone(),
-        type_name: "new".into(),
-        data: vec![3],
-    });
+    worker.deliver(
+        Message {
+            topic: topic.clone(),
+            type_name: "new".into(),
+            data: vec![3],
+        },
+        true,
+    );
     assert_eq!(replacement.recv_timeout(Duration::ZERO).unwrap().data, [3]);
     node.unsubscribe("/topic").unwrap();
     worker.command(commands.recv().unwrap());
@@ -2987,4 +2999,136 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
     let publisher = node.advertise_typed::<Int32>("/size").unwrap();
     assert_eq!(publisher.publish_typed(&right), Err(Error::InvalidFrame));
     assert_eq!(node.statistics().queue_drops, 0);
+}
+
+#[test]
+fn message_metadata_preserves_opaque_bytes_and_outlives_runtime() {
+    let payload = vec![0, 255, 128, 18, 0];
+    let received = {
+        let node = Node::new(Config {
+            partition: "/metadata/".into(),
+            namespace: "/space/".into(),
+            ..Config::default()
+        })
+        .unwrap();
+        let publisher = node.advertise("topic", "opaque.Type").unwrap();
+        let old = node.subscribe("topic", "opaque.Type").unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !publisher.has_connections().unwrap() {
+            assert!(Instant::now() < deadline);
+            thread::sleep(Duration::from_millis(1));
+        }
+        publisher.publish(payload.clone()).unwrap();
+        let received = old.recv_with_info_timeout(Duration::from_secs(1)).unwrap();
+        node.unsubscribe("topic").unwrap();
+        let replacement = node.subscribe("topic", "opaque.Type").unwrap();
+        publisher.publish(vec![2]).unwrap();
+        let next = replacement
+            .recv_with_info_timeout(Duration::from_secs(1))
+            .unwrap();
+        assert_eq!(next.data, [2]);
+        assert!(next.info().intra_process);
+        assert!(matches!(
+            old.recv_with_info_timeout(Duration::ZERO),
+            Err(Error::Shutdown)
+        ));
+        publisher.publish(vec![3]).unwrap();
+        assert_eq!(
+            replacement
+                .recv_timeout(Duration::from_secs(1))
+                .unwrap()
+                .data,
+            [3]
+        );
+        received
+    };
+    let expected = MessageInfo {
+        topic: "/space/topic",
+        partition: "/metadata",
+        type_name: "opaque.Type",
+        intra_process: true,
+    };
+    assert_eq!(received.info(), expected);
+    assert_eq!(received.clone().info(), expected);
+    assert_eq!(received.topic_path(), expected.topic);
+    let pointer = received.data.as_ptr();
+    let raw = received.into_message();
+    assert_eq!(raw.data.as_ptr(), pointer);
+    assert_eq!(
+        raw,
+        Message {
+            topic: "@/metadata@/space/topic".into(),
+            type_name: "opaque.Type".into(),
+            data: payload
+        }
+    );
+    let empty = ReceivedMessage {
+        message: Message {
+            topic: String::new(),
+            type_name: String::new(),
+            data: vec![],
+        },
+        intra_process: false,
+    };
+    assert_eq!(
+        empty.info(),
+        MessageInfo {
+            topic: "",
+            partition: "",
+            type_name: "",
+            intra_process: false
+        }
+    );
+}
+
+#[test]
+fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
+    let (mut worker, _) = state(4);
+    let context = zmq::Context::new();
+    let publisher = context.socket(zmq::XPUB).unwrap();
+    publisher.set_linger(0).unwrap();
+    publisher.bind("tcp://127.0.0.1:*").unwrap();
+    worker
+        .subscriber
+        .connect(&publisher.get_last_endpoint().unwrap().unwrap())
+        .unwrap();
+    let topic = qualified_name(&worker.config.partition, "space", "topic").unwrap();
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        topic.clone(),
+        "opaque.Type".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(
+        publisher.recv_bytes(0).unwrap(),
+        [vec![1], topic.as_bytes().to_vec()].concat()
+    );
+    let payload = [0, 255, 0, 128];
+    publisher
+        .send_multipart(
+            [
+                topic.as_bytes(),
+                worker.address.as_bytes(),
+                &payload,
+                b"opaque.Type",
+            ],
+            0,
+        )
+        .unwrap();
+    assert!(worker.subscriber.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    worker.receive_publications();
+    let received = rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert_eq!(received.data, payload);
+    assert_eq!(
+        received.info(),
+        MessageInfo {
+            topic: "/space/topic",
+            partition: &format!("/{}", worker.config.partition),
+            type_name: "opaque.Type",
+            intra_process: false
+        }
+    );
+    assert_eq!(worker.sender.counters.snapshot().malformed_frames, 0);
 }
