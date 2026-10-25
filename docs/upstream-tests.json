@@ -4315,10 +4315,12 @@
       "id": "UNIT_Node_TEST:NodeTest.MultipleServiceCallAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.MultipleServiceCallAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_multiple_service_call_async"
+      ],
+      "review": "approved /root/msgs; docs/reviews/service-batches.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4327,17 +4329,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or Empty input, invalid advertise/request, actual execution/true result/response data, independently counted1 then3 calls, invalid and valid withdrawal retained. Rust polling/scoped request threads replace callback syntax; one-way checks actual dispatch without a response.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-batches.md; mandatory unchanged native originals and source-exact Rust batch ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.MultipleServiceCallWithoutInputAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.MultipleServiceCallWithoutInputAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_multiple_service_call_without_input_async"
+      ],
+      "review": "approved /root/msgs; docs/reviews/service-batches.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4346,17 +4351,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or Empty input, invalid advertise/request, actual execution/true result/response data, independently counted1 then3 calls, invalid and valid withdrawal retained. Rust polling/scoped request threads replace callback syntax; one-way checks actual dispatch without a response.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-batches.md; mandatory unchanged native originals and source-exact Rust batch ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.MultipleServiceWithoutOutputCallAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.MultipleServiceWithoutOutputCallAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_multiple_service_without_output_call_async"
+      ],
+      "review": "approved /root/msgs; docs/reviews/service-batches.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4365,8 +4373,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or Empty input, invalid advertise/request, actual execution/true result/response data, independently counted1 then3 calls, invalid and valid withdrawal retained. Rust polling/scoped request threads replace callback syntax; one-way checks actual dispatch without a response.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-batches.md; mandatory unchanged native originals and source-exact Rust batch ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallSync",

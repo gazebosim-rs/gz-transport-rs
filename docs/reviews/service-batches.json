@@ -1,0 +1,10 @@
+{
+  "decision": "approved",
+  "author": "/root/transport",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T00:31:17.290777+00:00",
+  "tracked_diff": "b66fd9ff41056e893df7aeceb406fc6f88e2b577dcd8602b9fca5215b7a53f14",
+  "document_sha256": "3386a80ce5a10ff44bab8217b6615cc495f62db7e9cc34be60da29f4d61b276c",
+  "scope": "Compared all three original Node_TEST.cc1736\u20131872 cases and helpers146\u2013185. Original invalid advertise/request, /foo/Int32 data5 or Empty input, actual service execution and true result/response, independently reset counts1then3, invalid and successful valid withdrawal assertions retained. Actual queued request dispatch and completed response counts faithfully replace callbacks; one-way handoff followed by queue drain checks actual events, not fabricated flags. Scoped polling-thread mapping and distinct partitions appropriate. No production or tolerance change and no full packet claim.",
+  "independent_checks": "All3 multiple-call Rust tests pass under defaultparallel(0.03s); all3 exact native originals pass XML3run0fail(0.10s). Pinned source and native binary hashes verified unchanged. Author76Rust/21tool full gate and coverage reported, not independently recomputed. Final faithful mapping metadata and matching strict staged gate required."
+}
