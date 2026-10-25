@@ -169,3 +169,9 @@ waiting for the IO worker. Existing cleanup handles final socket filter removal
 and END notifications. Already-owned receiver buffers can drain, and previously
 selected worker deliveries may complete; native queued callback cancellation is
 a separate API boundary. See [unsubscribe ownership](NET-01-unsubscribe.md).
+
+Canonical `advertise_typed` and `publish_typed` use the pinned message producer
+name binding and maintained protobuf encoding. Descriptor mismatch or an
+over-limit encoded value returns InvalidFrame before command admission; existing
+raw publication remains available for opaque bytes. Typed values do not provide
+a lossless unknown-field relay. See [typed publication](NET-01-typed-publication.md).

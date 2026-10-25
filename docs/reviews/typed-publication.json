@@ -1,0 +1,45 @@
+{
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T08:11:56.778076+00:00",
+  "decision": "approved",
+  "base": "b3b2b9ec6d68f59fb371fb86cf5ebf40454ee5fb",
+  "diff_sha256": "cf043f572d32ad1a6bae1aacc519571fabce8195aed9960df7f0b8872eae4509",
+  "source_sha256": {
+    "README.md": "6c9c24d9da3add3758d085a70a51342d1010b3ad28ad71e548a01dd867bb2d9a",
+    "docs/NET-01-typed-publication.md": "a23ab85810c8e8794bc08dd1f7e67fc80d5cc2f380850ca64724e444c3278a5b",
+    "docs/PROTOCOL.md": "832f3372918226b1ca245c0efbc338aae338c43d593111c50a01d4b080e12c66",
+    "docs/TESTING.md": "5cbe9d5f0f0137282558ecd7a825d27d0ef3597b88a809b4a8cfd81aaac89298",
+    "docs/upstream-tests.json": "dcce4d52b0b3f0aa7cc9bc2c093786a49eca92efa4599f32c88b5eb1020171d3",
+    "scripts/verify.py": "d61bc2da869f8baa967aeb33542f64bb9c789aa36c86bf73c1435362a40d7f52",
+    "src/runtime.rs": "f2ff7a379e4cf27709e77c8ebd89ec56ce40e7fe11ffaef7d8d177e40cb8ce8c",
+    "tests/interop.rs": "16f4cdcc74112a3bc66fa22c7bd810f56fa7b18780b7fe310e5ad8e8f3726692",
+    "tests/support/runtime.rs": "8905c00e3c9375d7a8d1fab9fbd6bea99bb0beaa60cac5b8d79edba46b7bafc7",
+    "tests/typed_publication.rs": "1d563a85e6364e3c8c282fe02ddb0c8dc909ac0d57b465341294ed40abeb0f88"
+  },
+  "independent_checks": [
+    "Raw-exported and Git-blob/type/mode/path-set verified the public parent, applied exactly the ten frozen files and reverified all source bindings. Built only in reviewer-owned source/fresh private target.",
+    "Read the pinned e2001a3 CanonicalMessage sealing/supertraits and generated binding contract. New methods reuse the exact package/name and maintained Message encoding, with mismatch/encoded length checked before allocation/admission; raw APIs, dependency pins, codec/registry and error variants remain unchanged.",
+    "Compared complete original NodeTest.TypeMismatch: exact /foo topic, Int32 data 1, Vector3d 1/2/3, valid advertisement, wrong-type rejection and right-type admission retained. Fresh owned Node state replaces only unused global reset state; no subscriber/callback/readiness barrier added. Original 2014 notice retained.",
+    "Independently ran the original Rust port, the deterministic binding/size/queue/shutdown supplement and actual typed StringMsg delivery to a freshly compiled C++ subscriber: all three targeted Rust tests pass.",
+    "Independently reran exact unchanged native TypeMismatch: XML one run/zero failures, source and binary hashes match. The proposed full original mapping is faithful to the typed-owned-result API replacement."
+  ],
+  "author_gate": {
+    "rust_tests": 128,
+    "tool_tests": 22,
+    "lines": [
+      1591,
+      1611
+    ],
+    "regions": [
+      2420,
+      2485
+    ],
+    "changed_lines": [
+      12,
+      12
+    ],
+    "qualification": "Reported author full strict/native gate; independent full coverage/tooling/all-Rust rerun not claimed."
+  },
+  "limits": "Canonical generated types from the same pinned producer package only. Typed decode/reencode cannot recover unknown fields; unchanged raw bytes/envelope API remains required for lossless relays. No broad reflection/external-type API, performance or whole NET packet acceptance. Final metadata binding, normal exact staged hook and hosted qualification required."
+}

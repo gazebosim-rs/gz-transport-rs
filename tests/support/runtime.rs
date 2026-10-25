@@ -2935,3 +2935,56 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
     drop(subscription);
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
 }
+
+#[test]
+fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
+    use gz_msgs::prost::Message as _;
+    use gz_msgs::{int32::Int32, vector3d::Vector3d};
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise_typed::<Int32>("/typed").unwrap();
+    let wrong = Vector3d {
+        x: 1.,
+        y: 2.,
+        z: 3.,
+        ..Default::default()
+    };
+    let right = Int32 {
+        data: 1,
+        ..Default::default()
+    };
+    assert_eq!(publisher.publish_typed(&wrong), Err(Error::InvalidFrame));
+    assert_eq!(node.statistics().queue_drops, 0);
+    assert_eq!(publisher.publish_typed(&right), Err(Error::QueueFull));
+    worker.command(commands.recv().unwrap());
+    publisher.publish_typed(&right).unwrap();
+    let Command::Publish(_, name, bytes) = commands.recv().unwrap() else {
+        panic!("missing typed publication")
+    };
+    assert_eq!(name, "gz.msgs.Int32");
+    assert_eq!(Int32::decode(bytes.as_slice()).unwrap().data, 1);
+    node.cancel();
+    assert_eq!(publisher.publish_typed(&right), Err(Error::Shutdown));
+    let (worker, _commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: Config {
+            max_message_bytes: 1,
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise_typed::<Int32>("/size").unwrap();
+    assert_eq!(publisher.publish_typed(&right), Err(Error::InvalidFrame));
+    assert_eq!(node.statistics().queue_drops, 0);
+}

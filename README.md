@@ -42,13 +42,17 @@ listed in [the protocol contract](docs/PROTOCOL.md) and the 418-case
 [upstream ledger](docs/upstream-tests.json).
 
 ```rust,no_run
+use gz_msgs::stringmsg::StringMsg;
 use gz_transport::{Config, Node};
 let node = Node::new(Config { partition: "example".into(), ..Config::default() })?;
-let publisher = node.advertise("/greeting", "gz.msgs.StringMsg")?;
-// Canonical StringMsg field 2; applications normally encode with gz-msgs.
-publisher.publish(vec![0x12, 0x02, b'o', b'k'])?;
+let publisher = node.advertise_typed::<StringMsg>("/greeting")?;
+publisher.publish_typed(&StringMsg { data: "ok".into(), ..Default::default() })?;
 # Ok::<(), gz_transport::Error>(())
 ```
+
+Typed publication rejects a different canonical descriptor before encoding.
+Use `publish(bytes)` for opaque forwarding; typed reencoding does not retain
+unknown fields. See [typed publication](docs/NET-01-typed-publication.md).
 
 Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies

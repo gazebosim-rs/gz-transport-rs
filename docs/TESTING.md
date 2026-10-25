@@ -104,3 +104,8 @@ Explicit unsubscribe adds the unchanged native two-node original as a required
 baseline control without retiring its Rust mapping. Native/Rust metadata and
 actual XPUB filter-lifetime checks cover the narrower API; see the
 [receiver ownership boundary](NET-01-unsubscribe.md).
+
+Canonical typed publication requires the unchanged native NodeTest.TypeMismatch
+original plus its exact Int32/Vector3d assertion port and real C++ typed-value
+delivery. Descriptor/size checks and existing queue/shutdown errors are tested
+without changing raw byte forwarding.

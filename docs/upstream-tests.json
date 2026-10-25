@@ -4212,10 +4212,12 @@
       "id": "UNIT_Node_TEST:NodeTest.TypeMismatch",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TypeMismatch",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_type_mismatch"
+      ],
+      "review": "/root/msgs; 2026-10-25; exact literals, valid advertisement and rejected/accepted typed publication assertions compared; independent three targeted Rust checks and freshly rebuilt actual C++ delivery plus unchanged native TypeMismatch XML one run/zero failures with hashes verified; owned Result/canonical binding mapping approved",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4224,8 +4226,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Retains exact original Int32(1), Vector3d(1,2,3), successful Int32 advertisement, rejected wrong typed publication and accepted right publication. Canonical generated descriptor binding maps native typed Advertise/Publish to owned Rust wrappers; false mismatch maps to InvalidFrame and true admission maps to Ok. No subscriber, discovery barrier or callback substitution introduced.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-typed-publication.md; mandatory unchanged native TypeMismatch original; artifacts/typed-publication-probe/proof.json"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsync",

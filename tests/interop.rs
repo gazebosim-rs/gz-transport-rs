@@ -1289,3 +1289,25 @@ fn explicit_unsubscribe_matches_native_original_name_and_node_ownership() {
     assert!(second.subscribed_topics().unwrap().is_empty());
     drop((receivers, replacement));
 }
+
+#[test]
+fn typed_publication_reaches_actual_cpp_subscriber() {
+    let config = config();
+    let mut subscriber = Peer::start(&config, "subscribe", "/typed", "typed value");
+    let node = Node::new(config).unwrap();
+    let publisher = node.advertise_typed::<StringMsg>("/typed").unwrap();
+    let value = StringMsg {
+        data: "typed value".into(),
+        ..Default::default()
+    };
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while subscriber.0.try_wait().unwrap().is_none() {
+        assert!(
+            Instant::now() < deadline,
+            "native typed subscriber did not complete"
+        );
+        publisher.publish_typed(&value).unwrap();
+        thread::sleep(Duration::from_millis(20));
+    }
+    subscriber.success();
+}

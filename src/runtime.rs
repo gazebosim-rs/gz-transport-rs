@@ -144,6 +144,14 @@ impl Publisher {
         ))?;
         rx.recv_timeout(self.reply_timeout).map_err(receive_error)
     }
+    /// Encode a canonical value after checking its descriptor and size.
+    /// Typed reencoding does not preserve unknown fields from original wire bytes.
+    pub fn publish_typed<M: gz_msgs::CanonicalMessage>(&self, value: &M) -> Result<(), Error> {
+        if self.type_name != M::PROTOBUF_NAME || value.encoded_len() > self.max {
+            return Err(Error::InvalidFrame);
+        }
+        self.publish(value.encode_to_vec())
+    }
     pub fn publish(&self, data: impl Into<Vec<u8>>) -> Result<(), Error> {
         let data = data.into();
         if data.len() > self.max {
@@ -272,6 +280,13 @@ impl Node {
     }
     /// Reserve one publisher per qualified topic on this Node, as native Gazebo does.
     /// Dropping it immediately releases ownership; worker withdrawal precedes recreation.
+    /// Advertise the pinned canonical descriptor for a generated message type.
+    pub fn advertise_typed<M: gz_msgs::CanonicalMessage>(
+        &self,
+        topic: &str,
+    ) -> Result<Publisher, Error> {
+        self.advertise(topic, M::PROTOBUF_NAME)
+    }
     pub fn advertise(&self, topic: &str, type_name: &str) -> Result<Publisher, Error> {
         let topic = self.remapped_topic(topic)?;
         let mut topics = self
