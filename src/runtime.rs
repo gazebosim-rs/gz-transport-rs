@@ -14,7 +14,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddrV4, UdpSocket},
     sync::{
         Arc, Mutex, OnceLock, Weak,
-        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering},
         mpsc::{self, Receiver, SyncSender, TrySendError},
     },
     thread::{self, JoinHandle},
@@ -205,16 +205,73 @@ fn release(active: &AtomicBool, slots: &AtomicUsize) {
         slots.fetch_sub(1, Ordering::AcqRel);
     }
 }
+const LOCAL_INTEREST: u8 = 1;
+const REMOTE_INTEREST: u8 = 2;
+
+struct LocalPublisherInterest {
+    topic: String,
+    type_name: String,
+    active: Weak<AtomicBool>,
+    bits: Weak<AtomicU8>,
+}
+struct LocalSubscriberInterest {
+    topic: String,
+    type_name: String,
+    active: Weak<AtomicBool>,
+}
+#[derive(Default)]
+struct LocalInterestCache {
+    publishers: Vec<LocalPublisherInterest>,
+    subscribers: Vec<LocalSubscriberInterest>,
+}
+impl LocalInterestCache {
+    fn refresh(&mut self) {
+        self.subscribers.retain(|sub| {
+            sub.active
+                .upgrade()
+                .is_some_and(|a| a.load(Ordering::Acquire))
+        });
+        self.publishers.retain(|pub_| {
+            pub_.active
+                .upgrade()
+                .is_some_and(|a| a.load(Ordering::Acquire))
+                && pub_.bits.upgrade().is_some()
+        });
+        for pub_ in &self.publishers {
+            let matching = self.subscribers.iter().any(|sub| {
+                sub.topic == pub_.topic
+                    && (sub.type_name.is_empty() || sub.type_name == pub_.type_name)
+            });
+            if let Some(bits) = pub_.bits.upgrade() {
+                if matching {
+                    bits.fetch_or(LOCAL_INTEREST, Ordering::AcqRel);
+                } else {
+                    bits.fetch_and(!LOCAL_INTEREST, Ordering::AcqRel);
+                }
+            }
+        }
+    }
+}
 pub struct Publisher {
     _lease: Lease,
     sender: Sender,
     _lifetime: Arc<WorkerLifetime>,
+    interest: Arc<AtomicU8>,
     topic: String,
     type_name: String,
     max: usize,
     reply_timeout: Duration,
 }
 impl Publisher {
+    /// Read known matching registration interest without worker coordination.
+    /// This does not acknowledge authentication or delivery. The remote half
+    /// remembers native NEW_CONNECTION records across process-only BYE.
+    pub fn connection_snapshot(&self) -> Result<bool, Error> {
+        if self.sender.stop.load(Ordering::Acquire) || !self._lease.active.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        Ok(self.interest.load(Ordering::Acquire) != 0)
+    }
     /// Snapshot known matching subscriber registrations. As in native Gazebo,
     /// membership does not acknowledge authentication or successful delivery,
     /// and process-only disconnects do not erase remembered registrations.
@@ -252,6 +309,16 @@ pub struct Subscription {
     rx: Receiver<ReceivedMessage>,
     _lease: Lease,
     owner_dead: Arc<AtomicBool>,
+    local_interest: Arc<Mutex<LocalInterestCache>>,
+}
+impl Drop for Subscription {
+    fn drop(&mut self) {
+        release(&self._lease.active, &self._lease.slots);
+        self.local_interest
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .refresh();
+    }
 }
 impl Subscription {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Message, Error> {
@@ -420,6 +487,7 @@ pub struct Node {
     sender: Sender,
     lifetime: Arc<WorkerLifetime>,
     owner_dead: Arc<AtomicBool>,
+    local_interest: Arc<Mutex<LocalInterestCache>>,
     config: Config,
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
     subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
@@ -457,6 +525,7 @@ impl Node {
                 worker: Mutex::new(Some(worker)),
             }),
             owner_dead,
+            local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
             config,
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
@@ -503,10 +572,12 @@ impl Node {
             return Err(Error::AlreadyAdvertised);
         }
         let lease = self.reserve()?;
+        let interest = Arc::new(AtomicU8::new(0));
         self.sender.send(Command::Advertise(
             topic.clone(),
             type_name.into(),
             lease.active.clone(),
+            interest.clone(),
         ))?;
         topics.insert(topic.clone(), Arc::downgrade(&lease.active));
         drop(topics);
@@ -532,10 +603,22 @@ impl Node {
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
         });
+        let mut interests = self
+            .local_interest
+            .lock()
+            .map_err(|_| Error::Native("local interest cache poisoned".into()))?;
+        interests.publishers.push(LocalPublisherInterest {
+            topic: topic.clone(),
+            type_name: type_name.into(),
+            active: Arc::downgrade(&lease.active),
+            bits: Arc::downgrade(&interest),
+        });
+        interests.refresh();
         Ok(Publisher {
             _lease: lease,
             sender: self.sender.clone(),
             _lifetime: self.lifetime.clone(),
+            interest,
             topic,
             type_name: type_name.into(),
             max: self.config.max_message_bytes,
@@ -571,7 +654,7 @@ impl Node {
             key: SubscriberInterestKey {
                 process: identity.process.clone(),
                 node: identity.node.clone(),
-                topic,
+                topic: topic.clone(),
                 address: identity.address.clone(),
                 type_name: if type_name.is_empty() {
                     "google.protobuf.Message".into()
@@ -583,10 +666,21 @@ impl Node {
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
         });
+        let mut interests = self
+            .local_interest
+            .lock()
+            .map_err(|_| Error::Native("local interest cache poisoned".into()))?;
+        interests.subscribers.push(LocalSubscriberInterest {
+            topic,
+            type_name: type_name.into(),
+            active: Arc::downgrade(&lease.active),
+        });
+        interests.refresh();
         Ok(Subscription {
             rx,
             _lease: lease,
             owner_dead: self.owner_dead.clone(),
+            local_interest: self.local_interest.clone(),
         })
     }
     /// This Node's live publisher topics, sorted without partition prefixes.
@@ -747,6 +841,10 @@ impl Node {
                 true
             }
         });
+        self.local_interest
+            .lock()
+            .map_err(|_| Error::Native("local interest cache poisoned".into()))?
+            .refresh();
         Ok(())
     }
     /// Register one service per qualified topic on this Node. A rejected duplicate
@@ -969,6 +1067,10 @@ impl Drop for Node {
                 release(&active, &self.sender.slots);
             }
         }
+        self.local_interest
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .refresh();
         if self.sender.stop.load(Ordering::Acquire) || Arc::strong_count(&self.lifetime) == 1 {
             self.lifetime.stop_and_join();
         }
@@ -976,7 +1078,7 @@ impl Drop for Node {
 }
 
 enum Command {
-    Advertise(String, String, Arc<AtomicBool>),
+    Advertise(String, String, Arc<AtomicBool>, Arc<AtomicU8>),
     KnownPublisherTopics(SyncSender<TopicNameRecords>),
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
@@ -1081,7 +1183,7 @@ struct Worker {
     response_address: String,
     router_id: String,
     response_id: String,
-    advertisements: Vec<(WirePublisher, Arc<AtomicBool>)>,
+    advertisements: Vec<(WirePublisher, Arc<AtomicBool>, Arc<AtomicU8>)>,
     subscriptions: Vec<SubscriberState>,
     services: Vec<ServiceState>,
     peers: HashMap<PeerKey, (WirePublisher, Instant)>,
@@ -1368,7 +1470,7 @@ impl Worker {
             }
         };
         if channel == 0 {
-            for (publisher, active) in &self.advertisements {
+            for (publisher, active, _) in &self.advertisements {
                 if active.load(Ordering::Acquire) {
                     collect(publisher);
                 }
@@ -1412,7 +1514,7 @@ impl Worker {
     }
     fn topic_name_records(&self, include_subscribers: bool) -> TopicNameRecords {
         let mut records = TopicNameRecords::default();
-        for (publisher, active) in &self.advertisements {
+        for (publisher, active, _) in &self.advertisements {
             if active.load(Ordering::Acquire)
                 && matches!(publisher.pub_type, Some(PubType::MsgPub(_)))
                 && let Some(path) = self.known_topic_path(&publisher.topic)
@@ -1472,7 +1574,7 @@ impl Worker {
     }
     fn topic_endpoint_records(&self, topic: &str) -> TopicEndpointRecords {
         let mut records = TopicEndpointRecords::default();
-        for (publisher, active) in &self.advertisements {
+        for (publisher, active, _) in &self.advertisements {
             if active.load(Ordering::Acquire)
                 && publisher.topic == topic
                 && let Some(PubType::MsgPub(info)) = &publisher.pub_type
@@ -1556,20 +1658,38 @@ impl Worker {
         signatures.sort();
         signatures
     }
-    fn has_subscribers(&self, topic: &str, type_name: &str) -> bool {
-        self.subscriptions.iter().any(|s| {
-            s.active.load(Ordering::Acquire)
-                && s.topic == topic
-                && (s.type_name.is_empty() || s.type_name == type_name)
-        }) || self.remote_subscribers.values().any(|p| {
+    fn has_remote_subscribers(&self, topic: &str, type_name: &str) -> bool {
+        self.remote_subscribers.values().any(|p| {
             p.topic == topic
                 && matches!(&p.pub_type, Some(PubType::MsgPub(m))
                     if m.msg_type == type_name || m.msg_type == "google.protobuf.Message")
         })
     }
+    fn refresh_remote_interest(&self) {
+        for (publisher, active, bits) in &self.advertisements {
+            let type_name = match &publisher.pub_type {
+                Some(PubType::MsgPub(info)) => info.msg_type.as_str(),
+                _ => continue,
+            };
+            if active.load(Ordering::Acquire)
+                && self.has_remote_subscribers(&publisher.topic, type_name)
+            {
+                bits.fetch_or(REMOTE_INTEREST, Ordering::AcqRel);
+            } else {
+                bits.fetch_and(!REMOTE_INTEREST, Ordering::AcqRel);
+            }
+        }
+    }
+    fn has_subscribers(&self, topic: &str, type_name: &str) -> bool {
+        self.subscriptions.iter().any(|s| {
+            s.active.load(Ordering::Acquire)
+                && s.topic == topic
+                && (s.type_name.is_empty() || s.type_name == type_name)
+        }) || self.has_remote_subscribers(topic, type_name)
+    }
     fn command(&mut self, command: Command) {
         match command {
-            Command::Advertise(topic, type_name, active) => {
+            Command::Advertise(topic, type_name, active, interest) => {
                 // A queued replacement must never be followed by the old withdrawal.
                 self.cleanup();
                 if !active.load(Ordering::Acquire) {
@@ -1583,7 +1703,8 @@ impl Worker {
                     }),
                 );
                 self.announce(0, protocol::advertisement(&self.process, p.clone()));
-                self.advertisements.push((p, active));
+                self.advertisements.push((p, active, interest));
+                self.refresh_remote_interest();
             }
             Command::KnownPublisherTopics(reply) => {
                 let _ = reply.try_send(self.topic_name_records(false));
@@ -1893,6 +2014,7 @@ impl Worker {
                 self.remote_subscribers.retain(|key, _| {
                     key.process != process || key.node != node || key.topic != topic
                 });
+                self.refresh_remote_interest();
             }
             self.subscriber_interests
                 .retain(|key, _| key.process != process || key.node != node || key.topic != topic);
@@ -1941,6 +2063,7 @@ impl Worker {
                     if !self.remote_subscribers.contains_key(&key) {
                         if self.remote_subscribers.len() < self.config.capacity {
                             self.remote_subscribers.insert(key, p);
+                            self.refresh_remote_interest();
                         } else {
                             self.sender
                                 .counters
@@ -1978,14 +2101,15 @@ impl Worker {
                             || key.node != p.node_uuid
                             || key.topic != p.topic
                     });
+                    self.refresh_remote_interest();
                 }
             }
             Some(DiscContents::Sub(s)) if kind == Type::Subscribe => {
                 let publishers: Vec<_> = if channel == 0 {
                     self.advertisements
                         .iter()
-                        .filter(|(_, a)| a.load(Ordering::Acquire))
-                        .map(|(p, _)| p.clone())
+                        .filter(|(_, a, _)| a.load(Ordering::Acquire))
+                        .map(|(p, _, _)| p.clone())
                         .collect()
                 } else {
                     self.services
@@ -2082,7 +2206,7 @@ impl Worker {
                         protocol::discovery(&self.process, Type::Heartbeat, None),
                     );
                 }
-                for (p, active) in &self.advertisements {
+                for (p, active, _) in &self.advertisements {
                     if active.load(Ordering::Acquire) {
                         self.announce(0, protocol::advertisement(&self.process, p.clone()));
                     }
@@ -2189,7 +2313,7 @@ impl Worker {
     }
     fn cleanup(&mut self) {
         let mut removed = Vec::new();
-        self.advertisements.retain(|(p, a)| {
+        self.advertisements.retain(|(p, a, _)| {
             let keep = a.load(Ordering::Acquire);
             if !keep {
                 removed.push((0, p.clone()));

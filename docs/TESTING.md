@@ -306,3 +306,23 @@ regions; no production executable lines or coverage thresholds changed. An
 independent [review](reviews/staged-failure-evidence.json) reproduced the prior
 status-masking defect and approved the corrected behavior. The normal hook and
 hosted qualification remain pending at this review point.
+
+## Nonblocking Publisher interest snapshot
+
+`Publisher::connection_snapshot()` reads an atomic membership hint without a
+worker round trip. The pinned native local-interest probe observed 0, 0, 1, 0
+before subscription, for the wrong type, for a matching subscription, and
+after unsubscribe. A real C++ subscriber peer and Rust controls cover local
+wildcards, duplicate handlers, remaps, delayed worker commands, remote
+registration and withdrawal, partition and type isolation, ordinary Node
+destruction, explicit shutdown, and queue saturation. Removing the
+subscribe-side cache refresh fails the admitted-local-interest assertion.
+
+The corrected five-file staged gate recorded 2261/2307 production lines,
+3397/3544 regions, and 105/107 changed lines. The working gate's observed
+floor was 2260/2307 lines and 3396/3544 regions; both uncovered changed lines
+remain counted. The independent [review](reviews/publisher-interest-snapshot.json)
+approves the bounded source and assertions. This is a membership hint, not a
+delivery or readiness guarantee; remote discovery remains eventual, and BYE
+does not clear remembered registrations. No original test is retired by this
+slice. The final protected hook and hosted qualification remain pending.

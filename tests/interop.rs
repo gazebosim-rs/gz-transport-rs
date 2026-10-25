@@ -60,10 +60,12 @@ fn publisher_retains_worker_after_ordinary_node_drop() {
         [TYPE]
     );
     assert!(publisher.has_connections().unwrap());
+    assert!(publisher.connection_snapshot().unwrap());
     publisher.publish(data("queued")).unwrap();
     // Worker replies after the queued publish command, fixing the drain order.
     publisher.has_connections().unwrap();
     drop(owner);
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
 
     assert_eq!(
         subscription
@@ -1663,15 +1665,21 @@ fn publisher_membership_matches_native_reference_and_live_subscriber_withdrawal(
     let node = Node::new(config.clone()).unwrap();
     let publisher = node.advertise("/wire", TYPE).unwrap();
     assert!(!publisher.has_connections().unwrap());
+    assert!(!publisher.connection_snapshot().unwrap());
     let wrong = node.subscribe("/wire", "wrong.type").unwrap();
     assert!(!publisher.has_connections().unwrap());
+    assert!(!publisher.connection_snapshot().unwrap());
     let wildcard = node.subscribe("/wire", "").unwrap();
+    assert!(publisher.connection_snapshot().unwrap());
     assert!(publisher.has_connections().unwrap());
     drop(wildcard);
+    assert!(!publisher.connection_snapshot().unwrap());
     assert!(!publisher.has_connections().unwrap());
     let exact = node.subscribe("/wire", TYPE).unwrap();
+    assert!(publisher.connection_snapshot().unwrap());
     assert!(publisher.has_connections().unwrap());
     drop(exact);
+    assert!(!publisher.connection_snapshot().unwrap());
     assert!(!publisher.has_connections().unwrap());
     drop(wrong);
     let mut peer = Peer::start(&config, "subscriber-membership", "/wire", "value");
@@ -1683,6 +1691,7 @@ fn publisher_membership_matches_native_reference_and_live_subscriber_withdrawal(
         );
         thread::sleep(Duration::from_millis(10));
     }
+    assert!(publisher.connection_snapshot().unwrap());
     publisher.publish(data("value")).unwrap();
     let mut line = String::new();
     peer.1.read_line(&mut line).unwrap();
@@ -1699,10 +1708,34 @@ fn publisher_membership_matches_native_reference_and_live_subscriber_withdrawal(
         );
         thread::sleep(Duration::from_millis(10));
     }
+    assert!(!publisher.connection_snapshot().unwrap());
     writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
     peer.success();
     node.cancel();
+    assert_eq!(publisher.connection_snapshot(), Err(Error::Shutdown));
     assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
+}
+
+#[test]
+fn publisher_snapshot_tracks_duplicate_local_leases_and_registered_remap() {
+    let mut config = config();
+    config.add_topic_remap("/alias", "/wire").unwrap();
+    let node = Node::new(config).unwrap();
+    let first = node.subscribe("/alias", TYPE).unwrap();
+    let publisher = node.advertise("/alias", TYPE).unwrap();
+    assert!(publisher.connection_snapshot().unwrap());
+    let second = node.subscribe("/wire", TYPE).unwrap();
+    assert!(publisher.connection_snapshot().unwrap());
+    drop(first);
+    assert!(publisher.connection_snapshot().unwrap());
+    drop(second);
+    assert!(!publisher.connection_snapshot().unwrap());
+    let wildcard = node.subscribe("/wire", "").unwrap();
+    assert!(publisher.connection_snapshot().unwrap());
+    node.unsubscribe("/wire").unwrap();
+    assert!(!publisher.connection_snapshot().unwrap());
+    drop(wildcard);
+    assert!(!publisher.connection_snapshot().unwrap());
 }
 
 // Node_TEST.cc CreatePubSubTwoThreads/CreateSubscriber/cb assertions:

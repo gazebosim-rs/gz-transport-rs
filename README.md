@@ -45,6 +45,9 @@ native behavior. See [topic remapping](docs/NET-02-topic-remapping.md).
 `Publisher::has_connections()` snapshots matching subscriber registrations with
 bounded worker coordination. Native remembered membership can outlive a process
 disconnect and does not acknowledge delivery; see [publisher inspection](docs/NET-01-publisher-inspection.md).
+`Publisher::connection_snapshot()` reads the same bounded interest boundary from
+an atomic cache without waiting for the worker; see the [nonblocking snapshot
+contract](docs/NET-01-publisher-interest-snapshot.md).
 Graceful Node shutdown withdraws its subscription topics before process BYE.
 `advertised_topics()` and `subscribed_topics()` inspect this Node's live lease
 ownership without network waits; see [local topic inventory](docs/NET-01-local-topics.md).

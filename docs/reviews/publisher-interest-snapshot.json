@@ -1,0 +1,35 @@
+{
+  "author": "/root/transport_fallback",
+  "base": "1d13c010397bda79716b45e9166297db3a85e995",
+  "decision": "approved",
+  "exact_staged_gate_log_sha256": "282b75b6e7ccbdddac3d1fff99bbc8dd8b4108e84e01ef261aeb664cb77afd70",
+  "files_sha256": {
+    "README.md": "1dc6c186030ce551541e8afb2ba273301279a65aca97435d553461b1d7ea5bcf",
+    "docs/NET-01-publisher-interest-snapshot.md": "11c91e9d0cc7076d14946bee4f854a9d3a5c8624e33fc58250071fca7c7db1f5",
+    "src/runtime.rs": "44dd1b43df9d2baa7d3715ae33e50456508bc35a6517da66ca76778e20f346aa",
+    "tests/interop.rs": "3d048a3347547f1d11c57587f91b68db3f3039a90af292a268382112fe077b3e",
+    "tests/support/runtime.rs": "2e85104ce3b8d27d8c9774a7d09993b7fbc772be7630c3b4e86cde32f5a56e89"
+  },
+  "judgment": "Local/remote disjoint bits prevent delayed worker refresh from clearing same-Node admission. Subscription drop and explicit unsubscribe synchronously retire local interest; duplicate active handles preserve it. Remote identity/control/type/qualified topic filters, END/Unadvertise/BYE/no-TTL mirror worker map. Ordinary Node drop retires subscriptions and preserves surviving Publisher; explicit cancel returns Shutdown.",
+  "limits": [
+    "Membership hint only; no delivery/auth/readiness guarantee.",
+    "Other Nodes appear eventually through discovery; no process-global immediate visibility.",
+    "Process-only BYE retains remembered remote connection, no TTL.",
+    "Two mapped changed production lines remain uncovered and counted; exact gate 105/107 changed lines, total line/region >95%.",
+    "Normal hook, publication and hosted qualification remain pending."
+  ],
+  "private_review": {
+    "interop": "real pinned C++ subscriber matching/withdrawal 1/0; local remap/duplicate/drop 1/0; prior publisher lifetime compatibility 1/0",
+    "native": "Independently compiled same source against installed libgz-transport.so.16 SHA bc9b06e4; private process returned exact 0,0,1,0 and empty stderr",
+    "native_output_sha256": "d4b4227a5d80f056e5534a42b12ffd498f5f70289a1c4776704b53cdf46d39e4",
+    "negative": "Private corrected-tree source removing only Subscription::drop synchronous refresh fails exact drop-last interest assertion at tests/interop.rs:1732",
+    "negative_log_sha256": "2e980750ef8ab419d20f020ef2b704a4e0de76fa928173112a13abb19f243ccc",
+    "setup_failure": "First sandboxed unit attempt returned EPERM on socket before assertions; excluded from positive evidence",
+    "source": "Exact raw Git tree exported to /tmp private source, exclusive Cargo target; all five hashes verified",
+    "unit": "publisher_snapshot two tests passed 2/0 after local socket access"
+  },
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "New Publisher::connection_snapshot atomic registration hint: same-Node local admitted subscriptions and worker-remembered matching remote NEW_CONNECTION. Existing has_connections, wire, public ownership, and native originals retained.",
+  "staged_diff_sha256": "4c0997a1ea19d99ff3e66f1378fd5b133fb390787582c6b04a98ae8a698a7d34",
+  "staged_tree": "308475232b12b3841f94b4249040835e6abcbec5"
+}

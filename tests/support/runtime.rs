@@ -22,9 +22,11 @@ fn known_lists_filter_partition_kind_age_and_malformed_paths() {
     };
     let local_topic = worker.wire_publisher(topic(&partition, "/local"), message());
     let local_service = worker.wire_publisher(topic(&partition, "/local-service"), service());
-    worker
-        .advertisements
-        .push((local_topic, Arc::new(AtomicBool::new(true))));
+    worker.advertisements.push((
+        local_topic,
+        Arc::new(AtomicBool::new(true)),
+        Arc::new(AtomicU8::new(0)),
+    ));
     worker.services.push(ServiceState {
         publisher: local_service,
         tx: mpsc::sync_channel(1).0,
@@ -61,9 +63,11 @@ fn known_lists_filter_partition_kind_age_and_malformed_paths() {
     assert_eq!(worker.known_names(1), ["/local-service", "/remote-service"]);
     worker.config.partition.clear();
     let empty_partition = worker.wire_publisher(topic("", "/empty"), message());
-    worker
-        .advertisements
-        .push((empty_partition, Arc::new(AtomicBool::new(true))));
+    worker.advertisements.push((
+        empty_partition,
+        Arc::new(AtomicBool::new(true)),
+        Arc::new(AtomicU8::new(0)),
+    ));
     assert_eq!(worker.known_names(0), ["/empty"]);
     assert!(worker.known_names(1).is_empty());
 }
@@ -218,6 +222,7 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
         "/topic".into(),
         "old".into(),
         old.clone(),
+        Arc::new(AtomicU8::new(0)),
     ));
     old.store(false, Ordering::Release);
     let retired = Arc::new(AtomicBool::new(false));
@@ -225,11 +230,13 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
         "/topic".into(),
         "never-advertised".into(),
         retired,
+        Arc::new(AtomicU8::new(0)),
     ));
     worker.command(Command::Advertise(
         "/topic".into(),
         "new".into(),
         Arc::new(AtomicBool::new(true)),
+        Arc::new(AtomicU8::new(0)),
     ));
     worker.cleanup();
     let mut trace = Vec::new();
@@ -265,6 +272,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -313,6 +321,7 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -363,6 +372,7 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -417,6 +427,7 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -532,6 +543,7 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -984,6 +996,7 @@ fn discovery_lifecycle_and_capacity() {
         "/topic".into(),
         "type".into(),
         active.clone(),
+        Arc::new(AtomicU8::new(0)),
     ));
     let (tx, _) = mpsc::sync_channel(1);
     worker.command(Command::Serve(
@@ -2284,6 +2297,7 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -2362,6 +2376,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2402,6 +2417,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: long,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2700,6 +2716,7 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -2709,7 +2726,9 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
         services: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
     assert_eq!(publisher.has_connections(), Err(Error::QueueFull));
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
     worker.command(commands.recv().unwrap());
     assert_eq!(publisher.has_connections(), Err(Error::Timeout));
     assert_eq!(publisher.has_connections(), Err(Error::QueueFull));
@@ -2725,11 +2744,144 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
     drop(commands);
     assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
     node.cancel();
+    assert_eq!(publisher.connection_snapshot(), Err(Error::Shutdown));
     assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
     drop(publisher);
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 2);
+}
+
+#[test]
+fn publisher_snapshot_uses_remembered_remote_registration_controls() {
+    let (mut worker, commands) = state(8);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise("/wire", "T").unwrap();
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    worker.command(commands.recv().unwrap());
+
+    let remote = |node_id: &str, type_name: &str, ctrl: &str| {
+        let mut p = worker.subscriber_publisher(&publisher.topic, type_name);
+        p.process_uuid = "remote".into();
+        p.node_uuid = node_id.into();
+        if let Some(PubType::MsgPub(info)) = &mut p.pub_type {
+            info.ctrl = ctrl.into();
+        }
+        p
+    };
+    let wrong_ctrl = remote("wrong-ctrl", "T", "other");
+    let wrong_type = remote("wrong-type", "other.T", &worker.process);
+    let mut wrong_partition = remote("wrong-partition", "T", &worker.process);
+    wrong_partition.topic = "@other@/wire".into();
+    let matching = remote("matching", "T", &worker.process);
+    let wildcard = remote("wildcard", "google.protobuf.Message", &worker.process);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(wrong_ctrl)),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(wrong_type)),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(wrong_partition)),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(matching.clone())),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(matching.clone())),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(wildcard.clone())),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(wildcard)),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    drop(node);
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+}
+
+#[test]
+fn publisher_snapshot_sees_admitted_local_interest_before_worker_commands() {
+    let (mut worker, commands) = state(4);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise("/topic", "T").unwrap();
+    let subscription = node.subscribe("/topic", "T").unwrap();
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    worker.command(commands.recv().unwrap());
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    drop(subscription);
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
+    worker.command(commands.recv().unwrap());
+    assert_eq!(publisher.connection_snapshot(), Ok(false));
 }
 
 #[test]
@@ -2801,6 +2953,7 @@ fn final_publisher_retirement_sends_unadvertise_before_bye() {
         "/survivor".into(),
         "gz.msgs.Int32".into(),
         active.clone(),
+        Arc::new(AtomicU8::new(0)),
     ));
     let mut buffer = vec![0; protocol::MAX_DATAGRAM];
     while receiver.recv(&mut buffer).is_ok() {}
@@ -2832,6 +2985,7 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2954,6 +3108,7 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3065,6 +3220,7 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -3161,6 +3317,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3262,6 +3419,7 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3313,6 +3471,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3349,6 +3508,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
             worker: Mutex::new(None),
         }),
         owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
         config: Config {
             max_message_bytes: 1,
             ..worker.config.clone()
