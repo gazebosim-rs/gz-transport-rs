@@ -114,7 +114,9 @@ without changing raw byte forwarding.
 Received metadata additionally requires the unchanged native
 NodeTest.PubSubSameThreadMessageInfo original. Its two single publications and
 cbInfo observations have an independently approved owned-receive adaptation;
-see the [review receipt](reviews/message-info.json). A separate native/Rust two-Node test asserts the known origin mismatch;
+see the [review receipt](reviews/message-info.json). The separate native/Rust two-Node
+test originally exposed an origin mismatch; the bounded
+[direct-delivery successor](NET-02-process-local-direct.md) requires true from both;
 actual C++ peers cover remote origin in both directions and retirement/recreation.
 Existing raw relay and receiver lifecycle assertions stay in the full gate.
 
@@ -355,7 +357,9 @@ is registered, a second Rust Node witnesses ten Vector3d deliveries with no
 extra, and the publishing Node's opted-in receiver sees none. Three endpoint
 descriptors are a fixture-specific surrogate for distinct native subscriber
 process UUIDs. Neither original nor port checks receipt by the C++ child, and
-same-process origin sharing remains unported. The additive option leaves
+same-process origin sharing was unported at that review checkpoint. The later
+[direct-delivery successor](NET-02-process-local-direct.md) covers same-process
+message origin with explicit limits. The additive option leaves
 ordinary subscriptions and discovery registration intact. The exact staged
 source gate passed with 2277/2324 production lines, 3415/3563 regions and
 18/18 changed executable lines. The independent
@@ -363,3 +367,20 @@ source gate passed with 2277/2324 production lines, 3415/3563 regions and
 selected Rust cases; removing the direct-delivery filter fails the Int32
 assertion. See the [case contract](NET-02-ignore-local.md). Final protected
 hook and hosted qualification remain separate publication gates.
+
+## Same-process direct message delivery
+
+The retained `NodeTest.PubSubOneThreadTwoSubs` first publication now reaches
+both Nodes after only its original publisher membership check. The scoped
+[contract](NET-02-process-local-direct.md) records process-local routing,
+per-registration ignore-local behavior, domain isolation, bounded wire-echo
+suppression and its address/payload reuse limit. A tracked supplemental test
+establishes a connected second-Node wire path and rejects a duplicate copy;
+disabling only the echo-suppression callsite makes that test fail. Removing
+only cross-Node direct delivery makes the original first receipt fail at the
+unchanged 10-second bound. The exact staged source gate passed 185 Rust tests
+with 2395/2448 production lines, 3566/3717 regions and 132/132 changed
+executable lines. [Independent review](reviews/process-local-direct.json)
+approved the bounded port. The original lost-output status101 from the prior
+Publisher-lifetime gate remains unclassified; it is not explained by this
+slice. Final metadata binding, normal hook and hosted CI are pending.

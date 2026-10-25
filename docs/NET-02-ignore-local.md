@@ -19,9 +19,11 @@ ten witness deliveries followed by a 300 ms quiet interval, and zero ignored
 deliveries. A real C++ subscriber participates. Native readiness checks
 subscriber process UUIDs; the Rust fixture can only poll three known endpoint
 descriptors. The C++ child callback is empty and its process wrapper only
-joins, so neither case asserts remote receipt. Rust Nodes in one process use
-separate workers and wire delivery; full process-global origin behavior remains
-open. This two-process original therefore remains a partial mapping.
+joins, so neither case asserts remote receipt. At this review checkpoint Rust
+Nodes used separate workers and wire delivery. The later bounded
+[direct-delivery slice](NET-02-process-local-direct.md) changes same-process
+message origin, while native process-UUID readiness and full process-global
+ownership remain unqualified. This two-process original remains a partial mapping.
 
 Both pinned originals pass separately and the exact Rust assertions run in
 the strict staged gate. The source review and private filter-removal control

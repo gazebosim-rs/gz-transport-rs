@@ -10,7 +10,8 @@ use gz_msgs::discovery::{
 };
 use socket2::{Domain, Protocol, Socket, Type as SocketType};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
+    hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddrV4, UdpSocket},
     sync::{
         Arc, Mutex, OnceLock, Weak,
@@ -29,6 +30,8 @@ pub struct Statistics {
     pub malformed_frames: u64,
     pub send_failures: u64,
     pub reply_timeouts: u64,
+    /// Process-local direct routing failures; the ordinary wire send is still attempted.
+    pub routing_errors: u64,
 }
 #[derive(Default)]
 struct Counters {
@@ -36,6 +39,7 @@ struct Counters {
     malformed_frames: AtomicU64,
     send_failures: AtomicU64,
     reply_timeouts: AtomicU64,
+    routing_errors: AtomicU64,
 }
 impl Counters {
     fn snapshot(&self) -> Statistics {
@@ -44,6 +48,7 @@ impl Counters {
             malformed_frames: self.malformed_frames.load(Ordering::Relaxed),
             send_failures: self.send_failures.load(Ordering::Relaxed),
             reply_timeouts: self.reply_timeouts.load(Ordering::Relaxed),
+            routing_errors: self.routing_errors.load(Ordering::Relaxed),
         }
     }
     fn sent<E>(&self, result: Result<(), E>) -> bool {
@@ -73,9 +78,7 @@ impl Message {
     }
 }
 /// Borrowed metadata for an owned received message.
-/// `intra_process` records direct delivery within this Node's worker. Independent
-/// Rust Nodes still use the wire, even in one OS process; native process-global
-/// sharing and its broader origin semantics remain an explicit compatibility gap.
+/// `intra_process` records direct delivery within the local process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MessageInfo<'a> {
     pub topic: &'a str,
@@ -437,6 +440,12 @@ struct LocalPublication {
     active: Weak<AtomicBool>,
     stopped: Weak<AtomicBool>,
     retired_at: Option<Instant>,
+    recent_frames: VecDeque<(u64, usize, Instant)>,
+}
+fn frame_fingerprint(data: &[u8]) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    data.hash(&mut hasher);
+    hasher.finish()
 }
 impl LocalPublication {
     fn live(&self) -> bool {
@@ -451,6 +460,8 @@ impl LocalPublication {
     fn retain_for_peer_expiry(&mut self) -> bool {
         // Keep a retired key through the worker's three-second peer window so
         // an old multicast copy cannot resurrect a dropped local endpoint.
+        self.recent_frames
+            .retain(|(_, _, stamp)| stamp.elapsed() < Duration::from_secs(3));
         if self.live() {
             self.retired_at = None;
             true
@@ -469,6 +480,8 @@ struct LocalInterest {
     key: SubscriberInterestKey,
     active: Weak<AtomicBool>,
     stopped: Weak<AtomicBool>,
+    owner_dead: Weak<AtomicBool>,
+    tx: Option<SyncSender<ReceivedMessage>>,
     retired_at: Option<Instant>,
 }
 impl LocalInterest {
@@ -480,6 +493,10 @@ impl LocalInterest {
                 .stopped
                 .upgrade()
                 .is_some_and(|stopped| !stopped.load(Ordering::Acquire))
+            && self
+                .owner_dead
+                .upgrade()
+                .is_some_and(|dead| !dead.load(Ordering::Acquire))
     }
     fn retain_for_peer_expiry(&mut self) -> bool {
         if self.live() {
@@ -616,6 +633,7 @@ impl Node {
             active: Arc::downgrade(&lease.active),
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
+            recent_frames: VecDeque::new(),
         });
         let mut interests = self
             .local_interest
@@ -653,26 +671,29 @@ impl Node {
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
         let topic = self.remapped_topic(topic)?;
+        let (_, path) = decompose_fully_qualified_topic(&topic)?;
+        let identity = self.identity()?;
         let mut subscriptions = self
             .subscriptions
             .lock()
             .map_err(|_| Error::Native("subscription registry poisoned".into()))?;
         subscriptions.retain(|(_, a)| a.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
+        let mut local = local_interests()
+            .lock()
+            .map_err(|_| Error::Native("process-local subscriber registry poisoned".into()))?;
+        let mut interests = self
+            .local_interest
+            .lock()
+            .map_err(|_| Error::Native("local interest cache poisoned".into()))?;
         self.sender.send(Command::Subscribe(
             topic.clone(),
             type_name.into(),
-            tx,
+            tx.clone(),
             lease.active.clone(),
             options,
         ))?;
         subscriptions.push((topic.clone(), Arc::downgrade(&lease.active)));
-        drop(subscriptions);
-        let (_, path) = decompose_fully_qualified_topic(&topic)?;
-        let mut local = local_interests()
-            .lock()
-            .map_err(|_| Error::Native("process-local subscriber registry poisoned".into()))?;
         local.retain_mut(LocalInterest::retain_for_peer_expiry);
-        let identity = self.identity()?;
         local.push(LocalInterest {
             domain: MessageDomain::from_config(&self.config),
             topic: path.into(),
@@ -689,12 +710,10 @@ impl Node {
             },
             active: Arc::downgrade(&lease.active),
             stopped: Arc::downgrade(&self.sender.stop),
+            owner_dead: Arc::downgrade(&self.owner_dead),
+            tx: Some(tx),
             retired_at: None,
         });
-        let mut interests = self
-            .local_interest
-            .lock()
-            .map_err(|_| Error::Native("local interest cache poisoned".into()))?;
         interests.subscribers.push(LocalSubscriberInterest {
             topic,
             type_name: type_name.into(),
@@ -1756,6 +1775,7 @@ impl Worker {
                 let _ = reply.try_send(self.topic_endpoint_records(&topic));
             }
             Command::Publish(topic, type_name, data) => {
+                self.remember_local_publication(&topic, &type_name, &data);
                 self.sender.counters.sent(self.publisher.send_multipart(
                     [
                         topic.as_bytes(),
@@ -1767,12 +1787,17 @@ impl Worker {
                 ));
                 self.deliver(
                     Message {
-                        topic,
-                        type_name,
-                        data,
+                        topic: topic.clone(),
+                        type_name: type_name.clone(),
+                        data: data.clone(),
                     },
                     true,
                 );
+                self.deliver_process_local(Message {
+                    topic,
+                    type_name,
+                    data,
+                });
             }
             Command::Subscribe(topic, type_name, tx, active, options) => {
                 // Retire old filters/registrations before a replacement. This
@@ -1973,6 +1998,94 @@ impl Worker {
                     message: message.clone(),
                     intra_process,
                 }));
+            }
+        }
+    }
+    fn deliver_process_local(&self, message: Message) {
+        let domain = MessageDomain::from_config(&self.config);
+        let targets = match local_interests().lock() {
+            Ok(mut interests) => {
+                interests.retain_mut(LocalInterest::retain_for_peer_expiry);
+                interests
+                    .iter()
+                    .filter(|interest| {
+                        interest.live()
+                            && interest.domain == domain
+                            && interest.key.node != self.node
+                            && interest.key.topic == message.topic
+                            && (interest.key.type_name == "google.protobuf.Message"
+                                || interest.key.type_name == message.type_name)
+                    })
+                    .filter_map(|interest| interest.tx.clone())
+                    .collect::<Vec<_>>()
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+                return;
+            }
+        };
+        for target in targets {
+            self.sender
+                .counters
+                .dropped(target.try_send(ReceivedMessage {
+                    message: message.clone(),
+                    intra_process: true,
+                }));
+        }
+    }
+    fn remember_local_publication(&self, topic: &str, type_name: &str, data: &[u8]) {
+        match local_publications().lock() {
+            Ok(mut publications) => {
+                publications.retain_mut(LocalPublication::retain_for_peer_expiry);
+                if let Some(publication) = publications.iter_mut().find(|publication| {
+                    publication.live()
+                        && publication.key.node == self.node
+                        && publication.key.topic == topic
+                        && publication.type_name == type_name
+                        && publication.key.address == self.address
+                }) {
+                    publication.recent_frames.push_back((
+                        frame_fingerprint(data),
+                        data.len(),
+                        Instant::now(),
+                    ));
+                    while publication.recent_frames.len() > self.config.capacity {
+                        publication.recent_frames.pop_front();
+                    }
+                }
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+            }
+        }
+    }
+    fn local_wire_echo(&self, topic: &str, address: &str, type_name: &str, data: &[u8]) -> bool {
+        let domain = MessageDomain::from_config(&self.config);
+        match local_publications().lock() {
+            Ok(mut publications) => {
+                publications.retain_mut(LocalPublication::retain_for_peer_expiry);
+                publications.iter().any(|publication| {
+                    publication.domain == domain
+                        && publication.key.topic == topic
+                        && publication.key.address == address
+                        && publication.type_name == type_name
+                        && publication.recent_frames.iter().any(|(hash, len, _)| {
+                            *len == data.len() && *hash == frame_fingerprint(data)
+                        })
+                })
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+                false
             }
         }
     }
@@ -2313,6 +2426,16 @@ impl Worker {
             if let (Ok(topic), Ok(type_name)) =
                 (protocol::text(&frames[0]), protocol::text(&frames[3]))
             {
+                let Ok(address) = protocol::text(&frames[1]) else {
+                    self.sender
+                        .counters
+                        .malformed_frames
+                        .fetch_add(1, Ordering::Relaxed);
+                    continue;
+                };
+                if self.local_wire_echo(topic, address, type_name, &frames[2]) {
+                    continue;
+                }
                 self.deliver(
                     Message {
                         topic: topic.into(),
@@ -2375,6 +2498,24 @@ impl Worker {
             }
             keep
         });
+        // Match the worker's withdrawal boundary: before cleanup an already
+        // queued receiver can still time out; afterward no registry clone may
+        // keep its channel open once the worker drops its sender.
+        match local_interests().lock() {
+            Ok(mut interests) => {
+                for interest in interests.iter_mut().filter(|s| s.key.node == self.node) {
+                    if !interest.live() {
+                        interest.tx = None;
+                    }
+                }
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+            }
+        }
         let mut topics: Vec<_> = topics.into_iter().collect();
         topics.sort();
         for topic in topics {

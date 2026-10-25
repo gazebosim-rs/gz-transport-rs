@@ -631,6 +631,106 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
 }
 
 #[test]
+fn local_echo_suppression_requires_recent_payload_and_expires_on_address_reuse() {
+    let (worker, _) = state(1);
+    let topic = qualified_name(&worker.config.partition, "", "/reuse").unwrap();
+    let active = Arc::new(AtomicBool::new(true));
+    let publication = LocalPublication {
+        domain: MessageDomain::from_config(&worker.config),
+        topic: "/reuse".into(),
+        key: PeerKey {
+            channel: 0,
+            process: worker.process.clone(),
+            node: worker.node.clone(),
+            topic: topic.clone(),
+            address: worker.address.clone(),
+        },
+        type_name: "gz.msgs.Int32".into(),
+        active: Arc::downgrade(&active),
+        stopped: Arc::downgrade(&worker.sender.stop),
+        retired_at: None,
+        recent_frames: VecDeque::new(),
+    };
+    {
+        let mut local = local_publications().lock().unwrap();
+        local.push(publication);
+    }
+    worker.remember_local_publication(&topic, "gz.msgs.Int32", &[4]);
+    worker.remember_local_publication(&topic, "gz.msgs.Int32", &[5]);
+    assert!(!worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[4]));
+    assert!(worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[5]));
+    assert!(!worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[6]));
+    assert!(!worker.local_wire_echo(&topic, &worker.address, "other.Type", &[5]));
+    active.store(false, Ordering::Release);
+    // A retired local address cannot suppress a later unrelated publisher's
+    // different payload, even before the bounded tombstone expires.
+    assert!(!worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[6]));
+    local_publications()
+        .lock()
+        .unwrap()
+        .iter_mut()
+        .find(|entry| entry.key.topic == topic && entry.key.address == worker.address)
+        .unwrap()
+        .retired_at = Some(Instant::now() - Duration::from_secs(4));
+    assert!(!worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[5]));
+}
+
+#[test]
+fn poisoned_process_local_route_rejects_admission_and_counts_publish_degradation() {
+    const CHILD: &str = "GZ_DIRECT_ORIGIN_POISON_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("--exact")
+            .arg("runtime::tests::poisoned_process_local_route_rejects_admission_and_counts_publish_degradation")
+            .env(CHILD, "1")
+            .env("RUST_TEST_THREADS", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        return;
+    }
+    let node = Node::new(Config {
+        partition: Uuid::new_v4().to_string(),
+        ..Default::default()
+    })
+    .unwrap();
+    let publisher = node.advertise("/poison", "gz.msgs.Int32").unwrap();
+    let (worker, _) = state(2);
+    let poison = thread::spawn(|| {
+        let _guard = local_interests().lock().unwrap();
+        panic!("isolated routing-registry poison");
+    });
+    assert!(poison.join().is_err());
+    assert!(matches!(
+        node.subscribe("/poison", "gz.msgs.Int32"),
+        Err(Error::Native(message)) if message == "process-local subscriber registry poisoned"
+    ));
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    let publication_poison = thread::spawn(|| {
+        let _guard = local_publications().lock().unwrap();
+        panic!("isolated publication-registry poison");
+    });
+    assert!(publication_poison.join().is_err());
+    let routing_before = worker.sender.counters.snapshot().routing_errors;
+    worker.remember_local_publication("@/poison@/poison", "gz.msgs.Int32", &[5]);
+    assert!(!worker.local_wire_echo("@/poison@/poison", &worker.address, "gz.msgs.Int32", &[5]));
+    assert_eq!(
+        worker.sender.counters.snapshot().routing_errors,
+        routing_before + 2
+    );
+    publisher.publish(vec![5]).unwrap();
+    publisher.has_connections().unwrap();
+    let stats = node.statistics();
+    assert!(stats.routing_errors > 0);
+    assert_eq!(stats.send_failures, 0);
+}
+
+#[test]
 fn owner_retirement_cancels_pending_and_queued_requests() {
     let (mut worker, _) = state(2);
     let (request, pending_reply) = pending(Instant::now() + Duration::from_secs(5));
@@ -3641,6 +3741,13 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
         publisher.recv_bytes(0).unwrap(),
         [vec![1], topic.as_bytes().to_vec()].concat()
     );
+    publisher
+        .send_multipart([topic.as_bytes(), &[255], &[1], b"opaque.Type"], 0)
+        .unwrap();
+    assert!(worker.subscriber.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    worker.receive_publications();
+    assert_eq!(rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+    assert_eq!(worker.sender.counters.snapshot().malformed_frames, 1);
     let payload = [0, 255, 0, 128];
     publisher
         .send_multipart(
@@ -3666,5 +3773,5 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
             intra_process: false
         }
     );
-    assert_eq!(worker.sender.counters.snapshot().malformed_frames, 0);
+    assert_eq!(worker.sender.counters.snapshot().malformed_frames, 1);
 }

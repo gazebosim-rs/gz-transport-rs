@@ -2136,6 +2136,108 @@ fn original_pub_sub_same_thread() {
         assert_eq!(counter, 1);
     }
 }
+// Pinned Node_TEST.cc:1336-1405. The first publication must reach both Nodes
+// without a warmup message or a second-Node network-readiness sleep.
+#[test]
+fn original_pub_sub_one_thread_two_subs() {
+    let config = config();
+    let node1 = Node::new(config.clone()).unwrap();
+    let node2 = Node::new(config).unwrap();
+    let publication = node1.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let first = node1.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let second = node2.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    await_publication_membership(&publication);
+
+    publication.publish(int32_five()).unwrap();
+    assert_eq!(
+        first.recv_timeout(Duration::from_secs(10)).unwrap().data,
+        int32_five()
+    );
+    assert_eq!(
+        second.recv_timeout(Duration::from_secs(10)).unwrap().data,
+        int32_five()
+    );
+    assert_eq!(node1.subscribed_topics().unwrap(), ["/foo"]);
+
+    assert_eq!(node1.unsubscribe("invalid topic"), Err(Error::InvalidName));
+    node1.unsubscribe("/foo").unwrap();
+    thread::sleep(Duration::from_millis(500));
+    publication.publish(int32_five()).unwrap();
+    assert_eq!(
+        second.recv_timeout(Duration::from_secs(10)).unwrap().data,
+        int32_five()
+    );
+    assert_eq!(first.recv_timeout(Duration::ZERO), Err(Error::Shutdown));
+    assert!(node1.subscribed_topics().unwrap().is_empty());
+    drop(publication);
+    assert!(node1.advertised_topics().unwrap().is_empty());
+}
+#[test]
+fn process_local_direct_delivery_respects_domain_ignore_and_owner_retirement() {
+    let config = config();
+    let publisher_node = Node::new(config.clone()).unwrap();
+    let second_node = Node::new(config.clone()).unwrap();
+    let mut other_partition = config.clone();
+    other_partition.partition.push_str("-foreign");
+    let foreign_node = Node::new(other_partition).unwrap();
+    let publication = publisher_node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let mut options = SubscribeOptions::default();
+    options.set_ignore_local_messages(true);
+    let ignored = publisher_node
+        .subscribe_with_options("/foo", "gz.msgs.Int32", options)
+        .unwrap();
+    let remote = second_node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let wildcard = second_node.subscribe("/foo", "").unwrap();
+    let foreign = foreign_node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+
+    publication.publish(int32_five()).unwrap();
+    let received = remote
+        .recv_with_info_timeout(Duration::from_secs(10))
+        .unwrap();
+    assert_eq!(received.data, int32_five());
+    assert!(received.info().intra_process);
+    assert_eq!(
+        wildcard.recv_timeout(Duration::from_secs(10)).unwrap().data,
+        int32_five()
+    );
+    thread::sleep(Duration::from_millis(500));
+    assert_eq!(remote.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    assert_eq!(wildcard.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    assert_eq!(ignored.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    assert_eq!(foreign.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+
+    drop(second_node);
+    publication.publish(int32_five()).unwrap();
+    assert_eq!(remote.recv_timeout(Duration::ZERO), Err(Error::Shutdown));
+    assert_eq!(wildcard.recv_timeout(Duration::ZERO), Err(Error::Shutdown));
+    assert_eq!(ignored.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+}
+#[test]
+fn process_local_direct_delivery_suppresses_connected_wire_echo() {
+    let config = config();
+    let publisher_node = Node::new(config.clone()).unwrap();
+    let subscriber_node = Node::new(config).unwrap();
+    let publication = publisher_node
+        .advertise("/private_echo", "gz.msgs.Int32")
+        .unwrap();
+    let subscription = subscriber_node
+        .subscribe("/private_echo", "gz.msgs.Int32")
+        .unwrap();
+
+    // Give the second Node's wire subscription time to connect so this
+    // supplemental control exercises both the direct and wire paths.
+    thread::sleep(Duration::from_millis(1500));
+    publication.publish(int32_five()).unwrap();
+    let received = subscription
+        .recv_with_info_timeout(Duration::from_secs(10))
+        .unwrap();
+    assert_eq!(received.data, int32_five());
+    assert!(received.info().intra_process);
+    assert_eq!(
+        subscription.recv_timeout(Duration::from_millis(500)),
+        Err(Error::Timeout)
+    );
+}
 #[test]
 fn original_pub_sub_same_thread_generic_cb() {
     let node = Node::new(config()).unwrap();
@@ -2423,7 +2525,7 @@ fn original_pub_raw_sub_same_thread_message_info() {
 }
 
 #[test]
-fn same_process_two_node_origin_is_an_explicit_native_mismatch() {
+fn same_process_two_node_origin_matches_native_direct_delivery() {
     let config = config();
     let mut native = Peer::start(&config, "message-info-two-nodes", "/foo", "5");
     let mut origin = String::new();
@@ -2437,8 +2539,7 @@ fn same_process_two_node_origin_is_an_explicit_native_mismatch() {
         .advertise_typed::<gz_msgs::int32::Int32>("/foo")
         .unwrap();
     let subscription = subscriber_node.subscribe("/foo", "gz.msgs.Int32").unwrap();
-    // Actual delivery observes the per-Node wire path. This is not an added
-    // readiness barrier disguised as a complete native two-Node fixture port.
+    // Native MessageInfo marks a second Node in this process as intra-process.
     let deadline = Instant::now() + Duration::from_secs(10);
     let message = loop {
         publisher.publish(int32_five()).unwrap();
@@ -2457,7 +2558,7 @@ fn same_process_two_node_origin_is_an_explicit_native_mismatch() {
             .data,
         5
     );
-    assert!(!message.info().intra_process);
+    assert!(message.info().intra_process);
 }
 
 #[test]

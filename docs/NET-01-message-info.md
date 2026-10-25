@@ -30,10 +30,11 @@ recreation and Node shutdown. No address, loopback, UUID or descriptor heuristic
 infers origin. A real multipart message carrying the worker's own advertised
 address still records false and retains opaque bytes.
 
-This origin boundary is narrower than native process-global sharing. Native two
-Nodes in one OS process report true, whereas independent Rust Nodes currently
-use their own workers and receive through ZeroMQ, reporting false. A maintained
-isolated differential test asserts both observations. Actual C++/Rust processes
+At this historical review checkpoint the origin boundary was narrower than
+native process-global sharing. Native two Nodes in one OS process reported true,
+whereas independent Rust Nodes used their own workers and reported false. The
+later [direct-delivery slice](NET-02-process-local-direct.md) retains the
+original differential inputs and now requires true from both. Actual C++/Rust processes
 on loopback report false in both directions; lifecycle coverage retains a first
 message, retires and recreates a subscription, then requires a fresh data 6 value
 before checking metadata after shutdown. Repeated remote publication is a bounded

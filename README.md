@@ -60,9 +60,10 @@ delivery, and ignored registrations remain discoverable; see the
 [bounded ignore-local contract](docs/NET-02-ignore-local.md).
 `Subscription::recv_with_info_timeout()` returns an owned envelope with borrowed
 partition, topic, descriptor and delivery-path metadata; raw receive remains
-available. Independent Rust Nodes in one process still use the wire, a measured
-native process-global origin gap; see [received metadata](docs/NET-01-message-info.md).
-Local counters expose drops and wire errors; service replies retry
+available. Matching same-process Nodes now receive direct copies with native
+intra-process origin; wire peers remain remote. See [direct delivery](docs/NET-02-process-local-direct.md)
+and [received metadata](docs/NET-01-message-info.md).
+Local counters expose drops, wire errors and direct-routing errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
 relay/all-interface discovery, the full CLI and other retained behaviors remain
 listed in [the protocol contract](docs/PROTOCOL.md) and the 418-case

@@ -1,0 +1,46 @@
+{
+  "author": "/root/transport_fallback",
+  "decision": "approved",
+  "limits": [
+    "Broader native process-global ownership and arbitrary same-process endpoint lifetimes are unqualified.",
+    "Echo suppression uses a bounded recent fingerprint; adversarial identical payload/address reuse and collision/eviction behavior are not native-equivalence claims.",
+    "Initial V2 verifier attempt lacked GZ_REFERENCE_SOURCE and failed before tests; excluded from positive evidence."
+  ],
+  "reviewer": "/root/msgs_review_fallback",
+  "semantic_review": {
+    "gate": "185 Rust; strict 2395/2448 lines, 3566/3717 regions, 132/132 changed executable lines",
+    "negative_controls": {
+      "direct_call_removal": "original first second-Node receipt fails at unchanged 10 s bound",
+      "wire_echo_suppression_removal": "tracked connected-wire regression fails with second Ok(Message) after one publish, exact 500 ms quiet assertion; producer log sha256 271bee7c4f1c6bdaa25462e7530553c0b11d633f5d7a1d286aaae747a6c08daf"
+    },
+    "private_replay": {
+      "first_delivery_and_controls": "private raw export selected first-delivery, domain/ignore/retirement, and two-Node MessageInfo tests pass",
+      "native_original": "NodeTest.PubSubOneThreadTwoSubs 1/0 on pinned source/binary",
+      "prior_private_full_184": "/tmp/gz-transport-direct-review-full.log",
+      "prior_private_full_sha256": "18db2dcc20fbf506b2cc562a00c8c607cc60c62d522aad3aee1e1d61bc5e6a9c",
+      "v2_connected_wire_result": "1/0 in separate raw source and exclusive Cargo target",
+      "v2_connected_wire_selected_sha256": "7205c5ed92a4c567be349e278a33df782a2ef62408584d7049feaca700b160c0"
+    },
+    "result": "approved",
+    "scope": "Same-process, matching live Node publisher/subscriber direct delivery and MessageInfo origin; first NodeTest.PubSubOneThreadTwoSubs publish reaches both Nodes without a warmup or wire readiness barrier. Same-Node IgnoreLocal remains per registration. Connected second-Node wire echo is suppressed for one copy. Worker UUID and service routing remain unchanged.",
+    "source_audit": "Local weak owner/active/stop subscription leases, domain/topic/type filtering, publisher-worker direct route, local origin, and wire echo suppression reviewed against pinned NodeShared IgnoreLocal semantics.",
+    "staged_gate_sha256": "d7cf9693f92084bd6cecffbcded986bd83764fc0d354bfff4dbc8bbfacf28afe"
+  },
+  "source_freeze": {
+    "base": "77a533e8236547bc7552ffb25c1244b1a374ebd2",
+    "diff_sha256": "1ddae8937322d6cd231f848aa9ad694c0bd8c01e971620ae79e67f52b81b084b",
+    "files_sha256": {
+      "README.md": "125bfdb01d5e406b8b2356be597e2e31ad421437d8de3a159037be6c998df29c",
+      "docs/NET-01-message-info.md": "cd3ee9b84ab5c56e9c28b5f9d19b1085e60abf4f1c6528bf2c63d8ef3e215239",
+      "docs/NET-02-ignore-local.md": "fe3f96e26e8304e6116c224a4d092067b7874ada4e7abc1288120e3c35585846",
+      "docs/NET-02-process-local-direct.md": "4fffe2cf49aac881d6a19e11faec6f16a88d2503accc2ac8402c023d5be53423",
+      "docs/TESTING.md": "c85d8a3a80c58dacd298b8f407bfcf451a881c351287d0a14bb8777e45809b32",
+      "src/runtime.rs": "af4b05cd0034392f00480d6e920973d3ed053c3dacc363e8cc2f510db6d35b84",
+      "tests/interop.rs": "cb7ac76494430bcf31495a9159685ab731635ef02e0593dd9e11330327ae46a7",
+      "tests/support/runtime.rs": "45e75280948e36a0d875699c20f99e3a6b687c22058cd1275ef7a8d1858ed6a4"
+    },
+    "proposal_sha256": "f37a1f0a0a8cd35d74c7a7fc53a0709e4b0a96ea5c72e3665c56c9e869e7f92b",
+    "tree": "7f0c731cbb82ba609ef657de9fe5afe28e2eab96",
+    "unstaged_diff_empty": true
+  }
+}
