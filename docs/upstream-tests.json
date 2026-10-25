@@ -4236,12 +4236,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceWithoutOutputCallAsync",
       "baseline": "passed",
-      "disposition": "partial_port",
+      "disposition": "faithful_port",
       "replacement": [
         "oneway_local_handoff_bounds_and_matching",
         "original_oneway_int32_five_dispatches_once_and_rejects_invalid_service"
       ],
-      "review": "/root/msgs; 2026-10-24; partial source/assertion mapping and literal supplement approved; exact native original1/1, supplemental Rust literal1/1 and broader local one-way1/1 independently passed. Enumeration/unadvertise remain pending; no full retirement.",
+      "review": "/root/sdformat; 2026-10-25 UTC; complete original sequence and native lifecycle source compared; independently replayed4 lifecycle units,4 integration cases and exact native original1run0fail. Prior literal/counter/invalid-name partial mapping reviewed by /root/msgs; full case approved. Receipt docs/reviews/service-lifecycle.json. Duplicate service-advertisement sideeffects remain outside this case.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4250,9 +4250,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Partial: exact original /foo, Int32 data5, actual one-delivery count1, invalid service advertise and invalid request names retained through bounded Rust queue handoff and receipt polling instead of callback registration. AdvertisedServices enumeration, invalid UnadvertiseSrv, explicit valid UnadvertiseSrv and resulting empty enumeration remain pending. Supplemental StringMsg bounds/type tests do not replace original literals.",
+      "contract": "Original /foo Int32(5), invalid advertise/request/unadvertise, successful handoff, actual single execution, local service count/topic and final empty enumeration retained. Rust polls a bounded receiver instead of registering a callback; explicit invalid C++ false maps InvalidName, valid withdrawal succeeds even if absent.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-oneway.md: mandatory native original plus bounded local and real C++ supplemental tests"
+      "evidence": "docs/NET-02-oneway.md and docs/NET-02-service-lifecycle.md; mandatory native original plus source-exact Rust assertion sequence"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsyncLambda",

@@ -1,0 +1,16 @@
+{
+  "decision": "approved",
+  "author": "/root/transport",
+  "reviewer": "/root/sdformat",
+  "date": "2026-10-25T00:03:34.131565+00:00",
+  "tracked_diff": "16ff1e2254b039642aa7270b4433da1c7400fb7a5d45b2af4842adc6565c8b5e",
+  "new_document_sha256": "6486cb1497c3a6c88e1c21bcdb5906c327e887f717d19c77e0f280c2e6d8389b",
+  "original_reviewed_source_test_diff": "a18edb604e1c92a703b01e0154a41bbec71d44e72be1c7ccb0da87e91cf611b2",
+  "scope": "Independent source/lifecycle/assertion review against pinned Node.cc799-846, Discovery.hh658-687 and full NodeTest.ServiceWithoutOutputCallAsync. Weak registry admission remains bounded and serialized; active.swap releases slots exactly once, including Drop/withdrawal races and failed queued admission. Worker cleanup precedes replacement and skips retired queued registration; already admitted requests may drain and respond. Valid absent service withdrawal succeeds; qualified local listing is unique. Complete original enumeration, invalid/valid withdrawal and final empty-list observations retained alongside prior Int32(5), /foo and actual counter1 assertions. Final metadata-only review notes and faithful_port classification verified; source/test hashes still match author gate evidence. No full NET packet acceptance.",
+  "independent_checks": {
+    "rust": "Four exact lifecycle unit tests and four interop tests passed, including original literal port, local qualified/drop-aware listing, native enumeration/idempotent withdrawal and real C++ requester reaching replacement with old receiver held.",
+    "native": "Exact unchanged NodeTest.ServiceWithoutOutputCallAsync rerun: one run, zero failures XML.",
+    "provenance": "Native reviewed source files byte-identical to test-build reference clone. Replay used author gate-built instrumented Rust binaries and C++ peer with own LLVM profiles/logs; no claim of independently rebuilding the C++ peer or full gate.",
+    "limits": "Author full 69 Rust/21 tools gate and 1277/1300 line,1919/1985 region coverage reported, not independently recomputed. Duplicate-service/native failure-sideeffect semantics remain explicitly pending. Matching normal strict staged gate required after final receipt metadata."
+  }
+}

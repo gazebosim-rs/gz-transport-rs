@@ -19,9 +19,12 @@ API polls actual queued requests instead of registering a callback; each polled
 event executes the original payload assertion and increments the observed count.
 `oneway_local_handoff_bounds_and_matching` supplements those exact assertions
 with queue saturation, type and lifecycle bounds.
-Full case equivalence remains pending: advertised-service enumeration and explicit
-UnadvertiseSrv API assertions are retained and are not claimed as ported. Native
-source and fixture hashes remain in the unchanged retained catalog.
+The [local service lifecycle slice](NET-02-service-lifecycle.md) adds the remaining
+advertised-service count/topic, invalid/valid withdrawal and final empty-list
+assertions to that same port. Independent /root/sdformat review approved this
+complete original assertion sequence and independently reran the Rust and native
+case; both pass. Native source and fixture hashes remain in the unchanged retained
+catalog.
 
 Supplemental real C++ peers exercise both requester/provider directions, checking
 exact canonical StringMsg payloads. A direct ZeroMQ request verifies no response
@@ -32,7 +35,7 @@ and shutdown. No legacy async callback/CLI API parity is claimed.
 
 Independent /root/msgs review compared the original /foo/Int32(5)/counter1 and
 invalid-name assertions, reran the exact native original and supplemental Rust
-test, and approved this partial mapping. AdvertisedServices and explicit
-unadvertise observations remain unported. The independent reviewer also approved
+test, and approved that partial mapping. /root/sdformat subsequently approved the
+complete enumeration and explicit withdrawal additions. The first reviewer also approved
 the complete400-row TopicUtils mapping after source comparison and exact native
 and Rust reruns; no runtime behavior or production coverage policy changed.

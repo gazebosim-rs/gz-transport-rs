@@ -64,7 +64,16 @@ int main(int argc, char **argv) {
     return mode == "valid-topic-bytes" || result == value ? 0 : 15;
   }
   gz::transport::Node node;
-  if (mode == "config") {
+  if (mode == "service-lifecycle") {
+    if (!node.UnadvertiseSrv(topic) || !node.AdvertisedServices().empty()) return 26;
+    std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> callback=[](const auto &,auto &){return true;};
+    if (!node.Advertise(topic,callback)) return 27;
+    const auto topics=node.AdvertisedServices();
+    if (topics.size()!=1 || topics.front()!=value) return 28;
+    if (node.UnadvertiseSrv("invalid service") || node.AdvertisedServices()!=topics) return 29;
+    if (!node.UnadvertiseSrv(topic) || !node.AdvertisedServices().empty() || !node.UnadvertiseSrv(topic)) return 30;
+    std::cout << "READY" << std::endl;
+  } else if (mode == "config") {
     gz::transport::NodeOptions options;
     auto shared=gz::transport::NodeShared::Instance();
     std::cout << "CONFIG " << options.Partition() << ' ' << shared->msgDiscPort << ' ' << shared->srvDiscPort << ' ' << shared->SndHwm() << ' ' << shared->RcvHwm() << std::endl;

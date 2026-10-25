@@ -94,8 +94,12 @@ struct Lease {
 }
 impl Drop for Lease {
     fn drop(&mut self) {
-        self.active.store(false, Ordering::Release);
-        self.slots.fetch_sub(1, Ordering::AcqRel);
+        release(&self.active, &self.slots);
+    }
+}
+fn release(active: &AtomicBool, slots: &AtomicUsize) {
+    if active.swap(false, Ordering::AcqRel) {
+        slots.fetch_sub(1, Ordering::AcqRel);
     }
 }
 pub struct Publisher {
@@ -173,6 +177,7 @@ pub struct Node {
     worker: Option<JoinHandle<()>>,
     config: Config,
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
+    services: Mutex<Vec<(String, Weak<AtomicBool>)>>,
 }
 impl Node {
     pub fn new(config: Config) -> Result<Self, Error> {
@@ -195,6 +200,7 @@ impl Node {
             worker: Some(worker),
             config,
             topics: Mutex::new(HashMap::new()),
+            services: Mutex::new(Vec::new()),
         })
     }
     fn topic(&self, topic: &str) -> Result<String, Error> {
@@ -256,16 +262,64 @@ impl Node {
         request_type: &str,
         response_type: &str,
     ) -> Result<Service, Error> {
+        let topic = self.topic(topic)?;
+        let mut services = self
+            .services
+            .lock()
+            .map_err(|_| Error::Native("service registry poisoned".into()))?;
+        services.retain(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
         self.sender.send(Command::Serve(
-            self.topic(topic)?,
+            topic.clone(),
             request_type.into(),
             response_type.into(),
             tx,
             lease.active.clone(),
         ))?;
+        services.push((topic, Arc::downgrade(&lease.active)));
         Ok(Service { rx, _lease: lease })
+    }
+    /// This Node's live service topics, without partition prefixes, sorted uniquely.
+    pub fn advertised_services(&self) -> Result<Vec<String>, Error> {
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        let services = self
+            .services
+            .lock()
+            .map_err(|_| Error::Native("service registry poisoned".into()))?;
+        let mut topics: Vec<_> = services
+            .iter()
+            .filter(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)))
+            .map(|(topic, _)| topic.rsplit('@').next().unwrap_or(topic).to_owned())
+            .collect();
+        topics.sort();
+        topics.dedup();
+        Ok(topics)
+    }
+    /// Withdraw all handlers for a local service. Valid absent topics also succeed.
+    /// Already admitted requests may still be drained and completed.
+    pub fn unadvertise_service(&self, topic: &str) -> Result<(), Error> {
+        let topic = self.topic(topic)?;
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        let mut services = self
+            .services
+            .lock()
+            .map_err(|_| Error::Native("service registry poisoned".into()))?;
+        services.retain(|(name, active)| {
+            if name == &topic {
+                if let Some(active) = active.upgrade() {
+                    release(&active, &self.sender.slots);
+                }
+                false
+            } else {
+                true
+            }
+        });
+        Ok(())
     }
     /// Hand a one-way request to a matching local queue or connected native peer.
     /// The timeout bounds discovery and send retries; success does not acknowledge
@@ -676,6 +730,10 @@ impl Worker {
                 }
             }
             Command::Serve(topic, request_type, response_type, tx, active) => {
+                self.cleanup();
+                if !active.load(Ordering::Acquire) {
+                    return;
+                }
                 let p = self.wire_publisher(
                     topic,
                     PubType::SrvPub(ServicePublisher {

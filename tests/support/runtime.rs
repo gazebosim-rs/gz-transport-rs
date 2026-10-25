@@ -65,6 +65,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         worker: None,
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.advertise("/topic", "one"));
@@ -97,6 +98,162 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
     drop((replacement, second));
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert!(node.topics.lock().unwrap().len() <= node.config.capacity);
+}
+
+#[test]
+fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert_eq!(
+        node.unadvertise_service("invalid service"),
+        Err(Error::InvalidName)
+    );
+    node.unadvertise_service("/absent").unwrap();
+    let old = node.serve("/old", "req", "rep").unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/old"]);
+    node.unadvertise_service("old").unwrap();
+    node.unadvertise_service("old").unwrap();
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(
+        node.serve("/new", "req", "rep"),
+        Err(Error::QueueFull)
+    ));
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    worker.command(commands.recv().unwrap()); // Retired before registration: no advertisement.
+    assert!(worker.services.is_empty());
+    assert!(matches!(
+        old.recv_timeout(Duration::ZERO),
+        Err(Error::Shutdown)
+    ));
+    let new = node.serve("/new", "req", "rep").unwrap();
+    drop(old);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    drop(new);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(node.advertised_services().unwrap().is_empty());
+    node.cancel();
+    assert_eq!(node.unadvertise_service("/new"), Err(Error::Shutdown));
+    assert_eq!(node.advertised_services(), Err(Error::Shutdown));
+}
+
+#[test]
+fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() {
+    let (mut worker, commands) = state(2);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.service_port = receiver.local_addr().unwrap().port();
+    let old = node.serve("/topic", "old", EMPTY_TYPE).unwrap();
+    worker.command(commands.recv().unwrap());
+    let (mut request, result) = pending(Instant::now() + Duration::from_secs(1));
+    request.topic = node.topic("/topic").unwrap();
+    request.request_type = "old".into();
+    request.response_type = EMPTY_TYPE.into();
+    worker.command(Command::Request(request));
+    assert_eq!(result.recv().unwrap(), Ok((vec![], true)));
+    node.unadvertise_service("/topic").unwrap();
+    let replacement = node.serve("/topic", "new", EMPTY_TYPE).unwrap();
+    worker.command(commands.recv().unwrap());
+    worker.cleanup();
+    let mut trace = Vec::new();
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while let Ok(len) = receiver.recv(&mut buffer) {
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        if message.r#type == Type::Subscribe as i32 {
+            continue;
+        }
+        let Some(DiscContents::Pub(p)) = message.disc_contents else {
+            panic!("missing publisher")
+        };
+        let Some(PubType::SrvPub(info)) = p.pub_type else {
+            panic!("wrong kind")
+        };
+        trace.push((message.r#type, info.request_type));
+    }
+    assert_eq!(
+        trace,
+        [
+            (Type::Advertise as i32, "old".into()),
+            (Type::Unadvertise as i32, "old".into()),
+            (Type::Advertise as i32, "new".into())
+        ]
+    );
+    old.recv_timeout(Duration::ZERO)
+        .unwrap()
+        .respond(vec![], true)
+        .unwrap();
+    assert!(matches!(
+        old.recv_timeout(Duration::ZERO),
+        Err(Error::Shutdown)
+    ));
+    drop(old);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    drop(replacement);
+}
+
+#[test]
+fn service_drop_and_explicit_withdrawal_race_without_double_release() {
+    let node = Node::new(Config {
+        capacity: 1,
+        ..Default::default()
+    })
+    .unwrap();
+    let service = node.serve("/race", "req", "rep").unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    thread::scope(|scope| {
+        scope.spawn(|| {
+            barrier.wait();
+            drop(service);
+        });
+        barrier.wait();
+        node.unadvertise_service("/race").unwrap();
+    });
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(node.advertised_services().unwrap().is_empty());
+    let _new = node.serve("/new", "req", "rep").unwrap();
+}
+
+#[test]
+fn poisoned_service_registry_fails_explicitly() {
+    let node = Node::new(Config::default()).unwrap();
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = node.services.lock().unwrap();
+                    panic!("injected registry owner panic");
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(
+        matches!(node.serve("/topic", "req", "rep"), Err(Error::Native(message)) if message.contains("poisoned"))
+    );
+    assert!(
+        matches!(node.advertised_services(), Err(Error::Native(message)) if message.contains("poisoned"))
+    );
+    assert!(
+        matches!(node.unadvertise_service("/topic"), Err(Error::Native(message)) if message.contains("poisoned"))
+    );
 }
 impl TestDiscovery for Worker {
     fn discovered(&mut self, channel: usize, message: Discovery) {

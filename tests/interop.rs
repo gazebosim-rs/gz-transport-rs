@@ -520,6 +520,9 @@ fn original_oneway_int32_five_dispatches_once_and_rejects_invalid_service() {
         Err(Error::InvalidName)
     ));
     let service = node.serve("/foo", type_name, "gz.msgs.Empty").unwrap();
+    let advertised = node.advertised_services().unwrap();
+    assert_eq!(advertised.len(), 1);
+    assert_eq!(advertised[0], "/foo");
     let request = gz_msgs::int32::Int32 {
         data: 5,
         ..Default::default()
@@ -550,6 +553,62 @@ fn original_oneway_int32_five_dispatches_once_and_rejects_invalid_service() {
         counter += 1;
     }
     assert_eq!(counter, 1);
+    assert_eq!(
+        node.unadvertise_service("invalid service"),
+        Err(Error::InvalidName)
+    );
+    node.unadvertise_service("/foo").unwrap();
+    assert!(node.advertised_services().unwrap().is_empty());
+}
+
+#[test]
+fn advertised_service_topics_are_local_qualified_and_drop_aware() {
+    let mut config = config();
+    config.set_namespace("ns").unwrap();
+    let node = Node::new(config.clone()).unwrap();
+    let other = Node::new(config).unwrap();
+    let _foreign = other.serve("/foreign", TYPE, TYPE).unwrap();
+    let absolute = node.serve("/absolute", TYPE, TYPE).unwrap();
+    let relative = node.serve("relative", TYPE, TYPE).unwrap();
+    // Rust currently permits duplicate service handlers; listing remains unique.
+    let duplicate = node.serve("relative", TYPE, TYPE).unwrap();
+    assert_eq!(
+        node.advertised_services().unwrap(),
+        ["/absolute", "/ns/relative"]
+    );
+    node.unadvertise_service("/absent").unwrap();
+    node.unadvertise_service("relative").unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/absolute"]);
+    drop((relative, duplicate, absolute));
+    assert!(node.advertised_services().unwrap().is_empty());
+    let replacement = node.serve("relative", TYPE, TYPE).unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/ns/relative"]);
+    drop(replacement);
+}
+
+#[test]
+fn native_local_service_enumeration_and_idempotent_withdrawal() {
+    let config = config();
+    let mut peer = Peer::start(&config, "service-lifecycle", "relative", "/relative");
+    peer.success();
+}
+
+#[test]
+fn cpp_requester_reaches_service_recreated_before_old_receiver_is_dropped() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let retired = node.serve("/recreated_service", TYPE, TYPE).unwrap();
+    node.unadvertise_service("/recreated_service").unwrap();
+    let replacement = node.serve("/recreated_service", TYPE, TYPE).unwrap();
+    let mut peer = Peer::start(&config, "request", "/recreated_service", "cpp");
+    let request = replacement.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_eq!(request.data, data("cpp"));
+    request.respond(data("cpp-rust"), true).unwrap();
+    peer.success();
+    assert!(matches!(
+        retired.recv_timeout(Duration::ZERO),
+        Err(Error::Shutdown)
+    ));
 }
 
 #[test]
