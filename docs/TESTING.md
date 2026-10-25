@@ -99,3 +99,8 @@ The selected two-process ServiceInfo assertion ports require the exact ordinary,
 inputless and outputless native originals in every gate. They use real C++
 providers and a bounded provider-record type snapshot; the existing signature
 view still deduplicates type pairs. See [service inspection assertions](NET-01-service-info-ports.md).
+
+Explicit unsubscribe adds the unchanged native two-node original as a required
+baseline control without retiring its Rust mapping. Native/Rust metadata and
+actual XPUB filter-lifetime checks cover the narrower API; see the
+[receiver ownership boundary](NET-01-unsubscribe.md).

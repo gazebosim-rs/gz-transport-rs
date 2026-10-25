@@ -117,7 +117,21 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
-  if (mode == "publisher-membership") {
+  if (mode == "unsubscribe-reference") {
+    gz::transport::NodeOptions options;
+    if (!options.AddTopicRemap(topic,value)) return 90;
+    gz::transport::Node first(options),second(options);
+    std::function<void(const gz::msgs::Int32&)> callback=[](const auto&){};
+    if (!first.Subscribe(topic,callback) || !first.Subscribe(topic,callback) || !second.Subscribe(topic,callback)) return 91;
+    const std::vector<std::string> expected{value};
+    if (first.SubscribedTopics()!=expected || second.SubscribedTopics()!=expected) return 92;
+    if (first.Unsubscribe("invalid topic") || !first.Unsubscribe("/absent")) return 93;
+    if (first.SubscribedTopics()!=expected || !first.Unsubscribe(topic) || first.SubscribedTopics()!=expected) return 94;
+    if (!first.Unsubscribe(value) || !first.SubscribedTopics().empty() || second.SubscribedTopics()!=expected) return 95;
+    if (!first.Unsubscribe(value) || !first.Subscribe(topic,callback) || first.SubscribedTopics()!=expected) return 96;
+    if (!first.Unsubscribe(value) || !second.Unsubscribe(value) || !first.SubscribedTopics().empty() || !second.SubscribedTopics().empty()) return 97;
+    std::cout << "READY" << std::endl;
+  } else if (mode == "publisher-membership") {
     auto publisher=node.Advertise(topic,value);
     if (!publisher || publisher.HasConnections()) return 40;
     std::function<void(const gz::msgs::StringMsg&)> cb=[](const auto&){};

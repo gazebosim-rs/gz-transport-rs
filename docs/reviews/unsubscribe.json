@@ -1,0 +1,45 @@
+{
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T07:48:15.324858+00:00",
+  "decision": "approved",
+  "base": "32be6186dc16ca379dded9aa17ed299ef0214393",
+  "diff_sha256": "57e57f205700455314960c83a13ba67bf7d60627086b1cbaeff9c89b05beae55",
+  "source_sha256": {
+    "README.md": "b92f97d5da670d31fd2787b70013d7ca7299ce6fdc4d8a010b30b1fae560123f",
+    "docs/NET-01-unsubscribe.md": "e90b523be73a584d11756d1daf6385cc671d7eb1e87d90122c517f7e6a5a4e84",
+    "docs/PROTOCOL.md": "d94c4ca1c5f0ed70c34175d06ef143e2367e4ea1bcb39e5e93809bbffe741ca0",
+    "docs/TESTING.md": "056cf79afe7e2dda35085ea8120868f03ce318b0a5c3ba929fcd5a389fd44f3f",
+    "docs/upstream-tests.json": "4b3733acddaf22a4afe07601c9ccdfa5cca3f76c3d7e827a5479ffa83adeb21d",
+    "scripts/verify.py": "5ffa511f5372ef0646c0326c127fc87866cc1d908de4d35dccf7cf6672312615",
+    "src/runtime.rs": "16e9be66043bee6fb86ffe1e5e479e018dd9a45468d3fee63a579f60beee47f1",
+    "tests/cpp_peer.cc": "76b4c3169b3354c0e9209be29bd84cdf7cb609482cbabd7d1987fbcf88dea010",
+    "tests/interop.rs": "a3453c14930503e87c8335f7cd10330c4406012f3bf80764d85aff9d5bfd5a5f",
+    "tests/support/runtime.rs": "d8316e378620ac83f5ae5c4866af764ec4a0920aa27f2c76ff24d02dd72ef07b"
+  },
+  "independent_checks": [
+    "Raw-exported and Git-blob/type/mode/path-set verified public parent, applied exact ten frozen file overrides and reverified every source hash. All builds used reviewer-owned source and target; producer files/targets unchanged.",
+    "Audited original-name qualification/remap behavior against pinned Node.cc and NodeShared.cc, mutex admission ordering, queue-full rollback, atomic exactly-once slot release, stale weak/old lease handling, pending admission, worker cleanup/filter and bounded generic END refresh. No separate pending collection or network acknowledgment is introduced.",
+    "All 51 runtime unit regressions pass serially, including the three new unsubscribe checks, real XPUB filter acknowledgment/buffer retention/recreation, real UDP repeated/absent generic END records, poison/cancellation, duplicate filters and shutdown behavior. The initial three-test targeted pass is a subset, not added again.",
+    "Freshly compiled the unchanged-scoped C++ peer and independently passed the new C++/Rust unsubscribe metadata test for invalid/absent/alias/canonical/multiple-receiver/other-Node/repeated/recreation behavior.",
+    "Independently reran exact native NodeTest.PubSubOneThreadTwoSubs: one run, zero failures. Verified immutable upstream source and original binary hashes. Inspected ledger change: baseline becomes passed while disposition remains pending, preserving the full original assertions and process-global readiness/callback limitations. No original retirement is approved."
+  ],
+  "author_gate": {
+    "rust_tests": 125,
+    "tool_tests": 22,
+    "lines": [
+      1578,
+      1599
+    ],
+    "regions": [
+      2402,
+      2468
+    ],
+    "changed_lines": [
+      32,
+      32
+    ],
+    "qualification": "Reported author full strict/native gate; independent full coverage/tooling/all-Rust rerun is not claimed."
+  },
+  "limits": "Explicit bounded local subscription retirement only. Already-owned buffers remain drainable; already-selected deliveries may finish. No native callback-queue cancellation, exact directed packet counts, immediate process-global visibility or full original mapping/NET packet acceptance. Final metadata binding and normal staged/hosted qualification remain required."
+}

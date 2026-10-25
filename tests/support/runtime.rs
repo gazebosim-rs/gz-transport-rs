@@ -2638,6 +2638,9 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
     assert!(
         matches!(node.subscribe("/two","T"),Err(Error::Native(m)) if m=="subscription registry poisoned")
     );
+    assert!(
+        matches!(node.unsubscribe("/two"),Err(Error::Native(m)) if m=="subscription registry poisoned")
+    );
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     thread::scope(|scope| {
         assert!(
@@ -2758,4 +2761,177 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
     );
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 1);
+}
+
+#[test]
+fn unsubscribe_retires_all_local_receivers_without_double_slot_release() {
+    let mut config = Config {
+        capacity: 16,
+        ..Default::default()
+    };
+    config.add_topic_remap("/alias", "/canonical").unwrap();
+    let node = Node::new(config).unwrap();
+    let first = node.subscribe("/alias", "first").unwrap();
+    let second = node.subscribe("/alias", "second").unwrap();
+    let other = node.subscribe("/other", "first").unwrap();
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 3);
+    assert_eq!(node.unsubscribe("invalid topic"), Err(Error::InvalidName));
+    node.unsubscribe("/absent").unwrap();
+    node.unsubscribe("/alias").unwrap();
+    assert_eq!(node.subscribed_topics().unwrap(), ["/canonical", "/other"]);
+    node.unsubscribe("/canonical").unwrap();
+    assert_eq!(node.subscribed_topics().unwrap(), ["/other"]);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    assert!(!first._lease.active.load(Ordering::Acquire));
+    assert!(!second._lease.active.load(Ordering::Acquire));
+    assert!(other._lease.active.load(Ordering::Acquire));
+    node.unsubscribe("/canonical").unwrap();
+    drop((first, second));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    let replacement = node.subscribe("/alias", "first").unwrap();
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 2);
+    node.unsubscribe("/canonical").unwrap();
+    drop(replacement);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    let dropped = node.subscribe("/dropped", "first").unwrap();
+    drop(dropped);
+    node.unsubscribe("/dropped").unwrap();
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    node.cancel();
+    assert_eq!(node.unsubscribe("/other"), Err(Error::Shutdown));
+    drop(other);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
+    let (mut worker, commands) = state(8);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let context = zmq::Context::new();
+    let publisher = context.socket(zmq::XPUB).unwrap();
+    publisher.set_linger(0).unwrap();
+    publisher.bind("tcp://127.0.0.1:*").unwrap();
+    worker
+        .subscriber
+        .connect(&publisher.get_last_endpoint().unwrap().unwrap())
+        .unwrap();
+    let first = node.subscribe("/topic", "old").unwrap();
+    worker.command(commands.recv().unwrap());
+    let topic = worker.subscriptions[0].topic.clone();
+    let control = |enabled| [vec![u8::from(enabled)], topic.as_bytes().to_vec()].concat();
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
+    worker.deliver(Message {
+        topic: topic.clone(),
+        type_name: "old".into(),
+        data: vec![1],
+    });
+    node.unsubscribe("/topic").unwrap();
+    worker.deliver(Message {
+        topic: topic.clone(),
+        type_name: "old".into(),
+        data: vec![2],
+    });
+    assert_eq!(first.recv_timeout(Duration::ZERO).unwrap().data, [1]);
+    assert!(matches!(
+        first.recv_timeout(Duration::ZERO),
+        Err(Error::Timeout)
+    ));
+    worker.command(commands.recv().unwrap());
+    worker.cleanup();
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(false));
+    assert!(matches!(
+        first.recv_timeout(Duration::ZERO),
+        Err(Error::Shutdown)
+    ));
+    publisher
+        .send_multipart([topic.as_bytes(), b"old", b"retired"], 0)
+        .unwrap();
+    assert_eq!(worker.subscriber.poll(zmq::POLLIN, 100).unwrap(), 0);
+    let pending = node.subscribe("/topic", "pending").unwrap();
+    node.unsubscribe("/topic").unwrap();
+    let replacement = node.subscribe("/topic", "new").unwrap();
+    worker.command(commands.recv().unwrap());
+    worker.command(commands.recv().unwrap());
+    worker.command(commands.recv().unwrap());
+    assert_eq!(worker.subscriptions.len(), 1);
+    assert_eq!(worker.subscriptions[0].type_name, "new");
+    assert!(matches!(
+        pending.recv_timeout(Duration::ZERO),
+        Err(Error::Shutdown)
+    ));
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
+    worker.deliver(Message {
+        topic: topic.clone(),
+        type_name: "new".into(),
+        data: vec![3],
+    });
+    assert_eq!(replacement.recv_timeout(Duration::ZERO).unwrap().data, [3]);
+    node.unsubscribe("/topic").unwrap();
+    worker.command(commands.recv().unwrap());
+    worker.cleanup();
+    assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
+    assert_eq!(publisher.recv_bytes(0).unwrap(), control(false));
+    drop((first, pending, replacement));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end() {
+    let (mut worker, commands) = state(1);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let subscription = node.subscribe("/topic", "T").unwrap();
+    assert_eq!(node.unsubscribe("/topic"), Err(Error::QueueFull));
+    assert!(subscription._lease.active.load(Ordering::Acquire));
+    assert_eq!(node.subscribed_topics().unwrap(), ["/topic"]);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    worker.command(commands.recv().unwrap());
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while receiver.recv(&mut buffer).is_ok() {}
+    node.unsubscribe("/topic").unwrap();
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    worker.command(commands.recv().unwrap());
+    assert!(worker.subscriptions.is_empty());
+    while receiver.recv(&mut buffer).is_ok() {}
+    for name in ["/topic", "/absent"] {
+        node.unsubscribe(name).unwrap();
+        worker.command(commands.recv().unwrap());
+        let len = receiver.recv(&mut buffer).unwrap();
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        assert_eq!(message.r#type, Type::EndConnection as i32);
+        let Some(DiscContents::Pub(p)) = message.disc_contents else {
+            panic!("missing END record")
+        };
+        assert_eq!(p.topic, node.topic(name).unwrap());
+        let Some(PubType::MsgPub(metadata)) = p.pub_type else {
+            panic!("missing generic metadata")
+        };
+        assert!(metadata.ctrl.is_empty());
+        assert_eq!(metadata.msg_type, "google.protobuf.Message");
+        assert!(receiver.recv(&mut buffer).is_err());
+    }
+    drop(subscription);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
 }

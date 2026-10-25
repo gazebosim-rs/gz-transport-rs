@@ -1256,3 +1256,36 @@ fn provider_record_multiplicity_matches_native_for_equal_signatures() {
     await_count(0);
     assert!(node.service_type_signatures("/foo").unwrap().is_empty());
 }
+
+#[test]
+fn explicit_unsubscribe_matches_native_original_name_and_node_ownership() {
+    let mut config = config();
+    config.add_topic_remap("/alias", "/canonical").unwrap();
+    let mut reference = Peer::start(&config, "unsubscribe-reference", "/alias", "/canonical");
+    reference.success();
+    let first = Node::new(config.clone()).unwrap();
+    let second = Node::new(config).unwrap();
+    let receivers = [
+        first.subscribe("/alias", "gz.msgs.Int32").unwrap(),
+        first.subscribe("/alias", "gz.msgs.Int32").unwrap(),
+        second.subscribe("/alias", "gz.msgs.Int32").unwrap(),
+    ];
+    assert_eq!(first.subscribed_topics().unwrap(), ["/canonical"]);
+    assert_eq!(second.subscribed_topics().unwrap(), ["/canonical"]);
+    assert_eq!(first.unsubscribe("invalid topic"), Err(Error::InvalidName));
+    first.unsubscribe("/absent").unwrap();
+    assert_eq!(first.subscribed_topics().unwrap(), ["/canonical"]);
+    first.unsubscribe("/alias").unwrap();
+    assert_eq!(first.subscribed_topics().unwrap(), ["/canonical"]);
+    first.unsubscribe("/canonical").unwrap();
+    assert!(first.subscribed_topics().unwrap().is_empty());
+    assert_eq!(second.subscribed_topics().unwrap(), ["/canonical"]);
+    first.unsubscribe("/canonical").unwrap();
+    let replacement = first.subscribe("/alias", "gz.msgs.Int32").unwrap();
+    assert_eq!(first.subscribed_topics().unwrap(), ["/canonical"]);
+    first.unsubscribe("/canonical").unwrap();
+    second.unsubscribe("/canonical").unwrap();
+    assert!(first.subscribed_topics().unwrap().is_empty());
+    assert!(second.subscribed_topics().unwrap().is_empty());
+    drop((receivers, replacement));
+}

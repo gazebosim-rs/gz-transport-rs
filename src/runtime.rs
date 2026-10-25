@@ -340,6 +340,33 @@ impl Node {
             .map_err(|_| Error::Native("subscription registry poisoned".into()))?;
         Ok(active_topics(subscriptions.iter().map(|(t, a)| (t, a))))
     }
+    /// Retire this Node's subscriptions to an original qualified topic.
+    /// Valid absent topics also succeed. Already admitted receiver messages remain
+    /// owned by their queues; already-selected worker deliveries may complete. Filter
+    /// cleanup and remote withdrawal run asynchronously on the existing worker.
+    /// A saturated command queue leaves local leases unchanged.
+    pub fn unsubscribe(&self, topic: &str) -> Result<(), Error> {
+        let topic = self.topic(topic)?;
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        let mut subscriptions = self
+            .subscriptions
+            .lock()
+            .map_err(|_| Error::Native("subscription registry poisoned".into()))?;
+        self.sender.send(Command::Unsubscribe(topic.clone()))?;
+        subscriptions.retain(|(name, active)| {
+            if name == &topic {
+                if let Some(active) = active.upgrade() {
+                    release(&active, &self.sender.slots);
+                }
+                false
+            } else {
+                true
+            }
+        });
+        Ok(())
+    }
     /// Register one service per qualified topic on this Node. A rejected duplicate
     /// leaves the original receiver authoritative, including for different types.
     pub fn serve(
@@ -536,6 +563,7 @@ enum Command {
     Advertise(String, String, Arc<AtomicBool>),
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<Message>, Arc<AtomicBool>),
+    Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
@@ -954,6 +982,18 @@ impl Worker {
                     tx,
                     active,
                 });
+            }
+            Command::Unsubscribe(topic) => {
+                // Even an absent or repeated native retirement refreshes END.
+                self.cleanup();
+                self.announce(
+                    0,
+                    protocol::discovery(
+                        &self.process,
+                        Type::EndConnection,
+                        Some(DiscContents::Pub(self.subscriber_publisher(&topic, ""))),
+                    ),
+                );
             }
             Command::ServiceSignatures(topic, reply) => {
                 self.subscribe_message(1, &topic);

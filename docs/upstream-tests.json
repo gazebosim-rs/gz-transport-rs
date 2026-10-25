@@ -4097,10 +4097,10 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubOneThreadTwoSubs",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubOneThreadTwoSubs",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
-      "review": "pending",
+      "review": "/root/msgs independently reviewed bounded unsubscribe API/native baseline and explicit scope; complete original remains pending because added discovery barriers would change immediate process-global readiness and owned buffers do not reproduce callback queue cancellation",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4109,8 +4109,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Retained full original two-node callback/type/value/listing/invalid-name/500ms retirement assertions. Native process-global handler visibility makes the original local HasConnections predicate sufficient for both Nodes; independent per-Node asynchronous Rust discovery requires further implementation or a reviewed partial disposition. No full port claimed.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-unsubscribe.md; mandatory exact native original; artifacts/unsubscribe-probe/{original.xml,proof.json}"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackMessage",

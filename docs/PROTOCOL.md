@@ -163,3 +163,9 @@ Each remains retained in the 418-case runtime ledger and non-gtest inventory.
 
 Explicit supported environment capture and pending modes are documented in
 [NET-02 configuration](NET-02-config.md).
+
+Explicit `Node::unsubscribe` retires matching original-name local leases without
+waiting for the IO worker. Existing cleanup handles final socket filter removal
+and END notifications. Already-owned receiver buffers can drain, and previously
+selected worker deliveries may complete; native queued callback cancellation is
+a separate API boundary. See [unsubscribe ownership](NET-01-unsubscribe.md).
