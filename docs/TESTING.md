@@ -340,5 +340,26 @@ asserted by either test. The exact one-file source passed the strict staged
 gate with 2260/2307 lines and 3396/3544 regions, zero changed production
 lines; an extra-publish mutant fails. The independent
 [review](reviews/local-remote-once.json) approved this partial scope. See the
-[case contract](NET-02-local-remote-once.md). Normal hook and hosted CI remain
-publication gates.
+[case contract](NET-02-local-remote-once.md). Its normal protected hook and
+exact hosted run 40230542175 passed on public commit 1422aff0a0a89b1616f7a936ed71606b5affc27f.
+
+## Per-registration ignore-local delivery
+
+The pinned `NodeTest.IgnoreLocalMessages` original maps faithfully through
+`original_ignore_local_messages`: default false, set true and getter, one
+`/foo` Int32 publisher and ignored subscriber, three data5 publications 100 ms
+apart, and no local delivery. The pinned
+`twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber` maps partially through
+`original_ignore_local_messages_with_remote_subscriber`: a real C++ subscriber
+is registered, a second Rust Node witnesses ten Vector3d deliveries with no
+extra, and the publishing Node's opted-in receiver sees none. Three endpoint
+descriptors are a fixture-specific surrogate for distinct native subscriber
+process UUIDs. Neither original nor port checks receipt by the C++ child, and
+same-process origin sharing remains unported. The additive option leaves
+ordinary subscriptions and discovery registration intact. The exact staged
+source gate passed with 2277/2324 production lines, 3415/3563 regions and
+18/18 changed executable lines. The independent
+[review](reviews/ignore-local.json) reproduced both native originals and the
+selected Rust cases; removing the direct-delivery filter fails the Int32
+assertion. See the [case contract](NET-02-ignore-local.md). Final protected
+hook and hosted qualification remain separate publication gates.

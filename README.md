@@ -54,6 +54,10 @@ ownership without network waits; see [local topic inventory](docs/NET-01-local-t
 `unsubscribe()` retires every matching subscription on this Node using the
 original qualified name. Already-admitted owned receiver buffers remain drainable;
 see the [retirement contract](docs/NET-01-unsubscribe.md).
+`SubscribeOptions::set_ignore_local_messages(true)` suppresses direct delivery
+to that registration from its owning Node. Ordinary `subscribe()` retains local
+delivery, and ignored registrations remain discoverable; see the
+[bounded ignore-local contract](docs/NET-02-ignore-local.md).
 `Subscription::recv_with_info_timeout()` returns an owned envelope with borrowed
 partition, topic, descriptor and delivery-path metadata; raw receive remains
 available. Independent Rust Nodes in one process still use the wire, a measured

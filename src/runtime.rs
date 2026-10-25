@@ -311,6 +311,20 @@ pub struct Subscription {
     owner_dead: Arc<AtomicBool>,
     local_interest: Arc<Mutex<LocalInterestCache>>,
 }
+/// Per-subscription local-delivery policy. The default receives publications
+/// from the owning Node as well as matching wire publishers.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SubscribeOptions {
+    ignore_local_messages: bool,
+}
+impl SubscribeOptions {
+    pub fn ignore_local_messages(&self) -> bool {
+        self.ignore_local_messages
+    }
+    pub fn set_ignore_local_messages(&mut self, ignore: bool) {
+        self.ignore_local_messages = ignore;
+    }
+}
 impl Drop for Subscription {
     fn drop(&mut self) {
         release(&self._lease.active, &self._lease.slots);
@@ -626,6 +640,16 @@ impl Node {
         })
     }
     pub fn subscribe(&self, topic: &str, type_name: &str) -> Result<Subscription, Error> {
+        self.subscribe_with_options(topic, type_name, SubscribeOptions::default())
+    }
+    /// Subscribe with an optional same-Node delivery filter. An ignored local
+    /// registration remains visible to discovery and other Node publishers.
+    pub fn subscribe_with_options(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: SubscribeOptions,
+    ) -> Result<Subscription, Error> {
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
         let topic = self.remapped_topic(topic)?;
@@ -639,6 +663,7 @@ impl Node {
             type_name.into(),
             tx,
             lease.active.clone(),
+            options,
         ))?;
         subscriptions.push((topic.clone(), Arc::downgrade(&lease.active)));
         drop(subscriptions);
@@ -1083,7 +1108,13 @@ enum Command {
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
     Publish(String, String, Vec<u8>),
-    Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
+    Subscribe(
+        String,
+        String,
+        SyncSender<ReceivedMessage>,
+        Arc<AtomicBool>,
+        SubscribeOptions,
+    ),
     Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     KnownServices(SyncSender<Vec<String>>),
@@ -1109,6 +1140,7 @@ struct SubscriberState {
     type_name: String,
     tx: SyncSender<ReceivedMessage>,
     active: Arc<AtomicBool>,
+    options: SubscribeOptions,
 }
 struct ServiceState {
     publisher: WirePublisher,
@@ -1742,7 +1774,7 @@ impl Worker {
                     true,
                 );
             }
-            Command::Subscribe(topic, type_name, tx, active) => {
+            Command::Subscribe(topic, type_name, tx, active, options) => {
                 // Retire old filters/registrations before a replacement. This
                 // also bounds inactive entries during continuous command traffic.
                 self.cleanup();
@@ -1760,6 +1792,7 @@ impl Worker {
                     type_name,
                     tx,
                     active,
+                    options,
                 });
                 for peer in self
                     .peers
@@ -1934,6 +1967,7 @@ impl Worker {
             if s.active.load(Ordering::Acquire)
                 && s.topic == message.topic
                 && (s.type_name.is_empty() || s.type_name == message.type_name)
+                && !(intra_process && s.options.ignore_local_messages())
             {
                 self.sender.counters.dropped(s.tx.try_send(ReceivedMessage {
                     message: message.clone(),

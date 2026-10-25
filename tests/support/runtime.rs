@@ -990,6 +990,7 @@ fn discovery_lifecycle_and_capacity() {
         "type".into(),
         tx,
         active.clone(),
+        SubscribeOptions::default(),
     ));
     assert_eq!(worker.subscriptions_connected.len(), 1);
     worker.command(Command::Advertise(
@@ -1402,6 +1403,7 @@ fn queue_saturation_is_observable_in_local_counters() {
         "type".into(),
         tx,
         active,
+        SubscribeOptions::default(),
     ));
     let message = Message {
         topic: "topic".into(),
@@ -1436,6 +1438,7 @@ fn malformed_publications_and_discovery_errors_are_counted() {
         type_name: "type".into(),
         tx,
         active: Arc::new(AtomicBool::new(true)),
+        options: SubscribeOptions::default(),
     });
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::XPUB).unwrap();
@@ -1493,6 +1496,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
         type_name: "type".into(),
         tx,
         active: old,
+        options: SubscribeOptions::default(),
     });
     let (tx, rx) = mpsc::sync_channel(1);
     worker.subscriptions.push(SubscriberState {
@@ -1500,6 +1504,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
         type_name: "type".into(),
         tx,
         active: Arc::new(AtomicBool::new(true)),
+        options: SubscribeOptions::default(),
     });
     worker.cleanup();
     assert_eq!(worker.subscriptions.len(), 1);
@@ -1767,6 +1772,7 @@ fn subscriber_listing_uses_message_channel_live_leases_and_native_wildcard() {
             type_name.into(),
             tx,
             active,
+            SubscribeOptions::default(),
         ));
     }
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -1826,6 +1832,7 @@ fn subscriber_withdrawal_waits_for_last_lease_and_emits_one_generic_end() {
             "gz.msgs.StringMsg".into(),
             tx,
             active,
+            SubscribeOptions::default(),
         ));
     }
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -2053,6 +2060,7 @@ fn discovered_endpoints_only_connect_and_stay_alive_on_their_native_channel() {
         "type".into(),
         tx,
         Arc::new(AtomicBool::new(true)),
+        SubscribeOptions::default(),
     ));
     assert!(worker.subscriptions_connected.is_empty());
     worker.discovered(0, protocol::advertisement("remote", publication.clone()));
@@ -2152,6 +2160,7 @@ fn duplicate_or_capacity_rejected_advertisements_cannot_register_new_metadata() 
         "correct".into(),
         tx,
         Arc::new(AtomicBool::new(true)),
+        SubscribeOptions::default(),
     ));
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     receiver
@@ -2439,6 +2448,7 @@ fn remembered_subscribers_preserve_native_control_identity_and_lifecycle() {
         "wrong".into(),
         tx,
         active.clone(),
+        SubscribeOptions::default(),
     ));
     assert!(!worker.has_subscribers("/topic", "T"));
     worker.subscriptions[0].type_name.clear();
@@ -2902,6 +2912,7 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
             "T".into(),
             tx,
             active.clone(),
+            SubscribeOptions::default(),
         ));
         if !keep {
             retire.push(active);
@@ -3055,6 +3066,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
         "old".into(),
         tx,
         old.clone(),
+        SubscribeOptions::default(),
     ));
     for (index, type_name) in [(0, "old"), (1, "new")] {
         let mut p = worker.wire_publisher(
@@ -3077,6 +3089,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
         "new".into(),
         tx,
         Arc::new(AtomicBool::new(true)),
+        SubscribeOptions::default(),
     ));
     let mut trace = Vec::new();
     while let Ok(len) = receiver.recv(&mut buffer) {
@@ -3177,6 +3190,7 @@ fn duplicate_receivers_share_one_socket_filter_until_final_retirement() {
             descriptor.into(),
             tx,
             flag.clone(),
+            SubscribeOptions::default(),
         ));
         active.push(flag);
     }
@@ -3620,6 +3634,7 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
         "opaque.Type".into(),
         tx,
         Arc::new(AtomicBool::new(true)),
+        SubscribeOptions::default(),
     ));
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(

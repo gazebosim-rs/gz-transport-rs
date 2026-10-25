@@ -1012,10 +1012,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_ignore_local_messages_with_remote_subscriber"
+      ],
+      "review": "docs/reviews/ignore-local.json",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -1024,8 +1026,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact ten default Vector3d publications with ignored owner Node and a second local witness Node: witness receives ten then no extra after 300 ms; ignored Node receives none while a real C++ subscriber is registered. Three descriptor readiness is a fixture-specific surrogate for native distinct subscriber process UUIDs. Native child callback is empty, so remote receipt is unasserted; process-global origin sharing remains unported.",
+      "configuration": "Expanded on Linux x86_64; pinned native reference replay and Rust source review completed for this case.",
+      "evidence": "docs/NET-02-ignore-local.md; exact pinned native original and Rust port required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsPubSubStats:twoProcPubSubStats.PubSubTwoProcsThreeNodes",
@@ -4744,10 +4747,12 @@
       "id": "UNIT_Node_TEST:NodeTest.IgnoreLocalMessages",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.IgnoreLocalMessages",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_ignore_local_messages"
+      ],
+      "review": "docs/reviews/ignore-local.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4756,8 +4761,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact /foo gz.msgs.Int32 data5 local case: SubscribeOptions starts false, setter/getter true, three publishes separated by 100 ms, and no local message received. Existing ordinary subscribe remains default false; per-registration control is supplemental.",
+      "configuration": "Expanded on Linux x86_64; pinned native reference replay and Rust source review completed for this case.",
+      "evidence": "docs/NET-02-ignore-local.md; exact pinned native original and Rust port required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SrvRequestWrongReq",

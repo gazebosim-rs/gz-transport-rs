@@ -1,0 +1,35 @@
+{
+  "author": "/root/transport_fallback",
+  "base_commit": "1422aff0a0a89b1616f7a936ed71606b5affc27f",
+  "decision": "approved",
+  "files": {
+    "scripts/verify.py": "36adf04effe497e8c1977cc05d7d160310498af37b0bb7df30bdf15adb107d0f",
+    "src/lib.rs": "856568fa525a54de134bc8a126aea73c6cd5602d44067f06454e0b7df054d742",
+    "src/runtime.rs": "dcb3252c2230b61b415fa505714e8b4b6ec07b6879f2e4fb0be123a10a6db1c7",
+    "tests/interop.rs": "406548dd86f4cf6d34276b01f437d65f107e7f7bf08602b7a7a4ca95cc16622b",
+    "tests/support/runtime.rs": "f35212ec2604d665f2471910b97bde1055d2c82fd70c30d2fbfae7cd26b9bb37"
+  },
+  "review": {
+    "author_staged_gate_sha256": "6faa25dac6275ac1f5303e66dbc11c9048e0d2186bfb07f90c6f99c599a45a7a",
+    "excluded_setup": "First private source replay omitted GZ_CPP_PEER and the remote test failed before assertion. First mutant run used a broad filter and omitted GZ_CPP_PEER; corrected exact one-test replay is positive negative-control evidence.",
+    "ledger_disposition": {
+      "NodeTest.IgnoreLocalMessages": "faithful_port",
+      "twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber": "partial"
+    },
+    "limits": "Native ignore-local uses publisher/handler Node UUID. Rust filters direct same-Node worker delivery, not general same-process origin. Three subscriber descriptors are a fixture-specific remote-readiness surrogate, not process UUID proof. Neither native original nor Rust peer asserts C++ child message receipt; Rust witness proves its own ten ordered local deliveries.",
+    "mutant": "Private direct-delivery filter removal fails exact NodeTest-derived /foo Int32 data5 receive-timeout assertion.",
+    "mutant_diff_sha256": "5292a1669b794867b38622adbb3de46e70062e9ac42e68a5189ca61809eb17b9",
+    "mutant_log_sha256": "8fd1b137556a63acec4104ab296a71af17e8d5acd84216a490ad11512e98f2bc",
+    "native_originals": "Pinned unit and two-process originals replayed separately, each 1/0/no skips; installed pinned binary hashes match proposal. Native child subscriber has an empty callback and SubprocessJoinWrapper only joins, so no remote child delivery proof.",
+    "native_two_process_log_sha256": "900e59799d53374b432df535d47ce55e234232b1e65edbd5f074660a495600a5",
+    "native_unit_log_sha256": "edb8b77f789370b89b1a2354891deec89b94e7ef8518e3fb84244f24152abc5e",
+    "private_export": "All five staged file SHA-256 hashes independently verified in a raw base export; exclusive Cargo target and separate source.",
+    "rust": "Private selected original unit and remote tests 2/0; per-registration control 1/0. Exact author staged gate EXIT0, 2277/2324 lines,3415/3563 regions,18/18 changed production lines.",
+    "rust_per_registration_log_sha256": "da55436036170a61c06abb5f18047c286744f2d8d80be0176e5676798189ba61",
+    "rust_selected_log_sha256": "6183c9872980aa2138dfcd9b4c2e93fc2dd91575e4190d1d6ee2c08948832e69"
+  },
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Additive SubscribeOptions and per-registration suppression of direct same-Node delivery; unchanged default subscribe. Native NodeTest.IgnoreLocalMessages maps faithfully; two-process IgnoreLocalMessagesWithRemoteSubscriber maps partially due process UUID/readiness and origin scope.",
+  "staged_diff_sha256": "e15872f7ff73d141db3116ee40c8bb44aceb7a399cd70faf995009b1b772bf45",
+  "staged_tree": "2be64fc4e52f7c0fbf8a8da9de04e8ad8c07452a"
+}

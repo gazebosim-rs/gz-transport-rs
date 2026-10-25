@@ -18,7 +18,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
 use gz_msgs::{prost::Message, stringmsg::StringMsg, vector3d::Vector3d};
-use gz_transport::{Config, Error, Node};
+use gz_transport::{Config, Error, Node, SubscribeOptions};
 use std::{
     io::{BufRead, BufReader, Write},
     process::{Child, ChildStdout, Command, Stdio},
@@ -608,6 +608,131 @@ fn original_local_subscriber_receives_once_with_remote_subscriber() {
         subscription.recv_timeout(Duration::from_millis(300)),
         Err(Error::Timeout),
         "an extra local copy arrived after ten messages"
+    );
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+}
+
+// Node_TEST.cc:IgnoreLocalMessages and
+// twoProcsPubSub.cc:IgnoreLocalMessagesWithRemoteSubscriber.
+// Original assertion adaptation: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_ignore_local_messages() {
+    let node = Node::new(config()).unwrap();
+    let publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let mut options = SubscribeOptions::default();
+    assert!(!options.ignore_local_messages());
+    options.set_ignore_local_messages(true);
+    assert!(options.ignore_local_messages());
+    let ignored = node
+        .subscribe_with_options("/foo", "gz.msgs.Int32", options)
+        .unwrap();
+    for _ in 0..3 {
+        publisher
+            .publish_typed(&gz_msgs::int32::Int32 {
+                data: 5,
+                ..Default::default()
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+    }
+    publisher.has_connections().unwrap();
+    assert_eq!(
+        ignored.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Timeout)
+    );
+}
+
+#[test]
+fn ignore_local_policy_is_per_subscription() {
+    let node = Node::new(config()).unwrap();
+    let ordinary = node.subscribe("/mixed-local", TYPE).unwrap();
+    let mut options = SubscribeOptions::default();
+    options.set_ignore_local_messages(true);
+    let ignored = node
+        .subscribe_with_options("/mixed-local", TYPE, options)
+        .unwrap();
+    let publisher = node.advertise("/mixed-local", TYPE).unwrap();
+    publisher.publish(data("one")).unwrap();
+    assert_eq!(
+        ordinary.recv_timeout(Duration::from_secs(1)).unwrap().data,
+        data("one")
+    );
+    assert_eq!(
+        ignored.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Timeout)
+    );
+    drop(ordinary);
+    publisher.publish(data("two")).unwrap();
+    publisher.has_connections().unwrap();
+    assert_eq!(
+        ignored.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Timeout)
+    );
+}
+
+#[test]
+fn original_ignore_local_messages_with_remote_subscriber() {
+    let config = config();
+    let topic = "/ignore_local_remote";
+    let mut peer = Peer::start(&config, "list-vector3d-subscriber", topic, "unused");
+    let owner = Node::new(config.clone()).unwrap();
+    let witness = Node::new(config).unwrap();
+    let mut options = SubscribeOptions::default();
+    options.set_ignore_local_messages(true);
+    let ignored = owner
+        .subscribe_with_options(topic, "gz.msgs.Vector3d", options)
+        .unwrap();
+    let observed = witness.subscribe(topic, "gz.msgs.Vector3d").unwrap();
+    let publisher = owner.advertise_typed::<Vector3d>(topic).unwrap();
+
+    // Native waits for a separate subscriber process UUID. The public Rust
+    // snapshot can establish only this fixture's three endpoint descriptors.
+    let discovery_deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let info = owner.known_topic_info(topic).unwrap();
+        if info.subscribers == ["gz.msgs.Vector3d", "gz.msgs.Vector3d", "gz.msgs.Vector3d"] {
+            break;
+        }
+        assert!(
+            Instant::now() < discovery_deadline,
+            "remote subscriber was not discovered"
+        );
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    for _ in 0..10 {
+        publisher.publish_typed(&Vector3d::default()).unwrap();
+    }
+    let receipt_deadline = Instant::now() + Duration::from_secs(5);
+    for _ in 0..10 {
+        loop {
+            assert!(
+                Instant::now() < receipt_deadline,
+                "witness missed ten messages"
+            );
+            match observed.recv_timeout(Duration::from_millis(10)) {
+                Ok(message) => {
+                    assert_eq!(
+                        Vector3d::decode(message.data.as_slice()).unwrap(),
+                        Vector3d::default()
+                    );
+                    break;
+                }
+                Err(Error::Timeout) => continue,
+                Err(error) => panic!("witness failed: {error:?}"),
+            }
+        }
+    }
+    assert_eq!(
+        observed.recv_timeout(Duration::from_millis(300)),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        ignored.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Timeout)
     );
     writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
     peer.success();
