@@ -69,6 +69,93 @@ fn known_lists_filter_partition_kind_age_and_malformed_paths() {
 }
 
 #[test]
+fn subscriber_interest_replies_refresh_and_retire_by_identity() {
+    let (mut worker, _) = state(1);
+    let name = qualified_name(&worker.config.partition, "", "/remote-only").unwrap();
+    let reply = |worker: &Worker, topic: &str, process: &str, node: &str| {
+        let mut publisher = worker.subscriber_publisher(topic, "gz.msgs.StringMsg");
+        publisher.process_uuid = process.into();
+        publisher.node_uuid = node.into();
+        protocol::discovery(
+            process,
+            Type::SubscribersRep,
+            Some(DiscContents::Pub(publisher)),
+        )
+    };
+    let first = reply(&worker, &name, "remote", "node");
+    worker.discovered(0, first.clone());
+    assert_eq!(worker.known_topic_names(), ["/remote-only"]);
+    let key = SubscriberInterestKey {
+        process: "remote".into(),
+        node: "node".into(),
+        topic: name.clone(),
+    };
+    *worker.subscriber_interests.get_mut(&key).unwrap() = Instant::now() - Duration::from_secs(2);
+    worker.discovered(0, first);
+    assert_eq!(worker.subscriber_interests.len(), 1);
+    assert!(worker.subscriber_interests[&key].elapsed() < Duration::from_secs(1));
+
+    let other = qualified_name(&worker.config.partition, "", "/other").unwrap();
+    worker.discovered(0, reply(&worker, &other, "second", "node"));
+    assert_eq!(worker.known_topic_names(), ["/remote-only"]);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    worker.discovered(0, reply(&worker, &other, "remote", "wrong-node"));
+    assert_eq!(worker.subscriber_interests.len(), 1);
+
+    let mut wrong_kind = worker.wire_publisher(
+        other.clone(),
+        PubType::SrvPub(ServicePublisher {
+            socket_id: "socket".into(),
+            request_type: "request".into(),
+            response_type: "response".into(),
+        }),
+    );
+    wrong_kind.process_uuid = "wrong-kind".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "wrong-kind",
+            Type::SubscribersRep,
+            Some(DiscContents::Pub(wrong_kind)),
+        ),
+    );
+    worker.discovered(0, reply(&worker, "@/foreign@/other", "foreign", "node"));
+    assert_eq!(worker.subscriber_interests.len(), 1);
+
+    let mut wrong_end = worker.subscriber_publisher(&name, "gz.msgs.StringMsg");
+    wrong_end.process_uuid = "remote".into();
+    wrong_end.node_uuid = "wrong-node".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(wrong_end.clone())),
+        ),
+    );
+    assert_eq!(worker.subscriber_interests.len(), 1);
+    wrong_end.node_uuid = "node".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(wrong_end)),
+        ),
+    );
+    assert!(worker.subscriber_interests.is_empty());
+
+    worker.discovered(0, reply(&worker, &name, "remote", "node"));
+    *worker.subscriber_interests.get_mut(&key).unwrap() = Instant::now() - Duration::from_secs(4);
+    assert!(worker.known_topic_names().is_empty());
+    worker.discovered(0, reply(&worker, &other, "second", "node"));
+    assert_eq!(worker.known_topic_names(), ["/other"]);
+    assert_eq!(worker.subscriber_interests.len(), 1);
+    worker.discovered(0, protocol::discovery("second", Type::Bye, None));
+    assert!(worker.known_topic_names().is_empty());
+}
+
+#[test]
 fn publisher_recreation_withdraws_old_before_new_advertisement() {
     let (mut worker, _) = state(3);
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();

@@ -1,0 +1,125 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "89c1eba9b43c1a7a905e9a749df3d24c6dec9683",
+  "tree": "8eafca62e23cfbff779145a5074be9b530c8e551",
+  "diff_sha256": "b8f0f6d024a53806a902dc474b6886b53a1c7d555a3191764a3987b4e1cc3d7d",
+  "files": {
+    "README.md": "cc3ad4342393d12b482247d2748ee44f04235c3920d01ae6d4d4f0bb3376d384",
+    "docs/NET-02-subscriber-lists.md": "c22e9f2240b4de376477fbbd914a7862f05298cf1c3cd2dc9443d86ed5e104b0",
+    "docs/TESTING.md": "e7f8a620397c7a193d0651f7553a112eb0f711c1dc7f7f59d4e12cde3449462a",
+    "docs/upstream-tests.json": "b63215a334d2d0291b1a7aaa17a64556bc7f93a92fc31ce91daea8b871407f4a",
+    "scripts/verify.py": "fd4f61a8ff272c428c49986df4fedc11ea6570d776053c08091992ee2062c778",
+    "src/runtime.rs": "e0fad01003683abd346e1d9b27ebc13403ff1b02e21d4add18f7507dc36a712e",
+    "tests/cpp_peer.cc": "20e6022c011595cc41fee67b4605017bf6e0659b3eb20aafa534e74343e7d2ef",
+    "tests/interop.rs": "f289c004e9f4a59cfc2a741e0a91cdad60c562919132261ca09cd969a09e0e31",
+    "tests/support/runtime.rs": "5dbf0bdd2e1bd1eaa5ab637f73e9704d608a8192a5a3b515b94b31b8ceba7fee"
+  },
+  "findings": [],
+  "scope": "Additive Node::known_topics immediate worker snapshot of local and discovered message publishers plus local active and recently replied remote subscriber interests, with bounded eventual remote visibility.",
+  "source_api_review": {
+    "query": "The worker sends a nonblocking channel-0 SubscribersReq before the immediate snapshot; no input normalization or wait-for-reply is added.",
+    "identity_and_lifetime": "A separate capacity-bounded process/node/topic interest map admits only channel-0 MsgPub SubscribersRep with valid canonical partition/topic, refreshes repeat replies without capacity growth, checks age at snapshot, and retires matching END_CONNECTION, process BYE and three-second expiry.",
+    "isolation": "Existing known_publisher_topics, advertised_topics, subscribed_topics and remote_subscribers connection/HasConnections paths remain unchanged.",
+    "ledger": "NodeTest.TopicListSubscriberOnly one-node Subscribe /foo success, size1/index0 /foo, unsubscribe success and empty list map directly; native original and two-process original pass but the row remains partial because global initialization and latency are not ported.",
+    "limits": "No immediate global convergence, process-global registry equivalence, subscriber Info parity or native second-call <2ms latency claim."
+  },
+  "native_reference": {
+    "revision": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+    "originals": {
+      "cases": [
+        "NodeTest.TopicListSubscriberOnly",
+        "twoProcPubSub.TopicListSubscriberOnly"
+      ],
+      "xml_sha256": [
+        "f71229b96ee076c33cc4726ad5080ec51f97e8803210ed08ca69d136ab7184d7",
+        "ae08baf5aa404f58cecca164fa5cf9606000b951a1326e666c1581ec3e5bb501"
+      ],
+      "node_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+      "node_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+      "two_proc_binary_sha256": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319"
+    },
+    "original_xml_results": "NodeTest.TopicListSubscriberOnly and twoProcPubSub.TopicListSubscriberOnly each pass1/0 in source/binary-bound XML.",
+    "author_cpp_peer_source_sha256": "20e6022c011595cc41fee67b4605017bf6e0659b3eb20aafa534e74343e7d2ef",
+    "author_cpp_peer_binary_sha256": "cb5fdd8b762a9376d47c8559aef60c3b9a51140dcf76f702792d57fd5a115582"
+  },
+  "independent_replay": {
+    "source": "raw Git archive of original source-frozen nine-file tree ba3e9efffbfdb6edc2db5df362a7e82bfe89e24b at /tmp/transport-subscriber-review-22znxb2e/source; all nine file hashes checked; final proposal changes only docs/NET-02-subscriber-lists.md",
+    "target": "/tmp/transport-subscriber-review-22znxb2e/target",
+    "private_cpp_peer_binary_sha256": "aa765b98a622bc05c0dbe52c2f92bc736ecad86226b76b0b601ecff0d75307d2",
+    "private_cpp_peer_linkage": "Run with LD_LIBRARY_PATH bound to immutable reference prefix; libgz-transport, libgz-msgs and libgz-utils resolved inside it. Private binary differs from author binary because its runpath uses that prefix.",
+    "selected_results": "known_topics_include_local_and_remote_subscriber_only_interests 1/0; original_topic_list_subscriber_only 1/0; subscriber_interest_replies_refresh_and_retire_by_identity 1/0.",
+    "setup_only_attempt": "Default sandbox denied UDP worker setup with EPERM before assertions; network-enabled private unit replay passed."
+  },
+  "negative_control": "Author private SUBSCRIBERS_REP-admission mutant fails selected C++ remote-interest test at topics=[/local-only], missing /remote-only; log SHA256 33b9b19e181f6845ec435055d24fc25debc089baf4f4e36669cc477df6899280.",
+  "gates": {
+    "exact_final_tree_log_sha256": "015e35720dd0021920b7499e5c98840c7bc7c9cca5e6b14e73ce1282a68a8ce1",
+    "exact_final_tree_coverage": {
+      "lines": [
+        1760,
+        1777
+      ],
+      "regions": [
+        2664,
+        2735
+      ],
+      "changed_lines": [
+        71,
+        71
+      ]
+    },
+    "three_exact_replays": [
+      {
+        "tree": "ba3e9efffbfdb6edc2db5df362a7e82bfe89e24b",
+        "log_sha256": "7db0e6a14813e812c0f73fc8b0a24fef390fa145854b2cba2640ff08f2105ec5",
+        "lines": [
+          1759,
+          1777
+        ],
+        "regions": [
+          2663,
+          2735
+        ],
+        "changed_lines": [
+          71,
+          71
+        ]
+      },
+      {
+        "tree": "bdd15417d859b25676c2964398d27a1fa6e067ec",
+        "log_sha256": "e2021671ac4184749db4882b779bb634fc7da5716beecf6b2809c70f89ae65fd",
+        "lines": [
+          1760,
+          1777
+        ],
+        "regions": [
+          2664,
+          2735
+        ],
+        "changed_lines": [
+          71,
+          71
+        ]
+      },
+      {
+        "tree": "8eafca62e23cfbff779145a5074be9b530c8e551",
+        "log_sha256": "015e35720dd0021920b7499e5c98840c7bc7c9cca5e6b14e73ce1282a68a8ce1",
+        "lines": [
+          1760,
+          1777
+        ],
+        "regions": [
+          2664,
+          2735
+        ],
+        "changed_lines": [
+          71,
+          71
+        ]
+      }
+    ],
+    "coverage_floor": "Across exact passing trees at least 1759/1777 production lines and 2663/2735 regions, with all 71 changed executable lines covered; no exclusion or assertion weakening."
+  },
+  "publication_limit": "Semantic/API/assertion approval only. Final review metadata binding, normal commit hook and hosted qualification remain required."
+}

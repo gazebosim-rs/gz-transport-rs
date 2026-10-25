@@ -4879,10 +4879,12 @@
       "id": "UNIT_Node_TEST:NodeTest.TopicListSubscriberOnly",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicListSubscriberOnly",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_topic_list_subscriber_only"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-25; source/API/assertion mapping independently approved on final staged tree8eafca62; private C++ remote-interest, original one-node and worker lifetime checks3/0; exact receipt docs/reviews/subscriber-lists.json. Remains partial: global initialization and native latency unqualified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4891,8 +4893,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact one-node Subscribe /foo success, known_topics size1 and index0 /foo, Unsubscribe success, and empty list assertions retained; remote subscriber-only interests are covered separately with a native C++ process. Native TopicList global initialization/timing remain unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-subscriber-lists.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicInfoSubscriberOnly",

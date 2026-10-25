@@ -194,6 +194,55 @@ fn known_lists_include_local_and_discovered_cpp_advertisements() {
     assert_eq!(node.known_services(), Err(Error::Shutdown));
 }
 #[test]
+fn known_topics_include_local_and_remote_subscriber_only_interests() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    assert!(node.known_topics().unwrap().is_empty());
+    let _subscription = node.subscribe("/local-only", TYPE).unwrap();
+    assert_eq!(node.known_topics().unwrap(), ["/local-only"]);
+    assert!(node.known_publisher_topics().unwrap().is_empty());
+
+    let mut native = Peer::start(&config, "list-subscriber", "/remote-only", "unused");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let topics = node.known_topics().unwrap();
+        if topics == ["/local-only", "/remote-only"] {
+            break;
+        }
+        assert!(Instant::now() < deadline, "topics={topics:?}");
+        thread::sleep(Duration::from_millis(20));
+    }
+    assert!(node.known_publisher_topics().unwrap().is_empty());
+    node.unsubscribe("/local-only").unwrap();
+    assert_eq!(node.known_topics().unwrap(), ["/remote-only"]);
+
+    native.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+    native.success();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let topics = node.known_topics().unwrap();
+        if topics.is_empty() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "topics={topics:?}");
+        thread::sleep(Duration::from_millis(20));
+    }
+    node.cancel();
+    assert_eq!(node.known_topics(), Err(Error::Shutdown));
+}
+
+// Node_TEST.cc:NodeTest.TopicListSubscriberOnly, including both list states.
+#[test]
+fn original_topic_list_subscriber_only() {
+    let node = Node::new(config()).unwrap();
+    let _subscription = node.subscribe("/foo", TYPE).unwrap();
+    let topics = node.known_topics().unwrap();
+    assert_eq!(topics.len(), 1);
+    assert_eq!(topics[0], "/foo");
+    node.unsubscribe("/foo").unwrap();
+    assert!(node.known_topics().unwrap().is_empty());
+}
+#[test]
 fn cpp_publisher_rust_subscriber() {
     let config = config();
     let node = Node::new(config.clone()).unwrap();

@@ -16,6 +16,8 @@ the [explicit native API disposition](docs/NET-02-service-ownership.md).
 `known_publisher_topics()` and `known_services()` snapshot active local and
 already-discovered remote advertisements in this partition; see the
 [bounded discovered listing contract](docs/NET-02-known-lists.md).
+`known_topics()` additionally snapshots local and eventually discovered remote
+subscriber-only interests; see the [bounded subscriber contract](docs/NET-02-subscriber-lists.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.

@@ -377,6 +377,12 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::unique_lock<std::mutex> lock(state->mutex);
     if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->received;})) return 5;
+  } else if (mode == "list-subscriber") {
+    std::function<void(const gz::msgs::StringMsg&)> callback = [](const auto &) {};
+    if (!node.Subscribe(topic, callback)) return 88;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin, command) || command != "QUIT") return 89;
   } else if (mode == "service-info-record-count") {
     if (value != "2") return 85;
     const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);

@@ -192,3 +192,11 @@ records, remapping, partition isolation and eventual disappearance; see
 [known-list scope](NET-02-known-lists.md) and independent
 [review receipt](reviews/known-lists.json). Full original list equivalence is
 pending.
+
+The subscriber-only known-topic snapshot additionally requires the unchanged
+native NodeTest.TopicListSubscriberOnly original. Rust retains its local size,
+indexed `/foo`, and post-unsubscribe empty assertions; a real C++ peer exercises
+eventual remote subscriber discovery and disappearance. See
+[subscriber-list scope](NET-02-subscriber-lists.md) and
+[independent receipt](reviews/subscriber-lists.json). Full original TopicList
+equivalence remains pending.

@@ -402,6 +402,15 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Sorted paths with a known publisher or subscription interest.
+    /// A nonblocking subscriber query refreshes remote interests eventually;
+    /// this snapshot does not wait for replies or alter publisher-only lists.
+    pub fn known_topics(&self) -> Result<Vec<String>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::KnownTopics(tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// This Node's live subscription interests, including topics with no publisher.
     /// Duplicate receivers share one sorted entry; dropping the last removes it.
     pub fn subscribed_topics(&self) -> Result<Vec<String>, Error> {
@@ -645,6 +654,7 @@ impl Drop for Node {
 enum Command {
     Advertise(String, String, Arc<AtomicBool>),
     KnownPublisherTopics(SyncSender<Vec<String>>),
+    KnownTopics(SyncSender<Vec<String>>),
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
     Unsubscribe(String),
@@ -686,6 +696,12 @@ struct PeerKey {
     topic: String,
     address: String,
 }
+#[derive(Hash, PartialEq, Eq)]
+struct SubscriberInterestKey {
+    process: String,
+    node: String,
+    topic: String,
+}
 struct Worker {
     config: Config,
     host_interfaces: Vec<Ipv4Addr>,
@@ -708,6 +724,7 @@ struct Worker {
     services: Vec<ServiceState>,
     peers: HashMap<PeerKey, (WirePublisher, Instant)>,
     remote_subscribers: HashMap<PeerKey, WirePublisher>,
+    subscriber_interests: HashMap<SubscriberInterestKey, Instant>,
     connected: HashSet<String>,
     subscriptions_connected: HashSet<String>,
     response_connections: HashMap<String, Instant>,
@@ -875,6 +892,7 @@ impl Worker {
             services: Vec::new(),
             peers: HashMap::new(),
             remote_subscribers: HashMap::new(),
+            subscriber_interests: HashMap::new(),
             connected: HashSet::new(),
             subscriptions_connected: HashSet::new(),
             response_connections: HashMap::new(),
@@ -950,7 +968,7 @@ impl Worker {
         signatures.dedup();
         signatures
     }
-    fn known_names(&self, channel: usize) -> Vec<String> {
+    fn known_topic_path<'a>(&self, wire_topic: &'a str) -> Option<&'a str> {
         // Match the partition spelling produced by qualified_name, including
         // its leading slash for a nonempty partition.
         let partition = self.config.partition.trim_matches('/');
@@ -959,6 +977,10 @@ impl Worker {
         } else {
             format!("/{partition}")
         };
+        let (wire_partition, path) = decompose_fully_qualified_topic(wire_topic).ok()?;
+        (wire_partition == partition && path.starts_with('/')).then_some(path)
+    }
+    fn known_names(&self, channel: usize) -> Vec<String> {
         let mut names = Vec::new();
         let mut collect = |publisher: &WirePublisher| {
             let right_type = matches!(
@@ -968,10 +990,7 @@ impl Worker {
             if !right_type {
                 return;
             }
-            if let Ok((wire_partition, path)) = decompose_fully_qualified_topic(&publisher.topic)
-                && wire_partition == partition
-                && path.starts_with('/')
-            {
+            if let Some(path) = self.known_topic_path(&publisher.topic) {
                 names.push(path.to_owned());
             }
         };
@@ -991,6 +1010,26 @@ impl Worker {
         for (key, (publisher, stamp)) in &self.peers {
             if key.channel == channel && stamp.elapsed() < Duration::from_secs(3) {
                 collect(publisher);
+            }
+        }
+        names.sort();
+        names.dedup();
+        names
+    }
+    fn known_topic_names(&self) -> Vec<String> {
+        let mut names = self.known_names(0);
+        for subscriber in &self.subscriptions {
+            if subscriber.active.load(Ordering::Acquire)
+                && let Some(path) = self.known_topic_path(&subscriber.topic)
+            {
+                names.push(path.to_owned());
+            }
+        }
+        for (key, stamp) in &self.subscriber_interests {
+            if stamp.elapsed() < Duration::from_secs(3)
+                && let Some(path) = self.known_topic_path(&key.topic)
+            {
+                names.push(path.to_owned());
             }
         }
         names.sort();
@@ -1052,6 +1091,13 @@ impl Worker {
             }
             Command::KnownPublisherTopics(reply) => {
                 let _ = reply.try_send(self.known_names(0));
+            }
+            Command::KnownTopics(reply) => {
+                self.announce(
+                    0,
+                    protocol::discovery(&self.process, Type::SubscribersReq, None),
+                );
+                let _ = reply.try_send(self.known_topic_names());
             }
             Command::Publish(topic, type_name, data) => {
                 self.sender.counters.sent(self.publisher.send_multipart(
@@ -1303,10 +1349,14 @@ impl Worker {
             self.peers.retain(|key, (p, _)| {
                 key.channel != channel || p.process_uuid != message.process_uuid
             });
+            if channel == 0 {
+                self.subscriber_interests
+                    .retain(|key, _| key.process != message.process_uuid);
+            }
         }
         let local = matches!(source, IpAddr::V4(ip) if ip.is_loopback() || self.host_interfaces.contains(&ip));
         if matches!(&message.disc_contents, Some(DiscContents::Pub(p))
-        if matches!(kind, Type::Advertise | Type::Unadvertise)
+        if matches!(kind, Type::Advertise | Type::Unadvertise | Type::SubscribersRep)
             && match Scope::try_from(p.scope).unwrap_or(Scope::Process) {
                 Scope::Process => true,
                 Scope::Host => !local,
@@ -1336,9 +1386,37 @@ impl Worker {
                     key.process != process || key.node != node || key.topic != topic
                 });
             }
+            self.subscriber_interests
+                .retain(|key, _| key.process != process || key.node != node || key.topic != topic);
             return;
         }
         match message.disc_contents {
+            Some(DiscContents::Pub(p)) if channel == 0 && kind == Type::SubscribersRep => {
+                if !matches!(p.pub_type, Some(PubType::MsgPub(_)))
+                    || p.process_uuid.is_empty()
+                    || p.node_uuid.is_empty()
+                    || self.known_topic_path(&p.topic).is_none()
+                {
+                    return;
+                }
+                self.subscriber_interests
+                    .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
+                let key = SubscriberInterestKey {
+                    process: p.process_uuid,
+                    node: p.node_uuid,
+                    topic: p.topic,
+                };
+                if let Some(stamp) = self.subscriber_interests.get_mut(&key) {
+                    *stamp = Instant::now();
+                } else if self.subscriber_interests.len() < self.config.capacity {
+                    self.subscriber_interests.insert(key, Instant::now());
+                } else {
+                    self.sender
+                        .counters
+                        .queue_drops
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+            }
             Some(DiscContents::Pub(p)) if channel == 0 && kind == Type::NewConnection => {
                 if matches!(&p.pub_type, Some(PubType::MsgPub(m)) if m.ctrl == self.process) {
                     let key = PeerKey {
@@ -1513,6 +1591,8 @@ impl Worker {
             }
             self.peers
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
+            self.subscriber_interests
+                .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
             thread::sleep(Duration::from_millis(2));
         }
         // Graceful Node shutdown withdraws subscriptions before process BYE.
