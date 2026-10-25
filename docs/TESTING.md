@@ -47,7 +47,14 @@ hash, and computes changed lines from that same tree. Export attributes cannot
 omit source or substitute transformed content. It
 runs the same runner there and rejects concurrent index or HEAD changes before
 copying evidence into artifacts/staged. Unstaged source cannot validate a
-different staged source. CI invokes the same runner on a standard Ubuntu24.04 hosted worker after
+different staged source. Parent snapshot/export and final HEAD/index guards retain
+the caller's actual Git context, including an explicit custom index. Only the
+exported verifier/build/test child drops the official repository-local variables
+reported by `git rev-parse --local-env-vars`. This prevents reference commands and
+temporary Git fixtures from inheriting an absolute worktree Git directory or
+index. A real temporary worktree commit exercises bare-fixture initialization,
+independent reference lookup, an explicit selected index and untouched working
+edits, while checking caller HEAD/tree/index/config preservation. CI invokes the same runner on a standard Ubuntu24.04 hosted worker after
 building the exact native source chain; see [hosted CI](HOSTED-CI.md). No custom
 runner is required. Making its native check required in branch protection remains
 release administration work. A queued/missing/failed runner is not a passing result.
@@ -75,3 +82,15 @@ wrong version, overlength frames, queue/registration bounds, malformed multipart
 messages, native configuration failures, discovery withdrawal/BYE and reply
 routes. These supplement upstream assertions; they do not claim full equivalence
 of every legacy integration test. Assertion equivalence review is pending.
+
+
+The Git-context isolation increment passes the full author gate with 116 Rust
+and 22 tooling tests, 1528/1550 production lines and 2323/2389 regions; no
+production Rust changed. Independent /root/msgs review raw-verified the private
+snapshot and passed all 22 tooling checks, then swapped only the private driver
+back to the parent version and confirmed the worktree regression fails with the
+wrong reference HEAD. Restored reviewed hashes pass again. The independent
+[receipt](reviews/git-env-isolation.json) is copied unchanged; it does not claim
+an independent full Rust/coverage rerun. The original live-hook failure evidence
+and quarantined isolated branch remain preserved. Exact staged and hosted gates
+must qualify the published revision.

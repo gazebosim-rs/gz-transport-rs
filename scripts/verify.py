@@ -109,7 +109,12 @@ def staged():
         run(['git', 'read-tree', tree], cwd=ROOT, env=snapshot_env)
         run(['git', 'checkout-index', '--all', f'--prefix={candidate}/'], cwd=ROOT, env=snapshot_env)
         validate_snapshot(ROOT, tree, candidate)
-        env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
+        # Parent Git operations retain the caller's intended index/context.
+        # The exported verifier owns independent fixtures and reference repos.
+        env = dict(os.environ)
+        for name in subprocess.check_output(['git', 'rev-parse', '--local-env-vars'], cwd=ROOT, text=True).splitlines():
+            env.pop(name, None)
+        env.update(CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
         base = head or subprocess.check_output(['git', 'mktree'], cwd=ROOT, input='', text=True).strip()
         diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src'], cwd=ROOT, text=True)
         changed_file = Path(directory) / 'changed-lines.json'

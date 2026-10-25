@@ -155,6 +155,77 @@ Path('artifacts/proof').write_text('old tree passed')
                     verify.staged()
                 self.assertFalse((root / 'artifacts/staged/proof').exists())
 
+    def test_worktree_hook_isolates_child_git_context_and_preserves_selected_index(self):
+        import os
+        import shutil
+        import subprocess
+        import verify
+        clean = dict(os.environ)
+        local = subprocess.check_output(['git', 'rev-parse', '--local-env-vars'], text=True).splitlines()
+        for name in local:
+            clean.pop(name, None)
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            origin, worktree, reference = (directory / name for name in ('origin', 'work tree', 'reference'))
+            def git(root, *args, env=clean):
+                return subprocess.check_output(['git', '-C', str(root), *args], env=env, text=True).strip()
+            reference.mkdir()
+            git(reference, 'init', '--quiet')
+            (reference / 'marker').write_text('independent reference')
+            git(reference, 'add', '.')
+            git(reference, '-c', 'user.name=Gate test', '-c', 'user.email=gate@example.invalid', 'commit', '--quiet', '-m', 'reference')
+            reference_head = git(reference, 'rev-parse', 'HEAD')
+            (origin / 'scripts').mkdir(parents=True)
+            (origin / 'src').mkdir()
+            (origin / '.githooks').mkdir()
+            (origin / 'src/lib.rs').write_text('baseline')
+            child = f"""from pathlib import Path
+import os, subprocess, tempfile
+assert Path('src/lib.rs').read_text() == 'selected index'
+assert os.environ['GZ_HOOK_TEST_MARKER'] == 'retained'
+with tempfile.TemporaryDirectory() as directory:
+    subprocess.run(['git', 'init', '--bare', '--quiet', directory], check=True)
+    assert subprocess.check_output(['git', 'config', '--file', str(Path(directory)/'config'), '--get', 'core.bare'], text=True).strip() == 'true'
+assert subprocess.check_output(['git', '-C', {str(reference)!r}, 'rev-parse', 'HEAD'], text=True).strip() == {reference_head!r}
+for name in subprocess.check_output(['git', 'rev-parse', '--local-env-vars'], text=True).splitlines():
+    assert name not in os.environ, name
+Path('artifacts').mkdir()
+Path('artifacts/proof').write_text('isolated child ran')
+"""
+            (origin / 'scripts/verify.py').write_text(child)
+            hook = origin / '.githooks/pre-commit'
+            hook.write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\n'
+                            + f'sys.path.insert(0, {str(Path(verify.__file__).parent)!r})\n'
+                            + 'import verify\nverify.ROOT=Path.cwd()\nverify.staged()\n')
+            hook.chmod(0o755)
+            git(origin, 'init', '--quiet')
+            git(origin, 'add', '.')
+            git(origin, '-c', 'user.name=Gate test', '-c', 'user.email=gate@example.invalid', 'commit', '--quiet', '-m', 'baseline')
+            git(origin, 'worktree', 'add', '--quiet', '--detach', str(worktree), 'HEAD')
+            git(origin, 'config', 'core.hooksPath', '.githooks')
+            config = origin / '.git/config'
+            config_before = config.read_bytes()
+            head_before = git(worktree, 'rev-parse', 'HEAD')
+            normal_index = Path(git(worktree, 'rev-parse', '--path-format=absolute', '--git-path', 'index'))
+            normal_before = normal_index.read_bytes()
+            selected_index = directory / 'selected index'
+            shutil.copy2(normal_index, selected_index)
+            selected = dict(clean, GIT_INDEX_FILE=str(selected_index), GZ_HOOK_TEST_MARKER='retained')
+            (worktree / 'src/lib.rs').write_text('selected index')
+            git(worktree, 'add', 'src/lib.rs', env=selected)
+            selected_tree = git(worktree, 'write-tree', env=selected)
+            (worktree / 'src/lib.rs').write_text('unchecked working edit')
+            result = subprocess.run(['git', '-C', str(worktree), '-c', 'user.name=Gate test', '-c', 'user.email=gate@example.invalid',
+                                     'commit', '--quiet', '-m', 'selected index'], env=selected, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(git(worktree, 'rev-parse', 'HEAD^'), head_before)
+            self.assertEqual(git(worktree, 'rev-parse', 'HEAD^{tree}'), selected_tree)
+            self.assertEqual(git(worktree, 'show', 'HEAD:src/lib.rs'), 'selected index')
+            self.assertEqual(normal_index.read_bytes(), normal_before)
+            self.assertEqual(config.read_bytes(), config_before)
+            self.assertEqual((worktree / 'src/lib.rs').read_text(), 'unchecked working edit')
+            self.assertEqual((worktree / 'artifacts/staged/proof').read_text(), 'isolated child ran')
+
     def test_stale_source_or_profile_is_rejected(self):
         import hashlib
         from verify import validate_evidence
