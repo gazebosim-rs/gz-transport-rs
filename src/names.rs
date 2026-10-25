@@ -60,6 +60,17 @@ pub fn qualified_name(partition: &str, namespace: &str, topic: &str) -> Result<S
     }
 }
 
+/// Split a native fully qualified topic into its partition and topic parts.
+/// The returned slices borrow from the input and retain their original spelling.
+pub fn decompose_fully_qualified_topic(name: &str) -> Result<(&str, &str), Error> {
+    let body = name.strip_prefix('@').ok_or(Error::InvalidName)?;
+    let (partition, topic) = body.rsplit_once('@').ok_or(Error::InvalidName)?;
+    if topic.is_empty() || !valid(partition) || !valid(topic) {
+        return Err(Error::InvalidName);
+    }
+    Ok((partition, topic))
+}
+
 #[cfg(test)]
 #[path = "../tests/support/names.rs"]
 mod tests;

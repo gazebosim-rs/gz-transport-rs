@@ -6925,10 +6925,12 @@
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.decomposeFullyQualifiedTopic",
       "target": "UNIT_TopicUtils_TEST",
       "case": "TopicUtilsTest.decomposeFullyQualifiedTopic",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "names::tests::upstream_decompose_fully_qualified_topic_preserves_original_assertions"
+      ],
+      "review": "docs/reviews/decomposition.json",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6937,8 +6939,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All three successful boolean/output partition/topic tuples and five rejected inputs retained through borrowed Result API. Component grammar and last-@ split match pinned native source; no full-name length or mutable-output diagnostic claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-decomposition.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.decomposeMsgLivelinessToken",

@@ -16,7 +16,7 @@
  */
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
-use super::{qualified_name, valid};
+use super::{decompose_fully_qualified_topic, qualified_name, valid};
 use crate::{Config, Error};
 
 // TopicUtils_TEST.cc:TopicUtilsTest.testTopics. Native topics cannot be empty.
@@ -120,5 +120,28 @@ fn upstream_valid_partition_preserves_original_predicates() {
             "{partition:?}"
         );
         assert_eq!(config.partition, "retained");
+    }
+}
+
+// TopicUtils_TEST.cc:TopicUtilsTest.decomposeFullyQualifiedTopic.
+#[test]
+fn upstream_decompose_fully_qualified_topic_preserves_original_assertions() {
+    for (name, partition, topic) in [
+        ("@/foo@/fiz/buz", "/foo", "/fiz/buz"),
+        ("@/foo@/bar", "/foo", "/bar"),
+        ("@@/bar", "", "/bar"),
+    ] {
+        assert_eq!(
+            decompose_fully_qualified_topic(name),
+            Ok((partition, topic)),
+            "{name:?}"
+        );
+    }
+    for name in ["@/bar", "@@@/bar", "@/bar@", "@@", "@/foo@/"] {
+        assert_eq!(
+            decompose_fully_qualified_topic(name),
+            Err(Error::InvalidName),
+            "{name:?}"
+        );
     }
 }

@@ -164,3 +164,9 @@ native TopicUtilsTest.testPartitions original in every gate. Its exact 18
 predicates run through `Config::set_partition`; see the
 [partition assertion contract](NET-01-partition-validation.md) and
 [review receipt](reviews/partition-validation.json). It is a faithful port.
+
+The reviewed fully qualified topic decomposition port additionally requires
+the unchanged native TopicUtilsTest.decomposeFullyQualifiedTopic original in
+every gate. Its three output tuples and five negative inputs are retained in
+Rust; see the [decomposition contract](NET-01-decomposition.md) and
+[review receipt](reviews/decomposition.json). It is a faithful port.

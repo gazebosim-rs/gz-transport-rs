@@ -1,0 +1,35 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T12:45:48.763204+00:00",
+  "base": "48302f17ffffa27787b0d87cceea4cc7131c3b82",
+  "tree": "06edd3888ac4df751f6bf7ddec4ea5f2512587d7",
+  "diff_sha256": "eca4f67a2d55001796bc72c054dedacf99f4224bb03393389627a9794fc2ad39",
+  "files": {
+    "docs/NET-01-decomposition.md": "e136746bef5b876012906efa37d37e36214d912434e4172fc8bcae851e3c8c96",
+    "docs/TESTING.md": "5187f6ea14a0c33e84d337fcf71efdb5b5cda34e2bd16f8887da8054c83abbbd",
+    "docs/upstream-tests.json": "e3f23e3f65a5d2c4c22c20eb8c0c2d341abd793609fcf1f967746cfb0f1ba17d",
+    "scripts/verify.py": "3824b1c8c566462b00b132947d9a10ede024eb4db0b6a3f5790936e1acd11de9",
+    "src/lib.rs": "693450cb4ef60115147391b79ac530094a3c176c5401bda7ed13526eca6e2e53",
+    "src/names.rs": "e7d6c81e433dc97231c82d6bbfc088f408b9fd775ba573e6968864f8545bff24",
+    "tests/support/names.rs": "0f1ebb1c4c562c7aa6fd28801770c7c4872f2decc3d837e7a702e01e05237567"
+  },
+  "scope": "Exact TopicUtilsTest.decomposeFullyQualifiedTopic three successful output tuples and five rejected inputs via borrowed Result API; no mutable output on error or whole-name-length claim.",
+  "independent_checks": [
+    "Verified exact seven-file staged tree/diff, all seven file SHA-256s, clean unstaged worktree and public base.",
+    "Pinned raw C++ TopicUtils_TEST.cc and TopicUtils.cc hashes match proposal. Native first/last-@ split, component IsValidPartition/IsValidTopic checks and output assignment on success match Rust strip_prefix/rsplit_once/valid and borrowed output.",
+    "All three original success partition/topic pairs and five negative inputs are present verbatim in Rust. Ledger remains partial pending metadata review; no unrelated original row or gate weakened.",
+    "Separate staged Git archive source and private reviewer target passed all four names tests, including selected decomposition. Canonical and snapshot native original each independently replayed 1/0/no skip; binary/source hashes match.",
+    "Author staged log SHA matches proposal with 142 Rust, 22 tools, 1649/1653 lines, 2481/2531 regions and 8/8 changed executable lines; private guard-removal mutant fails selected invalid slash row."
+  ],
+  "reviewer_setup_disposition": [
+    "Initial --exact short-name filter selected zero tests and is non-evidence; fully qualified focused test then passed.",
+    "Exploratory full library run from Git archive lacked untracked C++ peer fixtures and later aborted inside zeromq; it is non-evidence, not a source regression. Four isolated names tests passed in reviewer-only source/target."
+  ],
+  "findings": [],
+  "limits": [
+    "Only selected decomposition assertion mapping approved; whole TopicUtils/NET-01/NET-02 remains open.",
+    "Author full instrumentation/tooling and strict staged gate inspected, not independently rerun. Final metadata binding, normal hook and hosted qualification remain required."
+  ]
+}
