@@ -42,6 +42,18 @@ fn original_advertise_two_equal_topics() {
     let _two = second.advertise("/foo", TYPE).unwrap();
 }
 
+// Node_TEST.cc:NodeTest.TopicListRemap. The native source uses /foo and /bar.
+#[test]
+fn original_topic_list_remap() {
+    let mut config = config();
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let _publisher = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let topics = node.advertised_topics().unwrap();
+    assert_eq!(topics.len(), 1);
+    assert_eq!(topics[0], "/bar");
+}
+
 #[test]
 fn original_advertise_same_topic_same_type_on_same_node() {
     let node = Node::new(config()).unwrap();

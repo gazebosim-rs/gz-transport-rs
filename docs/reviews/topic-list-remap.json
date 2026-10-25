@@ -1,0 +1,30 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T13:15:01.968024+00:00",
+  "base": "570e07eaaea96969bf05bb7c8727099b636f6063",
+  "tree": "fe3ac733e0439862d8d2ebab00409ff8681dfae4",
+  "diff_sha256": "44b360f89d5071019d9cf4204fbad4864363495818f0cf9553b34f4e519e383c",
+  "files": {
+    "docs/NET-02-topic-list-remap.md": "8b054310c231dc47043641c88fb71c59ef2b2dfe77e02cc3673381b51cec5005",
+    "docs/TESTING.md": "e728a25f271c571319f9b29f3a7ed2a283812145dfc8cc8f9d72e1383e7ee0fd",
+    "docs/upstream-tests.json": "dfb14b0263d37f61a26e72efef09b0fba6ab323829344189e622dc733e2dbd0c",
+    "scripts/verify.py": "4ce561eb7db9b1fd8f7f8badae5f63eef2a454d17ccc5f7db8a35078ac212b5e",
+    "tests/interop.rs": "69e240e24af4d967ed461e099abfb3c667b9eeb702ff1fac1363f3cd95fb9a10"
+  },
+  "scope": "Selected NodeTest.TopicListRemap one-node /foo to /bar remap, live publisher, topic-list size one and indexed /bar assertion via local advertised_topics. Ledger remains partial: no global discovery or cross-process list claim.",
+  "independent_checks": [
+    "Frozen staged tree, binary diff, all five file hashes, no unstaged diff, pinned native source/binary/XML and author mutation/staged-gate log hashes match proposal.",
+    "Compared unchanged upstream Node_TEST.cc:2635 assertion body and globals /foo,/bar with Config::add_topic_remap, Node::advertise and advertised_topics. Rust preserves both size and indexed-value assertions and holds the publisher until inspection.",
+    "Private raw Git tree export, separate Cargo target and actual native interface access: selected original_topic_list_remap passed 1/0; log SHA cdd47c3894e6fec323522d3493ab8b6b4e725e91c61a5863649fde7b6139037c.",
+    "Unchanged native NodeTest.TopicListRemap independently replayed 1/0/no skip with XML SHA 0645028d2c1538bd670834a855f4f440d8cd4bc548521d755c12a1fa3611589b.",
+    "Separate private source and Cargo target bypassed only remapped_topic lookup; selected assertion failed /foo versus /bar, log SHA c0d718c1b9a467a5bc055c2114c8237b74630bd587161d35e2befd170455e059.",
+    "Author exact staged strict gate EXIT0 SHA d77f7d33ae7d7654cc0e65aaff277b7eb17bb018f9364860b48f3f0e97a0ea1e with 1649/1653 lines, 2481/2531 regions and 0/0 changed production lines; no gate or coverage weakening."
+  ],
+  "findings": [],
+  "limits": [
+    "Local advertised_topics is not the native global discovery API; the source inventory correctly retains partial disposition.",
+    "Final metadata binding, mandatory normal worktree hook and hosted checks remain."
+  ]
+}

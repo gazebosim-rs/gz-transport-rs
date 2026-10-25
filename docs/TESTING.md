@@ -177,3 +177,10 @@ one-entry `/bar` result is retained through local service inspection; see the
 [service-list contract](NET-02-service-list-remap.md) and
 [review receipt](reviews/service-list-remap.json). Global discovery and timing
 remain unqualified.
+
+The reviewed partial remapped topic-list assertion port additionally requires the
+unchanged native NodeTest.TopicListRemap original in every gate. The exact
+one-entry `/bar` result is retained through local publisher inspection; see the
+[topic-list contract](NET-02-topic-list-remap.md) and
+[review receipt](reviews/topic-list-remap.json). Global discovery remains
+unqualified.

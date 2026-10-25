@@ -4856,10 +4856,12 @@
       "id": "UNIT_Node_TEST:NodeTest.TopicListRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicListRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_topic_list_remap"
+      ],
+      "review": "docs/reviews/topic-list-remap.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4868,8 +4870,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Native /foo to /bar single-hop remap and publisher advertisement map to Config::add_topic_remap and Node::advertise; both original TopicList size1 and indexed /bar assertions retained through advertised_topics. No global discovery list or cross-process claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-topic-list-remap.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicListSubscriberOnly",
