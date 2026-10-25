@@ -4952,9 +4952,11 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceList",
       "baseline": "passed",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "disposition": "partial",
+      "replacement": [
+        "original_service_list"
+      ],
+      "review": "docs/reviews/service-list-latency.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4963,9 +4965,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Exact native original runs in the required gate as a contextual control for the bounded known-service snapshot API; retained global process and second-call latency assertions are not yet ported.",
+      "contract": "One live Service handle and known_services preserve the original one-Node first size1, clear, second size1 and second-call integer-millisecond <2 assertions. Native global process sharing, remote convergence, complete list semantics and general latency remain unqualified.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-known-lists.md; native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-service-list-latency.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceListRemap",

@@ -239,3 +239,11 @@ while answering queued list commands promptly. See the
 The [independent receipt](reviews/two-process-topic-list.json) approves the
 original assertion sequence and bounded worker wake semantics; the final hook and
 hosted run remain pending.
+
+The pinned one-Node `NodeTest.ServiceList` original retains both list-size
+checks, the intervening clear and the second-call bound below two milliseconds.
+The Rust port uses the existing discovered-service worker snapshot and keeps
+the handler live through both queries; see the
+[service-list assertion scope](NET-02-service-list-latency.md). Its independent
+[review](reviews/service-list-latency.json) approved the one-Node mapping;
+the ledger remains partial and the final hook and hosted check remain pending.

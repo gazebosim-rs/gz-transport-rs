@@ -1,0 +1,53 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "48a58eed4e2a3a7613f8b0cd6b0842d7b758a848",
+  "tree": "2f667aa63520e445033360beda265a2d9b1d5dad",
+  "diff_sha256": "465f985206dfb0f181dd25df1d5424b6914dcc1344fa29443e2cd15434fe7302",
+  "files": {
+    "docs/NET-02-service-list-latency.md": "deb36a44f22e940f9e440d53862736adc213d4b74fc18ecf2b891f5433ee4181",
+    "docs/TESTING.md": "c73a4fd79b793bcc032f6b829b08f2f701ee4a9681ddf3f1952ae20134f981c7",
+    "tests/service_assertions.rs": "64959836b037be288567417117ad0978639a72e5a98482bead92d0b38d9ce02f"
+  },
+  "pinned_native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+  "pinned_native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+  "author_staged_gate_sha256": "cc1298173ebae890861950a31af82bee4709515fa038a9938976e16a2344aa0d",
+  "author_gate": "Exact immutable staged tree passes 157 Rust tests, 22 tooling checks, retained native NodeTest.ServiceList and other originals; production1816/1840 lines2756/2837 regions, no changed production executable lines.",
+  "reviewer_evidence": {
+    "native.log": "337a8834ad661e618cddd15d1aafeebb468a8fcb9c630be49f7bc5e1c065450c",
+    "rust.log": "64e81228a99e08619cdb220121913b027ffcbaf0c4b16582fcd5e60c024c3c22",
+    "mutant.log": "715b1f6b483fde5414c2434568e6be6a48b30368f33fa9a99a20e6118006a721",
+    "mutant.diff": "45b3d4e503529c10ac7db25a69da9f823786cb7d7b17c8d9aa0146efbf7d47c2"
+  },
+  "reviewer_repeats_sha256": [
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "d6674ed3ba9a469fea02454471f98f4418ba7b1082a43c03e6273697eb8232de",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6",
+    "9b821fd0823e38cf1d7f9d17fa09b60d2ef88f3305a93378fedc67dad34b8fa6"
+  ],
+  "reviewer_checks": [
+    "Pinned native NodeTest.ServiceList source and binary hashes match immutable reference; fresh selected original passes1/0 with one Node, first size1, clear, second size1 and integer-truncated milliseconds strictly below2.",
+    "Fresh exact Git tree export and exclusive Cargo target: selected original_service_list passes1/0 plus20 further independent selected replays; only the second known_services call is timed.",
+    "Separate private old-worker-sleep source/target mutation fails selected second-call assertion at2.089304ms (exit101); original frozen runtime source restored byte-for-byte."
+  ],
+  "assertion_mapping": "One live Rust Service handle; worker command ordering registers it before first known_services snapshot. Both vector lengths and intervening clear are preserved. Rust Duration<2ms has the same positive elapsed boundary as native duration_cast<milliseconds>.count()<2. Original checks no name/type or handler delivery.",
+  "scope": "Faithful partial one-Node service-list size and second-call timing mapping using existing discovered-service snapshot API. Existing command-woken worker runtime/API unchanged by this test-only slice.",
+  "limits": "No immediate same-process multi-Node sharing, remote convergence, global completeness, handler delivery or general latency guarantee. Ledger row presently remains pending and must be changed narrowly to partial with exact review link in metadata integration; normal hook, publication and hosted CI pending."
+}

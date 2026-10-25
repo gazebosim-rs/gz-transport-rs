@@ -25,6 +25,24 @@ fn five() -> Vec<u8> {
     .encode_to_vec()
 }
 
+// Node_TEST.cc:NodeTest.ServiceList. The native source checks one Node's
+// discovered list twice and bounds only the second call.
+#[test]
+fn original_service_list() {
+    let node = node();
+    let _service = node.serve("/foo", INT32, INT32).unwrap();
+
+    let mut services = node.known_services().unwrap();
+    assert_eq!(services.len(), 1);
+    services.clear();
+
+    let start = Instant::now();
+    services = node.known_services().unwrap();
+    let elapsed = start.elapsed();
+    assert_eq!(services.len(), 1);
+    assert!(elapsed < Duration::from_millis(2), "elapsed={elapsed:?}");
+}
+
 // Node_TEST.cc:NodeTest.ServiceListRemap. The native source uses /foo and /bar.
 #[test]
 fn original_service_list_remap() {
