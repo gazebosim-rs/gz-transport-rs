@@ -158,3 +158,9 @@ the unchanged native TopicUtilsTest.testTopics and testNamespaces originals in
 every gate. Their exact 21 and 18 predicates are retained in Rust; see the
 [validation assertion contract](NET-01-name-validation.md) and the
 [review receipt](reviews/name-validation.json). Both are faithful ports.
+
+The reviewed partition validation port additionally requires the unchanged
+native TopicUtilsTest.testPartitions original in every gate. Its exact 18
+predicates run through `Config::set_partition`; see the
+[partition assertion contract](NET-01-partition-validation.md) and
+[review receipt](reviews/partition-validation.json). It is a faithful port.

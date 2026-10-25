@@ -17,7 +17,7 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 use super::{qualified_name, valid};
-use crate::Error;
+use crate::{Config, Error};
 
 // TopicUtils_TEST.cc:TopicUtilsTest.testTopics. Native topics cannot be empty.
 #[test]
@@ -77,5 +77,48 @@ fn upstream_valid_namespace_preserves_original_predicates() {
         &over_max,
     ] {
         assert!(!valid(namespace), "invalid namespace: {namespace:?}");
+    }
+}
+
+// TopicUtils_TEST.cc:TopicUtilsTest.testPartitions. The same component grammar
+// is applied by Config::set_partition, including the valid empty partition.
+#[test]
+fn upstream_valid_partition_preserves_original_predicates() {
+    let max = "a".repeat(65_535);
+    for partition in [
+        "/abcde",
+        "abcde",
+        "abcde/",
+        "/abcde/",
+        "/abcde/fg",
+        "/abcde/fg/",
+        "",
+        &max,
+    ] {
+        let mut config = Config::default();
+        assert_eq!(config.set_partition(partition), Ok(()), "{partition:?}");
+        assert_eq!(config.partition, partition);
+    }
+    let over_max = "a".repeat(65_536);
+    for partition in [
+        "/",
+        " ",
+        "ns ",
+        "abc//def",
+        "ab~cd",
+        "~/abcde",
+        "~abcde",
+        "@namespace",
+        "namespace:=",
+        &over_max,
+    ] {
+        let mut config = Config::default();
+        config.set_partition("retained").unwrap();
+        assert_eq!(
+            config.set_partition(partition),
+            Err(Error::InvalidName),
+            "{partition:?}"
+        );
+        assert_eq!(config.partition, "retained");
     }
 }

@@ -6982,10 +6982,12 @@
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.testPartitions",
       "target": "UNIT_TopicUtils_TEST",
       "case": "TopicUtilsTest.testPartitions",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "names::tests::upstream_valid_partition_preserves_original_predicates"
+      ],
+      "review": "docs/reviews/partition-validation.json",
       "source": [
         {
           "path": "src/TopicUtils_TEST.cc",
@@ -6994,8 +6996,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "All 18 original IsValidPartition true/false predicates retained through Config::set_partition, including empty, slash-only, forbidden token and 65535/65536-byte bounds; setter state preservation is supplemental.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-partition-validation.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_TopicUtils_TEST:TopicUtilsTest.testFullyQualifiedName",

@@ -1,0 +1,72 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_recovery",
+  "reviewed_at": "2026-10-25T12:32:34.606621+00:00",
+  "base": "7351f8aafe6c7cd9455227afca8124e13d7c4a32",
+  "tree": "d9a11766861622e923da37146d7579686abbe4ee",
+  "diff_sha256": "ec61e7b540c3e9dcbb966410d84d78d4d3729f6de5f3802471d314b6ef2611c8",
+  "files": {
+    "docs/NET-01-partition-validation.md": "b8884c25bf8593773611686eb4f92357e266d93fa7dcf89310c0c0952eb70788",
+    "docs/TESTING.md": "65f4b697f03aef98347ac26141b441be42117a46d4ff00533b95a1c78934319d",
+    "docs/upstream-tests.json": "b2670650a890aa3ac822ed8c44a78d5161028c268778d3c210e795be75008597",
+    "scripts/verify.py": "7e1d40355441064aa5138d12fcabe4fd84ea324a3351661af17e1e7e4dfc15f5",
+    "tests/support/names.rs": "9cd692399329180cb3152935e41afbe3e0b6e6107df61fdbf4e6155ceb2bc949"
+  },
+  "scope": "Exact 18 original partition validity predicates through production Config::set_partition, plus supplemental success storage and rejected-state preservation; assertion/API mapping only.",
+  "independent_checks": [
+    {
+      "check": "Raw source and binary provenance",
+      "result": "89 frozen Git blobs, types/modes/path set and all 5 frozen source hashes verified. Fresh positive-only private Cargo target, all 5 owned test artifacts fresh from correct source. All 141 Rust checks pass in required serial mode with freshly built real C++ peer."
+    },
+    {
+      "check": "Focused names matrix",
+      "result": "Exact new partition test 1/0 and all3topic/namespace/partition tests 3/0 pass; all 8 accepted/10 rejected native rows retained, including empty and 65535/65536 ASCII byte limits."
+    },
+    {
+      "check": "Native originals",
+      "result": "Canonical 7b53 and snapshot 046b actual unchanged TopicUtilsTest.testPartitions runners each 1 run/0 failures. Test source SHA c77f74ad matches both trees; TopicUtils.cc implementation byte-identical. Both libraries resolved from their intended prefixes, linkage logs retained."
+    },
+    {
+      "check": "Direct production setter and native alias audit",
+      "result": "Native IsValidPartition delegates to IsValidNamespace; production Config::set_partition invokes same names::valid as set_namespace. No qualified-topic shortcut, duplicated test predicate, production rule or API change. All original valid strings stored verbatim; invalid cases retain seeded partition as supplemental assertions."
+    },
+    {
+      "check": "Independent mutation control",
+      "result": "Separate private source removes only production setter grammar guard. Exact selected test fails on first invalid slash row with Ok versus InvalidName,0 pass/1 fail. Frozen positive source untouched; mutation is excluded from positive-only target."
+    },
+    {
+      "check": "Author strict gate binding",
+      "result": "Frozen exact staged gate log SHA 7312ef6a matches; author 141 Rust, 22 tooling, 1641/1645 lines and 2460/2509 regions,zero changed executable production lines. Required native filter only adds selected original; existing filters/quality policy retained."
+    }
+  ],
+  "findings": [],
+  "scope_judgments": [
+    "Approve UNIT_TopicUtils_TEST:TopicUtilsTest.testPartitions as faithful_port via bool-to-Result API mapping; all 18 inputs/assertion outcomes preserved and supplement state checks clearly distinguished.",
+    "Maximum component validity is separate from fully-qualified name length; no whole TopicUtils/NET-01/NET-02 or additional API behavior accepted.",
+    "Original full 2014 Apache/OSRF notice and new 2026 attribution remain intact. No dependency, production source, coverage threshold/exclusion or original-case retirement."
+  ],
+  "reviewer_setup_dispositions": [
+    "Initial short-name filter with --exact selected 0 tests and is retained as non-evidence; fully qualified 1 test and all 3 names subsequently passed.",
+    "I initially reused one reviewer-owned target across positive and guard-removal sources. A subsequent exploratory full run reused the mutated binary and failed 4 unit tests, including missing native peer paths. The old binary embeds the negative source path; failed cross-source-target log retained. This run is NOT positive candidate evidence.",
+    "Rebuilt all 5 owned test artifacts in a NEW positive-only target never shared with the mutation source; all 141 required serial checks pass with frozen 5 hashes unchanged. No assertion or producer code changed, and no retry converts a failing candidate into success."
+  ],
+  "author_evidence_separate": {
+    "rust_tests": 141,
+    "tooling_tests": 22,
+    "lines": [
+      1641,
+      1645
+    ],
+    "regions": [
+      2460,
+      2509
+    ],
+    "new_executable_production_lines": "none",
+    "qualification": "Author exact staged evidence inspected; reviewer independently reran all 141 Rust and focused/mutation/native checks, not full instrumentation/tooling."
+  },
+  "limits": [
+    "Final metadata-only receipt/ledger binding, normal strict hook and hosted qualification remain required.",
+    "Only the selected 18 predicate mapping is approved; broader retained behavior/performance/NET acceptance remains open."
+  ]
+}
