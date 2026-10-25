@@ -4951,10 +4951,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceListRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceListRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_service_list_remap"
+      ],
+      "review": "docs/reviews/service-list-remap.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4963,8 +4965,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Native /foo to /bar single-hop remap and service advertisement map to Config::add_topic_remap and Node::serve; both original ServiceList size1 and indexed /bar assertions retained through advertised_services. No global discovery list, timing or cross-process claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-list-remap.md; native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.WrongTopicRemap",

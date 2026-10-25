@@ -1,0 +1,32 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "reviewed_at": "2026-10-25T13:02:12.474264+00:00",
+  "base": "32bbebe1a6c006fd9f488e0767dda1b87e5dbfa4",
+  "tree": "ab0429ca2781490167480da44a17394f28399650",
+  "diff_sha256": "572351c44d49a2c2e2e384ae765b50cf909d2776c4fc02cacc77b00b5544e07e",
+  "files": {
+    "docs/NET-02-service-list-remap.md": "173c125988bfde1aeb86b63cc95883d0fde4bc820fd63b2e1495dfaa6da50a75",
+    "docs/TESTING.md": "315552d32d018bb5bbc3a60196252d56f0d607405751471f2c9515b1261b34d6",
+    "docs/upstream-tests.json": "35d552648053fe80f150a528a6ed0a45ca957c5866a5d6148ba439870b6642d7",
+    "scripts/verify.py": "eb0d2acdbd009803bec285a0890f6b7eab37023d5d9c3ba0deb55a7388062e2d",
+    "tests/service_assertions.rs": "c81385d7d449a99c332ddc66a4335d7f2faf1b736a7ab4e3bbc2ff7fbecfe5ea"
+  },
+  "scope": "Selected NodeTest.ServiceListRemap one-node /foo\u2192/bar service listing assertion mapping only; ledger remains partial because native ServiceList global discovery behavior is not implemented by local advertised_services.",
+  "independent_checks": [
+    "Corrected five-file staged tree/diff and every file SHA-256 match the proposal; no unstaged changes. Source, dependency and API files are untouched.",
+    "Raw pinned Node_TEST.cc (including /foo and /bar globals) preserves one-node AddTopicRemap, Advertise, ServiceList, size 1 and indexed /bar assertions. Rust exact names and both outcomes run through existing Config::add_topic_remap, Node::serve and advertised_services while retaining the Service handle.",
+    "Canonical unchanged native NodeTest.ServiceListRemap independently replayed 1 run/0 failures/no skip from pinned source and binary hashes.",
+    "Private corrected Git archive source and exclusive Cargo target pass the selected test 1/0 and all 15 service_assertions tests. Private separate source/target disabling only production remapped_topic lookup fails selected test with /foo versus /bar.",
+    "Corrected exact staged gate log SHA 3663e2d8a60060018bb333c468916ab5d249c57a853cdb7e39f19aa31421dbba exits zero with 1649/1653 lines, 2481/2531 regions, zero changed executable production lines. Initial proposal gate failure was exact ledger replacement spelling; corrected only that row name and retained failure log."
+  ],
+  "reviewer_setup_disposition": [
+    "Unescalated native replay failed at sandbox getifaddrs and Rust selected test returned EPERM. Both were rerun with network-interface access against unchanged frozen sources and passed; EPERM runs are not positive evidence."
+  ],
+  "findings": [],
+  "limits": [
+    "Native global ServiceList discovery path, callback effects, cross-process behavior and timing are not qualified by local advertised_services.",
+    "Only this original case is approved as partial; broader NET-02 scope stays open. Author full instrumentation/tooling is inspected, not independently rerun. Final metadata binding, normal hook and hosted checks remain."
+  ]
+}

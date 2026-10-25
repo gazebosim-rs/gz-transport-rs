@@ -170,3 +170,10 @@ the unchanged native TopicUtilsTest.decomposeFullyQualifiedTopic original in
 every gate. Its three output tuples and five negative inputs are retained in
 Rust; see the [decomposition contract](NET-01-decomposition.md) and
 [review receipt](reviews/decomposition.json). It is a faithful port.
+
+The reviewed partial remapped service-list assertion port additionally requires the
+unchanged native NodeTest.ServiceListRemap original in every gate. The exact
+one-entry `/bar` result is retained through local service inspection; see the
+[service-list contract](NET-02-service-list-remap.md) and
+[review receipt](reviews/service-list-remap.json). Global discovery and timing
+remain unqualified.

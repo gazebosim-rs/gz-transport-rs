@@ -25,6 +25,21 @@ fn five() -> Vec<u8> {
     .encode_to_vec()
 }
 
+// Node_TEST.cc:NodeTest.ServiceListRemap. The native source uses /foo and /bar.
+#[test]
+fn original_service_list_remap() {
+    let mut config = Config {
+        partition: format!("service-list-remap-{}", uuid::Uuid::new_v4()),
+        ..Default::default()
+    };
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let _service = node.serve("/foo", INT32, INT32).unwrap();
+    let services = node.advertised_services().unwrap();
+    assert_eq!(services.len(), 1);
+    assert_eq!(services[0], "/bar");
+}
+
 fn sync_service(with_input: bool) {
     let node = node();
     let request_type = if with_input { INT32 } else { EMPTY };
