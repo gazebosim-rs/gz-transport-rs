@@ -124,6 +124,13 @@ C++'s inaccessible callback from a failed duplicate registration; see the
 
 # Remaining retained scope
 
+Publisher subscriber membership is available through a bounded control-plane
+snapshot. Native registration ctrl checks, keep-first identity and generic END
+projection are retained; process-only BYE and publication-peer expiry leave
+remembered registration intact. Graceful Node shutdown emits one generic END per
+known subscription topic before BYE. No authentication, delivery acknowledgement
+or full process-global sharing is implied. See [publisher inspection](NET-01-publisher-inspection.md).
+
 Owned topic remaps apply once by exact raw key before qualification for advertise,
 subscribe, serve and request. Inspection and explicit service withdrawal retain
 native original-name behavior; aliases are not resolved transitively. The options

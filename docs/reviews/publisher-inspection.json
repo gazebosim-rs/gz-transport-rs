@@ -1,0 +1,29 @@
+{
+  "reviewer": "/root/msgs",
+  "updated_at": "2026-10-25T03:48:21.657906+00:00",
+  "verdict": "approved within documented bounded publisher-membership scope",
+  "base": "c8060e4495e9a7cb87f779e1bcd69e31b513ed0e",
+  "tracked_diff_sha256": "5e354cfc7112ccfaeb124681d0bb13bd98cf52a6a8ff0c5f42346c1f07aaa650",
+  "contract_sha256": "891924f5026a2f30ab10d0f5de9247b043491659c9a53c604d27ecbb717c0f3a",
+  "source_sha256": {
+    "src/runtime.rs": "147ddb622015b35c8065ebf863cb8bbf4795e9958bcbab0c34537d99ee984047",
+    "tests/support/runtime.rs": "c3471d1271dda442a5cdd06d2edbdf2eedd5b6c6c204a048baa4d4907ff7818e",
+    "tests/interop.rs": "716e350e12ed36142c678d868f530e6f3abfec0e1011abdcce90b8712f4358df",
+    "tests/cpp_peer.cc": "d694c8ae131813367f30520e8a566dc0e5ec0b6e057ec2a4dd610fa9200aac57",
+    "scripts/verify.py": "05c3141b9927d82a8fe562c53945ca3415f183dd18e79740067f113d4af43bc4"
+  },
+  "independent_evidence": [
+    "Copied and SHA256-verified all 67 candidate source files into a reviewer-owned snapshot; producer source bindings remain exact after replay. Fresh reviewer target and freshly compiled strict-warning C++ peer; no producer Cargo target reused.",
+    "All 53 library tests pass with required local socket permissions, including registration identity, bounds, default END projection, coordination failure paths, graceful END-before-BYE and both service retirement race variants.",
+    "Both live membership integration tests pass: actual C++ callback/storage reference, matching local subscriptions, live native receipt and explicit withdrawal, plus Rust graceful shutdown with a still-live lease.",
+    "All four Rust threaded original ports pass in the private target. Independently replayed four exact native originals: PubSubTwoThreadsSameTopic, PubSubTwoThreadsSameTopicRemap, ScopeAll and ScopeAllRemap; XML records 4 run, 0 failures. Original source and native binary hashes match the candidate proof.",
+    "Compared native Node::Publisher::HasConnections, NodeShared registration/disconnection callbacks, TopicStorage duplicate identity and type matching, HandlerStorage local matching, discovery message projection, and all helper assertions. Valid creation, HasConnections polling, single publication of Int32 data 5, exact receipt, thread join and execution flag retained. Explicit native ALL binds existing Rust ALL default.",
+    "Existing supplementary service race assertions after the barrier remain intact; worker-admission setup establishes the former assumed empty-queue precondition. Separate deterministic pre-admission test retains QueueFull, zero-permit rollback, retired-command drain and recreation assertions. No service production change.",
+    "Initial restricted-environment library run aborted in ZeroMQ signaler; preserved restricted-lib.log. Authorized local-socket replay passes all 53 tests. This is not silently classified as a successful first run."
+  ],
+  "limits": [
+    "Author full 108 Rust / 21 tooling coverage gate (1480/1501 lines, 2246/2310 regions, 84/84 changed) was not independently repeated.",
+    "Bounded control-plane membership is not authentication, handshake, delivery acknowledgement or immediate process-global visibility; PROCESS/HOST scope and full transport remain open.",
+    "Four proposed original mappings are approved only for their retained helper semantics. Final metadata binding, mandatory strict staged hook and hosted qualification remain required."
+  ]
+}

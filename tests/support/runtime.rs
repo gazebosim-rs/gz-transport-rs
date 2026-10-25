@@ -266,6 +266,30 @@ fn service_drop_and_explicit_withdrawal_race_without_double_release() {
     })
     .unwrap();
     let service = node.serve("/race", "req", "rep").unwrap();
+    // Observe worker admission before racing retirement, so an old queued
+    // command cannot consume the capacity needed by the final recreation.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        match node.service_type_signatures("/race") {
+            Err(Error::QueueFull) => {
+                assert!(
+                    Instant::now() < deadline,
+                    "service admission did not complete"
+                );
+                thread::yield_now();
+            }
+            result => {
+                assert_eq!(
+                    result.unwrap(),
+                    [ServiceTypes {
+                        request_type: "req".into(),
+                        response_type: "rep".into(),
+                    }]
+                );
+                break;
+            }
+        }
+    }
     let barrier = std::sync::Barrier::new(2);
     thread::scope(|scope| {
         scope.spawn(|| {
@@ -278,6 +302,46 @@ fn service_drop_and_explicit_withdrawal_race_without_double_release() {
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert!(node.advertised_services().unwrap().is_empty());
     let _new = node.serve("/new", "req", "rep").unwrap();
+}
+
+#[test]
+fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let service = node.serve("/race", "req", "rep").unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    thread::scope(|scope| {
+        scope.spawn(|| {
+            barrier.wait();
+            drop(service);
+        });
+        barrier.wait();
+        node.unadvertise_service("/race").unwrap();
+    });
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert!(matches!(
+        node.serve("/new", "req", "rep"),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    worker.command(commands.recv().unwrap());
+    assert!(
+        worker.services.is_empty(),
+        "retired queued service must not advertise"
+    );
+    let new = node.serve("/new", "req", "rep").unwrap();
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    worker.command(commands.recv().unwrap());
+    assert_eq!(worker.services.len(), 1);
+    drop(new);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
 }
 
 #[test]
@@ -2024,4 +2088,364 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         long.advertise("alias", "type"),
         Err(Error::InvalidName)
     ));
+}
+
+#[test]
+fn remembered_subscribers_preserve_native_control_identity_and_lifecycle() {
+    let (mut worker, _) = state(4);
+    let active = Arc::new(AtomicBool::new(true));
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        "/topic".into(),
+        "wrong".into(),
+        tx,
+        active.clone(),
+    ));
+    assert!(!worker.has_subscribers("/topic", "T"));
+    worker.subscriptions[0].type_name.clear();
+    assert!(worker.has_subscribers("/topic", "T"));
+    active.store(false, Ordering::Release);
+    assert!(!worker.has_subscribers("/topic", "T"));
+    worker.subscriptions[0].type_name = "T".into();
+    active.store(true, Ordering::Release);
+    assert!(worker.has_subscribers("/topic", "T"));
+    active.store(false, Ordering::Release);
+    let mut remote = worker.wire_publisher(
+        "/topic".into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "T".into(),
+            ctrl: "wrong".into(),
+            ..Default::default()
+        }),
+    );
+    remote.process_uuid = "remote".into();
+    remote.node_uuid = "subscriber".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+    let Some(PubType::MsgPub(m)) = &mut remote.pub_type else {
+        unreachable!()
+    };
+    m.ctrl = worker.process.clone();
+    for kind in [Type::SubscribersRep, Type::Advertise] {
+        worker.discovered(
+            0,
+            protocol::discovery("remote", kind, Some(DiscContents::Pub(remote.clone()))),
+        );
+        assert!(!worker.has_subscribers("/topic", "T"));
+    }
+    worker.discovered(
+        1,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert!(worker.has_subscribers("/topic", "T"));
+    assert!(!worker.has_subscribers("/other", "T"));
+    assert!(!worker.has_subscribers("/topic", "wrong"));
+    let mut duplicate = remote.clone();
+    let Some(PubType::MsgPub(m)) = &mut duplicate.pub_type else {
+        unreachable!()
+    };
+    m.msg_type = "changed".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(duplicate)),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 1);
+    assert!(worker.has_subscribers("/topic", "T"));
+    assert!(!worker.has_subscribers("/topic", "changed"));
+    for (process, node, topic) in [
+        ("other", "subscriber", "/topic"),
+        ("remote", "other", "/topic"),
+        ("remote", "subscriber", "/other"),
+    ] {
+        let mut other = remote.clone();
+        other.process_uuid = process.into();
+        other.node_uuid = node.into();
+        other.topic = topic.into();
+        worker.discovered(
+            0,
+            protocol::discovery(process, Type::NewConnection, Some(DiscContents::Pub(other))),
+        );
+    }
+    assert_eq!(worker.remote_subscribers.len(), 4);
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
+    worker.cleanup();
+    assert_eq!(worker.remote_subscribers.len(), 4);
+    let mut wrong_end = remote.clone();
+    let Some(PubType::MsgPub(m)) = &mut wrong_end.pub_type else {
+        unreachable!()
+    };
+    m.ctrl = "wrong-destination".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(wrong_end)),
+        ),
+    );
+    worker.discovered(
+        1,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 4);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 3);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::HasConnections("/topic".into(), "T".into(), tx));
+    assert!(rx.recv().unwrap());
+    let (tx, rx) = mpsc::sync_channel(1);
+    drop(rx);
+    worker.command(Command::HasConnections("/topic".into(), "T".into(), tx));
+    remote.pub_type = None;
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(remote)),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 3);
+}
+
+#[test]
+fn subscriber_registration_bounds_and_native_default_projection() {
+    let (mut worker, _) = state(1);
+    let mut remote = worker.wire_publisher(
+        "/topic".into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "google.protobuf.Message".into(),
+            ctrl: worker.process.clone(),
+            ..Default::default()
+        }),
+    );
+    remote.process_uuid.clear();
+    remote.node_uuid.clear();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert!(worker.has_subscribers("/topic", "any.type"));
+    let mut overflow = remote.clone();
+    overflow.address.push_str("-other");
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(overflow)),
+        ),
+    );
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 1);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert_eq!(
+        worker.remote_subscribers.len(),
+        1,
+        "empty node is a process-only native disconnection"
+    );
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Sub(Subscriber {
+                topic: "/topic".into(),
+            })),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+    remote.topic.clear();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 1);
+    worker.discovered(0, protocol::discovery("remote", Type::EndConnection, None));
+    assert!(worker.remote_subscribers.is_empty());
+    remote.topic = "/topic".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    remote.pub_type = Some(PubType::SrvPub(ServicePublisher::default()));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::EndConnection,
+            Some(DiscContents::Pub(remote.clone())),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "remote",
+            Type::NewConnection,
+            Some(DiscContents::Pub(remote)),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+}
+
+#[test]
+fn publisher_connection_coordination_has_no_unbounded_pending_state() {
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise("/topic", "T").unwrap();
+    assert_eq!(publisher.has_connections(), Err(Error::QueueFull));
+    worker.command(commands.recv().unwrap());
+    assert_eq!(publisher.has_connections(), Err(Error::Timeout));
+    assert_eq!(publisher.has_connections(), Err(Error::QueueFull));
+    drop(commands.recv().unwrap());
+    let commands = thread::scope(|scope| {
+        let responder = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
+        responder.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
+    node.cancel();
+    assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    drop(publisher);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 2);
+}
+
+#[test]
+fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
+    let (mut worker, commands) = state(4);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    for (topic, active) in [("/one", true), ("/one", false), ("/two", false)] {
+        let (tx, _) = mpsc::sync_channel(1);
+        worker.command(Command::Subscribe(
+            topic.into(),
+            "T".into(),
+            tx,
+            Arc::new(AtomicBool::new(active)),
+        ));
+    }
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while receiver.recv(&mut buffer).is_ok() {}
+    let process = worker.process.clone();
+    let stop = worker.sender.stop.clone();
+    stop.store(true, Ordering::Release);
+    worker.run(commands, stop);
+    let mut trace = Vec::new();
+    while let Ok(len) = receiver.recv(&mut buffer) {
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        assert_eq!(message.process_uuid, process);
+        if let Some(DiscContents::Pub(p)) = message.disc_contents {
+            assert_eq!(p.process_uuid, process);
+            assert!(matches!(&p.pub_type,Some(PubType::MsgPub(m)) if m.ctrl.is_empty()));
+            trace.push((message.r#type, p.topic));
+        } else {
+            trace.push((message.r#type, String::new()));
+        }
+    }
+    assert_eq!(
+        trace,
+        [
+            (Type::EndConnection as i32, "/one".into()),
+            (Type::EndConnection as i32, "/two".into()),
+            (Type::Bye as i32, String::new())
+        ]
+    );
 }

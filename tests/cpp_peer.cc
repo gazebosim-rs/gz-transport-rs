@@ -98,7 +98,68 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
-  if (mode == "inspect-service") {
+  if (mode == "publisher-membership") {
+    auto publisher=node.Advertise(topic,value);
+    if (!publisher || publisher.HasConnections()) return 40;
+    std::function<void(const gz::msgs::StringMsg&)> cb=[](const auto&){};
+    if (!node.Subscribe(topic,cb) || !publisher.HasConnections()) return 41;
+    if (!node.Unsubscribe(topic) || publisher.HasConnections()) return 42;
+    auto shared=gz::transport::NodeShared::Instance();
+    std::string qualified;
+    if (!gz::transport::TopicUtils::FullyQualifiedName(node.Options().Partition(),node.Options().NameSpace(),topic,qualified)) return 43;
+    gz::transport::MessagePublisher remote(qualified,"tcp://127.0.0.1:45555","wrong","remote","subscriber",value,gz::transport::AdvertiseMessageOptions());
+    shared->OnNewRegistration(remote);
+    if (publisher.HasConnections()) return 44;
+    remote.SetCtrl(shared->pUuid);
+    shared->OnNewRegistration(remote);
+    if (!publisher.HasConnections()) return 45;
+    auto duplicate=remote; duplicate.SetMsgTypeName("changed");
+    shared->OnNewRegistration(duplicate);
+    if (!publisher.HasConnections()) return 46;
+    auto wrong=remote; wrong.SetCtrl("wrong"); shared->OnEndRegistration(wrong);
+    if (!publisher.HasConnections()) return 47;
+    auto gone=remote; gone.SetTopic(""); gone.SetNUuid(""); shared->OnNewDisconnection(gone);
+    if (!publisher.HasConnections()) return 48;
+    auto end=remote; end.SetCtrl(""); shared->OnEndRegistration(end);
+    if (publisher.HasConnections()) return 49;
+    remote.SetPUuid(""); remote.SetNUuid(""); remote.SetMsgTypeName("google.protobuf.Message");
+    shared->OnNewRegistration(remote);
+    if (!publisher.HasConnections()) return 50;
+    gz::msgs::Discovery projection;
+    projection.set_type(gz::msgs::Discovery::END_CONNECTION);
+    projection.mutable_sub()->set_topic(qualified);
+    gz::transport::MessagePublisher projected;
+    projected.SetFromDiscovery(projection); shared->OnEndRegistration(projected);
+    if (publisher.HasConnections()) return 51;
+    remote.SetTopic(""); shared->OnNewRegistration(remote);
+    if (!shared->remoteSubscribers.HasTopic("")) return 52;
+    projection.clear_sub(); projected=gz::transport::MessagePublisher();
+    projected.SetFromDiscovery(projection); shared->OnEndRegistration(projected);
+    if (shared->remoteSubscribers.HasTopic("")) return 53;
+    remote.SetTopic(qualified); remote.SetPUuid("remote"); remote.SetNUuid("subscriber");
+    shared->OnNewRegistration(remote);
+    if (!publisher.HasConnections()) return 54;
+    remote.FillDiscovery(projection); projection.mutable_pub()->mutable_srv_pub();
+    projected.SetFromDiscovery(projection); shared->OnEndRegistration(projected);
+    if (publisher.HasConnections()) return 55;
+    std::cout << "READY" << std::endl;
+  } else if (mode == "subscriber-membership") {
+    struct State { std::mutex mutex; std::condition_variable cv; bool received=false; };
+    auto state=std::make_shared<State>();
+    std::function<void(const gz::msgs::StringMsg&)> cb=[state,value](const auto &message){
+      if (message.data()!=value) return;
+      std::lock_guard<std::mutex> lock(state->mutex); state->received=true; state->cv.notify_all();
+    };
+    if (!node.Subscribe(topic,cb)) return 56;
+    std::cout << "READY" << std::endl;
+    std::unique_lock<std::mutex> lock(state->mutex);
+    if (!state->cv.wait_for(lock,std::chrono::seconds(10),[&]{return state->received;})) return 57;
+    lock.unlock(); std::cout << "RECEIVED" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="DROP" || !node.Unsubscribe(topic)) return 58;
+    std::cout << "DROPPED" << std::endl;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 59;
+  } else if (mode == "inspect-service") {
     std::cout << "READY" << std::endl;
     std::string request, response;
     if (node.ResolveServiceTypes(topic, request, response, 5000) !=

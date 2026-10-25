@@ -122,8 +122,22 @@ pub struct Publisher {
     topic: String,
     type_name: String,
     max: usize,
+    reply_timeout: Duration,
 }
 impl Publisher {
+    /// Snapshot known matching subscriber registrations. As in native Gazebo,
+    /// membership does not acknowledge authentication or successful delivery,
+    /// and process-only disconnects do not erase remembered registrations.
+    /// Worker coordination is bounded by `Config::reply_timeout`.
+    pub fn has_connections(&self) -> Result<bool, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::HasConnections(
+            self.topic.clone(),
+            self.type_name.clone(),
+            tx,
+        ))?;
+        rx.recv_timeout(self.reply_timeout).map_err(receive_error)
+    }
     pub fn publish(&self, data: impl Into<Vec<u8>>) -> Result<(), Error> {
         let data = data.into();
         if data.len() > self.max {
@@ -262,6 +276,7 @@ impl Node {
             topic,
             type_name: type_name.into(),
             max: self.config.max_message_bytes,
+            reply_timeout: self.config.reply_timeout,
         })
     }
     pub fn subscribe(&self, topic: &str, type_name: &str) -> Result<Subscription, Error> {
@@ -469,6 +484,7 @@ enum Command {
     Subscribe(String, String, SyncSender<Message>, Arc<AtomicBool>),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
+    HasConnections(String, String, SyncSender<bool>),
     Request(Pending),
     Respond(Vec<Vec<u8>>, Vec<u8>, bool),
 }
@@ -523,6 +539,7 @@ struct Worker {
     subscriptions: Vec<SubscriberState>,
     services: Vec<ServiceState>,
     peers: HashMap<PeerKey, (WirePublisher, Instant)>,
+    remote_subscribers: HashMap<PeerKey, WirePublisher>,
     connected: HashSet<String>,
     subscriptions_connected: HashSet<String>,
     response_connections: HashMap<String, Instant>,
@@ -689,6 +706,7 @@ impl Worker {
             subscriptions: Vec::new(),
             services: Vec::new(),
             peers: HashMap::new(),
+            remote_subscribers: HashMap::new(),
             connected: HashSet::new(),
             subscriptions_connected: HashSet::new(),
             response_connections: HashMap::new(),
@@ -784,6 +802,17 @@ impl Worker {
         signatures.dedup();
         signatures
     }
+    fn has_subscribers(&self, topic: &str, type_name: &str) -> bool {
+        self.subscriptions.iter().any(|s| {
+            s.active.load(Ordering::Acquire)
+                && s.topic == topic
+                && (s.type_name.is_empty() || s.type_name == type_name)
+        }) || self.remote_subscribers.values().any(|p| {
+            p.topic == topic
+                && matches!(&p.pub_type, Some(PubType::MsgPub(m))
+                    if m.msg_type == type_name || m.msg_type == "google.protobuf.Message")
+        })
+    }
     fn command(&mut self, command: Command) {
         match command {
             Command::Advertise(topic, type_name, active) => {
@@ -860,6 +889,9 @@ impl Worker {
             Command::ServiceSignatures(topic, reply) => {
                 self.subscribe_message(1, &topic);
                 let _ = reply.try_send(self.service_signatures(&topic));
+            }
+            Command::HasConnections(topic, type_name, reply) => {
+                let _ = reply.try_send(self.has_subscribers(&topic, &type_name));
             }
             Command::Request(pending) => {
                 if Instant::now() >= pending.deadline {
@@ -1009,6 +1041,8 @@ impl Worker {
             return;
         }
         if kind == Type::Bye {
+            // Native NodeShared deliberately keeps subscriber registrations
+            // across process-only disconnects; only publication peers expire.
             self.peers.retain(|key, (p, _)| {
                 key.channel != channel || p.process_uuid != message.process_uuid
             });
@@ -1024,7 +1058,51 @@ impl Worker {
         {
             return;
         }
+        if channel == 0 && kind == Type::EndConnection {
+            // MessagePublisher::SetFromDiscovery projects missing message
+            // metadata to an empty ctrl, the generic withdrawal form.
+            let (topic, process, node, ctrl) = match &message.disc_contents {
+                Some(DiscContents::Pub(p)) => (
+                    p.topic.as_str(),
+                    p.process_uuid.as_str(),
+                    p.node_uuid.as_str(),
+                    match &p.pub_type {
+                        Some(PubType::MsgPub(m)) => m.ctrl.as_str(),
+                        _ => "",
+                    },
+                ),
+                Some(DiscContents::Sub(s)) => (s.topic.as_str(), "", "", ""),
+                None => ("", "", "", ""),
+            };
+            if ctrl.is_empty() || ctrl == self.process {
+                self.remote_subscribers.retain(|key, _| {
+                    key.process != process || key.node != node || key.topic != topic
+                });
+            }
+            return;
+        }
         match message.disc_contents {
+            Some(DiscContents::Pub(p)) if channel == 0 && kind == Type::NewConnection => {
+                if matches!(&p.pub_type, Some(PubType::MsgPub(m)) if m.ctrl == self.process) {
+                    let key = PeerKey {
+                        channel,
+                        process: p.process_uuid.clone(),
+                        node: p.node_uuid.clone(),
+                        topic: p.topic.clone(),
+                        address: p.address.clone(),
+                    };
+                    if !self.remote_subscribers.contains_key(&key) {
+                        if self.remote_subscribers.len() < self.config.capacity {
+                            self.remote_subscribers.insert(key, p);
+                        } else {
+                            self.sender
+                                .counters
+                                .queue_drops
+                                .fetch_add(1, Ordering::Relaxed);
+                        }
+                    }
+                }
+            }
             Some(DiscContents::Pub(p)) if kind == Type::Advertise => {
                 let key = PeerKey {
                     channel,
@@ -1047,6 +1125,13 @@ impl Worker {
                         || key.node != p.node_uuid
                         || key.topic != p.topic
                 });
+                if channel == 0 && !p.topic.is_empty() && !p.node_uuid.is_empty() {
+                    self.remote_subscribers.retain(|key, _| {
+                        key.process != p.process_uuid
+                            || key.node != p.node_uuid
+                            || key.topic != p.topic
+                    });
+                }
             }
             Some(DiscContents::Sub(s)) if kind == Type::Subscribe => {
                 let publishers: Vec<_> = if channel == 0 {
@@ -1172,6 +1257,23 @@ impl Worker {
             self.peers
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
             thread::sleep(Duration::from_millis(2));
+        }
+        // Graceful Node shutdown withdraws subscriptions before process BYE.
+        // Native publishers intentionally retain registration on BYE alone.
+        let mut topics = HashSet::new();
+        for subscription in &self.subscriptions {
+            if topics.insert(subscription.topic.as_str()) {
+                self.announce(
+                    0,
+                    protocol::discovery(
+                        &self.process,
+                        Type::EndConnection,
+                        Some(DiscContents::Pub(
+                            self.subscriber_publisher(&subscription.topic, ""),
+                        )),
+                    ),
+                );
+            }
         }
         for channel in 0..2 {
             self.announce(channel, protocol::discovery(&self.process, Type::Bye, None));

@@ -3915,10 +3915,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubTwoThreadsSameTopic",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubTwoThreadsSameTopic",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_two_threads_same_topic"
+      ],
+      "review": "/root/msgs; compared all original helper assertions and ALL/default binding, native callbacks/storage/projection/lifecycle, and preserved service-race assertion tail. Independently replayed 53 unit tests, two live C++ membership checks, four Rust ports and four exact native originals XML four runs/zero failures in a new verified private snapshot/target. Receipt docs/reviews/publisher-inspection.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3927,8 +3929,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb assertions retained: valid Int32 publisher and subscriber, actual HasConnections readiness polling with native 10000ms/10ms defaults, single publish of data5, exact received data5, joined subscriber and actual execution flag. Remapped /foo -> /bar setup retained where requested; explicit ALL maps to existing Rust ALL default. No PROCESS/HOST or immediate process-global visibility claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-publisher-inspection.md; artifacts/publisher-readiness/original.xml; mandatory untouched native helper cases"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeProcess",
@@ -3972,10 +3975,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ScopeAll",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeAll",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_all"
+      ],
+      "review": "/root/msgs; compared all original helper assertions and ALL/default binding, native callbacks/storage/projection/lifecycle, and preserved service-race assertion tail. Independently replayed 53 unit tests, two live C++ membership checks, four Rust ports and four exact native originals XML four runs/zero failures in a new verified private snapshot/target. Receipt docs/reviews/publisher-inspection.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3984,17 +3989,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb assertions retained: valid Int32 publisher and subscriber, actual HasConnections readiness polling with native 10000ms/10ms defaults, single publish of data5, exact received data5, joined subscriber and actual execution flag. Remapped /foo -> /bar setup retained where requested; explicit ALL maps to existing Rust ALL default. No PROCESS/HOST or immediate process-global visibility claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-publisher-inspection.md; artifacts/publisher-readiness/original.xml; mandatory untouched native helper cases"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubTwoThreadsSameTopicRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubTwoThreadsSameTopicRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_two_threads_same_topic_remap"
+      ],
+      "review": "/root/msgs; compared all original helper assertions and ALL/default binding, native callbacks/storage/projection/lifecycle, and preserved service-race assertion tail. Independently replayed 53 unit tests, two live C++ membership checks, four Rust ports and four exact native originals XML four runs/zero failures in a new verified private snapshot/target. Receipt docs/reviews/publisher-inspection.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4003,8 +4011,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb assertions retained: valid Int32 publisher and subscriber, actual HasConnections readiness polling with native 10000ms/10ms defaults, single publish of data5, exact received data5, joined subscriber and actual execution flag. Remapped /foo -> /bar setup retained where requested; explicit ALL maps to existing Rust ALL default. No PROCESS/HOST or immediate process-global visibility claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-publisher-inspection.md; artifacts/publisher-readiness/original.xml; mandatory untouched native helper cases"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeProcessRemap",
@@ -4048,10 +4057,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ScopeAllRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeAllRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_all_remap"
+      ],
+      "review": "/root/msgs; compared all original helper assertions and ALL/default binding, native callbacks/storage/projection/lifecycle, and preserved service-race assertion tail. Independently replayed 53 unit tests, two live C++ membership checks, four Rust ports and four exact native originals XML four runs/zero failures in a new verified private snapshot/target. Receipt docs/reviews/publisher-inspection.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4060,8 +4071,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb assertions retained: valid Int32 publisher and subscriber, actual HasConnections readiness polling with native 10000ms/10ms defaults, single publish of data5, exact received data5, joined subscriber and actual execution flag. Remapped /foo -> /bar setup retained where requested; explicit ALL maps to existing Rust ALL default. No PROCESS/HOST or immediate process-global visibility claim.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-publisher-inspection.md; artifacts/publisher-readiness/original.xml; mandatory untouched native helper cases"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubOneThreadTwoSubs",

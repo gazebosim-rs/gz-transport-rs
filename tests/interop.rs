@@ -871,3 +871,136 @@ fn remapping_inspection_and_explicit_withdrawal_retain_native_original_name() {
     assert!(node.advertised_services().unwrap().is_empty());
     assert!(node.service_type_signatures("/to").unwrap().is_empty());
 }
+
+#[test]
+fn publisher_membership_matches_native_reference_and_live_subscriber_withdrawal() {
+    let config = config();
+    let mut reference = Peer::start(&config, "publisher-membership", "/reference", TYPE);
+    reference.success();
+    let node = Node::new(config.clone()).unwrap();
+    let publisher = node.advertise("/wire", TYPE).unwrap();
+    assert!(!publisher.has_connections().unwrap());
+    let wrong = node.subscribe("/wire", "wrong.type").unwrap();
+    assert!(!publisher.has_connections().unwrap());
+    let wildcard = node.subscribe("/wire", "").unwrap();
+    assert!(publisher.has_connections().unwrap());
+    drop(wildcard);
+    assert!(!publisher.has_connections().unwrap());
+    let exact = node.subscribe("/wire", TYPE).unwrap();
+    assert!(publisher.has_connections().unwrap());
+    drop(exact);
+    assert!(!publisher.has_connections().unwrap());
+    drop(wrong);
+    let mut peer = Peer::start(&config, "subscriber-membership", "/wire", "value");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !publisher.has_connections().unwrap() {
+        assert!(
+            Instant::now() < deadline,
+            "native registration did not arrive"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    publisher.publish(data("value")).unwrap();
+    let mut line = String::new();
+    peer.1.read_line(&mut line).unwrap();
+    assert_eq!(line.trim(), "RECEIVED");
+    writeln!(peer.0.stdin.as_mut().unwrap(), "DROP").unwrap();
+    line.clear();
+    peer.1.read_line(&mut line).unwrap();
+    assert_eq!(line.trim(), "DROPPED");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while publisher.has_connections().unwrap() {
+        assert!(
+            Instant::now() < deadline,
+            "native END registration did not arrive"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+    node.cancel();
+    assert_eq!(publisher.has_connections(), Err(Error::Shutdown));
+}
+
+// Node_TEST.cc CreatePubSubTwoThreads/CreateSubscriber/cb assertions:
+// Copyright (C) 2014 Open Source Robotics Foundation.
+fn original_threaded_publication(remapping: bool) {
+    let mut config = config();
+    if remapping {
+        config.add_topic_remap("/foo", "/bar").unwrap();
+    }
+    let node = Node::new(config.clone()).unwrap();
+    let publication = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let executed = std::sync::atomic::AtomicBool::new(false);
+    thread::scope(|scope| {
+        let executed = &executed;
+        let subscriber = scope.spawn(move || {
+            let node = Node::new(config).unwrap();
+            let subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+            let message = subscription.recv_timeout(Duration::from_secs(10)).unwrap();
+            assert_eq!(
+                gz_msgs::int32::Int32::decode(message.data.as_slice())
+                    .unwrap()
+                    .data,
+                5
+            );
+            executed.store(true, std::sync::atomic::Ordering::Release);
+        });
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !publication.has_connections().unwrap() {
+            assert!(
+                Instant::now() < deadline,
+                "subscriber registration did not arrive"
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+        publication
+            .publish(
+                gz_msgs::int32::Int32 {
+                    data: 5,
+                    ..Default::default()
+                }
+                .encode_to_vec(),
+            )
+            .unwrap();
+        subscriber.join().unwrap();
+    });
+    assert!(executed.load(std::sync::atomic::Ordering::Acquire));
+}
+#[test]
+fn original_pub_sub_two_threads_same_topic() {
+    original_threaded_publication(false);
+}
+#[test]
+fn original_pub_sub_two_threads_same_topic_remap() {
+    original_threaded_publication(true);
+}
+#[test]
+fn original_scope_all() {
+    original_threaded_publication(false);
+}
+#[test]
+fn original_scope_all_remap() {
+    original_threaded_publication(true);
+}
+
+#[test]
+fn graceful_subscriber_shutdown_with_live_lease_withdraws_membership() {
+    let config = config();
+    let publisher_node = Node::new(config.clone()).unwrap();
+    let publisher = publisher_node.advertise("/wire", TYPE).unwrap();
+    let mut subscriber_node = Node::new(config).unwrap();
+    let lease = subscriber_node.subscribe("/wire", TYPE).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !publisher.has_connections().unwrap() {
+        assert!(Instant::now() < deadline, "registration did not arrive");
+        thread::sleep(Duration::from_millis(10));
+    }
+    subscriber_node.shutdown();
+    assert_eq!(lease.recv_timeout(Duration::ZERO), Err(Error::Shutdown));
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while publisher.has_connections().unwrap() {
+        assert!(Instant::now() < deadline, "graceful shutdown omitted END");
+        thread::sleep(Duration::from_millis(10));
+    }
+}
