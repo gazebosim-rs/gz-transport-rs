@@ -67,7 +67,17 @@ def staged_head(root):
 
 
 def staged_tree(root):
-    return subprocess.check_output(['git', 'write-tree'], cwd=root, text=True).strip()
+    # Git may update the caller's index cache-tree extension on write-tree.
+    # Compute from an exact private index copy, including a selected index.
+    index = Path(subprocess.check_output(
+        ['git', 'rev-parse', '--path-format=absolute', '--git-path', 'index'],
+        cwd=root, text=True).strip())
+    with tempfile.TemporaryDirectory(prefix='gz-transport-index-') as directory:
+        private = Path(directory) / 'index'
+        if index.exists():
+            shutil.copy2(index, private)
+        env = dict(os.environ, GIT_INDEX_FILE=str(private))
+        return subprocess.check_output(['git', 'write-tree'], cwd=root, env=env, text=True).strip()
 
 
 def validate_snapshot(root, tree, candidate):
@@ -99,6 +109,29 @@ def validate_snapshot(root, tree, candidate):
         raise ValueError('Exported staged paths differ from Git tree')
 
 
+def preserve_staged_child_failure(root, candidate, tree, head, failure):
+    """Keep the complete failed child's test output before its export is removed."""
+    parent = root / 'artifacts/staged-failures' / tree
+    parent.mkdir(parents=True, exist_ok=True)
+    destination = Path(tempfile.mkdtemp(prefix='failure-', dir=parent))
+    source = candidate / 'artifacts/test-build.jsonl'
+    output_sha256 = None
+    if source.is_file():
+        output = source.read_bytes()
+        (destination / 'test-build.jsonl').write_bytes(output)
+        output_sha256 = hashlib.sha256(output).hexdigest()
+    record = {
+        'tree': tree,
+        'head': head,
+        'exit_code': failure.returncode,
+        'test_build_sha256': output_sha256,
+        'caller_tree_after': staged_tree(root),
+        'caller_head_after': staged_head(root),
+    }
+    (destination / 'failure.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(f'Preserved failed staged child output: {destination}', file=sys.stderr)
+
+
 def staged():
     tree, head = staged_tree(ROOT), staged_head(ROOT)
     with tempfile.TemporaryDirectory(prefix='gz-transport-staged-') as directory:
@@ -120,7 +153,14 @@ def staged():
         changed_file = Path(directory) / 'changed-lines.json'
         changed_file.write_text(json.dumps({name: sorted(lines) for name, lines in changed_lines(diff).items()}))
         env['GZ_CHANGED_LINES_FILE'] = str(changed_file)
-        run([sys.executable, 'scripts/verify.py', 'verify', '--profile', 'zeromq-linux'], cwd=candidate, env=env)
+        try:
+            run([sys.executable, 'scripts/verify.py', 'verify', '--profile', 'zeromq-linux'], cwd=candidate, env=env)
+        except subprocess.CalledProcessError as failure:
+            try:
+                preserve_staged_child_failure(ROOT, candidate, tree, head, failure)
+            except Exception as preservation_error:
+                print(f'Could not preserve failed staged child output: {preservation_error}', file=sys.stderr)
+            raise
         if staged_tree(ROOT) != tree or staged_head(ROOT) != head:
             raise ValueError('Git index or HEAD changed during staged verification')
         destination = ROOT / 'artifacts/staged'

@@ -282,3 +282,22 @@ lines). Independent [review](reviews/four-node-topic-info.json) replayed the
 original and Rust selected cases, both supplemental cases, serial full Rust
 and two boundary mutants. Native Publisher lifetime after Node destruction
 remains open. Normal final hook and hosted CI are pending at this review point.
+
+## Failed staged test output
+
+When the staged child fails, `scripts/verify.py` retains its complete
+`test-build.jsonl`, if one was created, under
+`artifacts/staged-failures/<tree>/failure-*/`. The adjacent `failure.json`
+records the staged tree, child exit, output hash and caller tree. Failures
+before test execution have a null output hash. Artifact retention is best
+effort: an I/O error is diagnosed, and the original child failure remains the
+reported exit. `staged_tree` uses a private index copy so its Git write-tree
+operation does not modify either the selected alternate index or normal index.
+
+The exact two-file tooling change passed 24 tooling tests, including a forced
+child exit with complete retained output and an injected artifact I/O failure.
+The strict staged gate passed with 2085/2124 production lines and 3142/3271
+regions; no production executable lines or coverage thresholds changed. An
+independent [review](reviews/staged-failure-evidence.json) reproduced the prior
+status-masking defect and approved the corrected behavior. The normal hook and
+hosted qualification remain pending at this review point.

@@ -1,0 +1,45 @@
+{
+  "author": "/root/transport_fallback",
+  "base": "11a6ab66a5f92f9b7d67dcae0d5d6f4b948711e8",
+  "decision": "approved",
+  "diff_sha256": "3b73cc6800d31af5b705a06f5a4e9b33e3e6481d6fcd4b440c2f3833f81b978c",
+  "disposition": "The initial v1 exception-masking finding was reproduced privately and corrected in this v2 tree. Missing-reference and sandbox getifaddrs gate attempts are setup failures, retained and excluded from positive evidence.",
+  "files_sha256": {
+    "scripts/test_quality.py": "4e5a6a77581eb7e67f138cb83a67ea95576ac22df9b1a2526d92e21bfab6aeb3",
+    "scripts/verify.py": "eada3cf9562dcd4693a0bccfbb73701893d773af589d87cfde6c4099225e716a"
+  },
+  "independent_review": {
+    "author_coverage_lines": [
+      2085,
+      2124
+    ],
+    "author_coverage_regions": [
+      3142,
+      3271
+    ],
+    "author_exact_staged_gate_sha256": "303f4139b2a36c3834b5872348cd983a92ab8d0243df6cea62d5c1c46474e34e",
+    "author_tooling_tests": 24,
+    "changed_production_lines": [
+      0,
+      0
+    ],
+    "private_test_quality": "19 passed",
+    "private_test_quality_log_sha256": "8112472650aaf9aa0580ca666ee6029ecd5f85def73cb3157203ddc442424128",
+    "raw_export_files_match": true,
+    "retention_error_regression": "Injected OSError is diagnosed while original CalledProcessError exit 23 survives.",
+    "selected_split_index_forced_child": {
+      "caller_tree_match": true,
+      "exit": 23,
+      "normal_index_bytes_unchanged": true,
+      "output_byte_match": true,
+      "output_sha_match": true,
+      "selected_index_bytes_unchanged": true,
+      "tree_match": true
+    }
+  },
+  "limits": "Retains test-build.jsonl only when the child created it; an earlier failure records a null hash. Preservation I/O can fail, but the original child exit remains authoritative and the failure is diagnosed. Hosted qualification and normal hook remain pending.",
+  "proposal_sha256": "bd9124ebf71238f6d8d858884b0b60c6d6e8f7a543a2abf608f515b0147a3f2f",
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Tooling-only best-effort staged child failure retention and private index write-tree; no production/API/coverage threshold changes.",
+  "tree": "f86df0acd856eec50acd003b7e255a2778c8b345"
+}

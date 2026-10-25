@@ -71,6 +71,77 @@ class StagedAndEvidencePolicy(unittest.TestCase):
             self.assertEqual((root / 'artifacts/staged/proof').read_text(), 'staged')
             self.assertEqual((root / 'src/lib.rs').read_text(), 'unstaged')
 
+    def test_failed_staged_child_retains_complete_output_and_selected_index(self):
+        import hashlib
+        import json
+        import os
+        import shutil
+        import subprocess
+        import verify
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'repo'
+            (root / 'scripts').mkdir(parents=True)
+            (root / 'src').mkdir()
+            (root / 'src/lib.rs').write_text('staged')
+            expected_output = 'running 1 test\ntest exact_failure ... FAILED\nassertion: left != right\n'
+            (root / 'scripts/verify.py').write_text(
+                "from pathlib import Path\nimport sys\n"
+                "assert Path('src/lib.rs').read_text() == 'staged'\n"
+                "Path('artifacts').mkdir()\n"
+                f"Path('artifacts/test-build.jsonl').write_text({expected_output!r})\n"
+                "sys.exit(23)\n"
+            )
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+            normal_index = root / '.git/index'
+            normal_before = normal_index.read_bytes()
+            selected = Path(directory) / 'selected-index'
+            shutil.copy2(normal_index, selected)
+            selected_before = selected.read_bytes()
+            (root / 'src/lib.rs').write_text('unchecked working edit')
+            with patch.dict(os.environ, {'GIT_INDEX_FILE': str(selected)}), patch.object(verify, 'ROOT', root):
+                tree = verify.staged_tree(root)
+                with self.assertRaises(subprocess.CalledProcessError) as error:
+                    verify.staged()
+                self.assertEqual(error.exception.returncode, 23)
+                self.assertEqual(verify.staged_tree(root), tree)
+            failures = list((root / 'artifacts/staged-failures' / tree).glob('failure-*'))
+            self.assertEqual(len(failures), 1)
+            record = json.loads((failures[0] / 'failure.json').read_text())
+            self.assertEqual(record['tree'], tree)
+            self.assertEqual(record['exit_code'], 23)
+            self.assertEqual(record['caller_tree_after'], tree)
+            self.assertEqual(record['test_build_sha256'], hashlib.sha256(expected_output.encode()).hexdigest())
+            self.assertEqual((failures[0] / 'test-build.jsonl').read_text(), expected_output)
+            self.assertEqual(normal_index.read_bytes(), normal_before)
+            self.assertEqual(selected.read_bytes(), selected_before)
+            self.assertEqual((root / 'src/lib.rs').read_text(), 'unchecked working edit')
+            self.assertFalse((root / 'artifacts/staged').exists())
+
+    def test_failed_staged_child_retains_status_when_preservation_fails(self):
+        import contextlib
+        import io
+        import subprocess
+        import verify
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'repo'
+            (root / 'scripts').mkdir(parents=True)
+            (root / 'src').mkdir()
+            (root / 'src/lib.rs').write_text('staged')
+            (root / 'scripts/verify.py').write_text('import sys\nsys.exit(23)\n')
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+            output = io.StringIO()
+            with patch.object(verify, 'ROOT', root), patch.object(
+                verify, 'preserve_staged_child_failure', side_effect=OSError('retention unavailable')
+            ), contextlib.redirect_stderr(output):
+                with self.assertRaises(subprocess.CalledProcessError) as error:
+                    verify.staged()
+            self.assertEqual(error.exception.returncode, 23)
+            self.assertIn('Could not preserve failed staged child output: retention unavailable', output.getvalue())
+
     def test_checkout_attributes_cannot_substitute_transformed_staged_source(self):
         import subprocess
         import verify
