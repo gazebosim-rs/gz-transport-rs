@@ -94,6 +94,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
+name = "clap_lex"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
+
+[[package]]
 name = "dircpy"
 version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -193,13 +199,14 @@ dependencies = [
 [[package]]
 name = "gz-msgs"
 version = "0.1.0"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=2cea810e929adb4f925750b325265a99f9ae78b4#2cea810e929adb4f925750b325265a99f9ae78b4"
 dependencies = [
  "bytemuck",
+ "clap_lex",
  "heck",
  "prost",
  "prost-build",
- "prost-derive 0.14.4 (git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df)",
+ "prost-derive 0.14.4 (git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=2cea810e929adb4f925750b325265a99f9ae78b4)",
  "prost-reflect",
  "prost-types",
  "quick-xml",
@@ -479,7 +486,7 @@ dependencies = [
 [[package]]
 name = "prost-derive"
 version = "0.14.4"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=2cea810e929adb4f925750b325265a99f9ae78b4#2cea810e929adb4f925750b325265a99f9ae78b4"
 dependencies = [
  "anyhow",
  "itertools",
@@ -491,7 +498,7 @@ dependencies = [
 [[package]]
 name = "prost-reflect"
 version = "0.16.5"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=2cea810e929adb4f925750b325265a99f9ae78b4#2cea810e929adb4f925750b325265a99f9ae78b4"
 dependencies = [
  "base64",
  "logos",

@@ -10,7 +10,7 @@ description = "Interoperable Gazebo transport with explicit IO ownership"
 zmq = "=0.10.0"
 socket2 = { version = "=0.6.5", features = ["all"] }
 uuid = { version = "=1.23.1", features = ["v4"] }
-gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "e2001a3bc5b54cb15ea1cc16deaefdf14719b2df" }
+gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "2cea810e929adb4f925750b325265a99f9ae78b4" }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "=0.31.3", default-features = false, features = ["hostname", "user", "net"] }

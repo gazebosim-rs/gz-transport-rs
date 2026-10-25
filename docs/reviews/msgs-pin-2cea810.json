@@ -1,0 +1,71 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_owner",
+  "reviewer": "/root/msgs_recovery",
+  "reviewed_at": "2026-10-25T10:47:00.171041+00:00",
+  "base": "b04b1f32a47709a94a932ea019978a6cc95ef831",
+  "diff_sha256": "931205872eae4f42eb99cfc96e09de8be6b81bf6167d55c3ac1989e726031a7e",
+  "files": {
+    "Cargo.lock": "5ab0082a03afd41ba0b86deee23fa62673a26af0799a3ce891e3cd9441314479",
+    "Cargo.toml": "1d152b952968efa0254422132c6602122433a38188cdb0a5fb1d6745c8557a55",
+    "docs/MSG-runtime.md": "6d44d97056b7f4781caa92ba764b1daa14923a508ad4183b9b898f026714dfcd"
+  },
+  "scope": "Exact public Msgs2cea810 pin, bounded lockfile update and runtime/consumer identity documentation. No production/test/gate changes.",
+  "independent_checks": [
+    {
+      "check": "Raw immutable base export and frozen candidate binding",
+      "result": "81 Git blobs verified by object SHA/type/mode/path set, isolated diff applied, all3 input SHA256 bindings unchanged before/after tests; separate reviewer target and all5 owned test artifacts freshly built."
+    },
+    {
+      "check": "Lockfile and producer source invariants",
+      "result": "Only gz-msgs/prost-derive/prost-reflect Git identities change e200->2cea and clap_lex1.1.1 is added. Canonical schemas/build.rs/src/wire.rs/vendor byte-identical across producer revisions; no unexpected package update."
+    },
+    {
+      "check": "Private fresh native peer and intended required cargo test --locked --offline -- --test-threads=1",
+      "result": "All135 Rust checks pass, including actual C++ pub/sub/service/discovery peers, typed identity publication, opaque relay, metadata/lifecycle and malformed discovery assertions. Mode matches unchanged verify.py270."
+    },
+    {
+      "check": "Matching and deliberately mismatched downstream canonical type identity",
+      "result": "Exact2cea direct Msgs + candidate Transport consumer compiles publish_typed and external byte-default DecodeError test1passes. Separate olde200 direct/new2cea transitive compile fails expected E0277 and explicitly diagnoses distinct CanonicalMessage identities."
+    },
+    {
+      "check": "Independent Linux graph with read-only Fuel3747086",
+      "result": "1gz-msgs,1prost0.14.4,1socket2,1Transport,1Fuel;2prost-reflect identities are intentional private registry/vendored copies. Fuel HEAD/status/Cargo.toml/Cargo.lock identical before/after metadata resolution, no Fuel source/test changes or runtime claim."
+    },
+    {
+      "check": "Exploratory parallel-test failure and controlled before/after diagnosis",
+      "result": "Default-parallel exploratory run had 1existing malformed_discovery_is_ignored_and_counted timeout;53other interop and64unit checks passed. The original test unicasts once to shared10317. Isolated reviewer two-Node probe on alternate15473 reproduces intended-node0/competing-node1 on both baseline olde200 and candidate2cea. Required gate already serializes tests; its independent135pass is the declared configuration, not a retry-as-pass assertion. Failed exploratory log retained."
+    }
+  ],
+  "findings": [],
+  "pre_existing_followup": [
+    {
+      "issue": "malformed_discovery fixture fixed-port unicast can reach a concurrent Node",
+      "owner": "/root/transport_owner",
+      "status": "Separate deterministic port-isolation correction planned after pin, preserving one-send/one-second/exact-counter assertions; no candidate edits or waiver in this review."
+    }
+  ],
+  "scope_judgments": [
+    "Approve Cargo-only pin against required serial/native matrix. Canonical wire/codegen source unchanged and full native suite verifies the resolved new graph.",
+    "Direct consumers exchanging canonical values must align exact Git revision with Transport; compile-negative control proves the identity constraint. Separate private prost-reflect instances do not imply a second canonical Msgs or prost trait identity.",
+    "No original assertion disposition changes, unsafe, protocol, production coverage exclusion or performance claim."
+  ],
+  "author_evidence_separate": {
+    "rust_tests": 135,
+    "tooling_tests": 22,
+    "lines": [
+      1641,
+      1645
+    ],
+    "regions": [
+      2460,
+      2509
+    ],
+    "new_executable_production_lines": "none",
+    "qualification": "Reviewed author strict-gate evidence; independently reran135 Rust with fresh native peer plus consumer/graph/probes, not full instrumentation/tooling gate."
+  },
+  "limits": [
+    "Exact additive final metadata binding, normal mandatory staged hook and hosted qualification remain required.",
+    "No broad MSG-02/NET-01/NET-02, default/native formatting, performance, complete package/release or Fuel runtime acceptance."
+  ]
+}
