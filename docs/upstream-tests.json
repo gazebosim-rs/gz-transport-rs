@@ -1152,10 +1152,12 @@
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.ServiceInfo",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.ServiceInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_service_info"
+      ],
+      "review": "/root/sdformat; 2026-10-25; compared all original predicates, provider-record count, canonical type names and wait helper defaults; independently passed two focused units, four new real C++ interop checks and three exact native originals with verified hashes; owned Result/no-address API mapping approved",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCall.cc",
@@ -1164,8 +1166,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact native two-process ServiceInfo fixture: actual provider readiness using native 10000ms/100ms helper defaults; invalid @ yields InvalidName, absent /bogus yields an empty owned provider-record type list, known /foo has exactly one provider-record entry with request gz.msgs.Int32 and response gz.msgs.Int32. The result preserves equal-signature provider multiplicity rather than counting deduplicated canonical pairs. Provider addresses/identity and native mutable out-parameter shape remain outside this bounded API.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-info-ports.md; three exact native originals in the mandatory gate; artifacts/service-info-next/{native.json,xml-summary.json}"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallLateResponder:twoProcSrvCallLateResponder.RequestSucceedsWhenResponderAppearsLate",
@@ -1304,10 +1307,12 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.ServiceInfo",
       "target": "INTEGRATION_twoProcsSrvCallWithoutInput",
       "case": "twoProcSrvCallWithoutInput.ServiceInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_inputless_service_info"
+      ],
+      "review": "/root/sdformat; 2026-10-25; compared all original predicates, provider-record count, canonical type names and wait helper defaults; independently passed two focused units, four new real C++ interop checks and three exact native originals with verified hashes; owned Result/no-address API mapping approved",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutInput.cc",
@@ -1316,8 +1321,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact native two-process ServiceInfo fixture: actual provider readiness using native 10000ms/100ms helper defaults; invalid @ yields InvalidName, absent /bogus yields an empty owned provider-record type list, known /foo has exactly one provider-record entry with request gz.msgs.Empty and response gz.msgs.Int32. The result preserves equal-signature provider multiplicity rather than counting deduplicated canonical pairs. Provider addresses/identity and native mutable out-parameter shape remain outside this bounded API.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-info-ports.md; three exact native originals in the mandatory gate; artifacts/service-info-next/{native.json,xml-summary.json}"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutInputStress:twoProcSrvCallWithoutInput.ThousandCalls",
@@ -1399,10 +1405,12 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutOutput:twoProcSrvCallWithoutOutput.ServiceInfo",
       "target": "INTEGRATION_twoProcsSrvCallWithoutOutput",
       "case": "twoProcSrvCallWithoutOutput.ServiceInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_outputless_service_info"
+      ],
+      "review": "/root/sdformat; 2026-10-25; compared all original predicates, provider-record count, canonical type names and wait helper defaults; independently passed two focused units, four new real C++ interop checks and three exact native originals with verified hashes; owned Result/no-address API mapping approved",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutOutput.cc",
@@ -1411,8 +1419,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Exact native two-process ServiceInfo fixture: actual provider readiness using native 10000ms/100ms helper defaults; invalid @ yields InvalidName, absent /bogus yields an empty owned provider-record type list, known /foo has exactly one provider-record entry with request gz.msgs.Int32; the outputless original asserts no response descriptor. The result preserves equal-signature provider multiplicity rather than counting deduplicated canonical pairs. Provider addresses/identity and native mutable out-parameter shape remain outside this bounded API.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-info-ports.md; three exact native originals in the mandatory gate; artifacts/service-info-next/{native.json,xml-summary.json}"
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutOutputStress:twoProcSrvCallWithoutOuput.ThousandCalls",

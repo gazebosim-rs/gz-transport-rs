@@ -453,6 +453,17 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// One type entry per known provider record, sorted but not deduplicated.
+    /// Equal signatures retain provider multiplicity. This bounded worker snapshot
+    /// uses original-name qualification and the same discovery/coordination limits
+    /// as `service_type_signatures`; it exposes no addresses or process-global view.
+    pub fn service_provider_types(&self, topic: &str) -> Result<Vec<ServiceTypes>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::ServiceProviderTypes(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// Resolve empty descriptor names from matching providers. Explicit names
     /// select providers; both explicit names return immediately without lookup.
     /// The provider wait is polled every 100ms on the caller, never the IO worker.
@@ -527,6 +538,7 @@ enum Command {
     Subscribe(String, String, SyncSender<Message>, Arc<AtomicBool>),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
+    ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     HasConnections(String, String, SyncSender<bool>),
     Request(Pending),
     Respond(Vec<Vec<u8>>, Vec<u8>, bool),
@@ -821,6 +833,11 @@ impl Worker {
         )
     }
     fn service_signatures(&self, topic: &str) -> Vec<ServiceTypes> {
+        let mut signatures = self.service_provider_types(topic);
+        signatures.dedup();
+        signatures
+    }
+    fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
         let local = self.services.iter().filter_map(|service| {
             service
                 .active
@@ -842,7 +859,6 @@ impl Worker {
             })
             .collect();
         signatures.sort();
-        signatures.dedup();
         signatures
     }
     fn has_subscribers(&self, topic: &str, type_name: &str) -> bool {
@@ -942,6 +958,10 @@ impl Worker {
             Command::ServiceSignatures(topic, reply) => {
                 self.subscribe_message(1, &topic);
                 let _ = reply.try_send(self.service_signatures(&topic));
+            }
+            Command::ServiceProviderTypes(topic, reply) => {
+                self.subscribe_message(1, &topic);
+                let _ = reply.try_send(self.service_provider_types(&topic));
             }
             Command::HasConnections(topic, type_name, reply) => {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));

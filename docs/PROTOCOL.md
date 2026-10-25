@@ -142,6 +142,10 @@ native original-name behavior; aliases are not resolved transitively. The option
 map is bounded by configuration capacity and validated before worker creation.
 See the [remapping contract](NET-02-topic-remapping.md).
 
+Service provider type inspection preserves record multiplicity; its separate
+signature view deduplicates equal pairs. Neither exposes provider addresses or
+identities; see [provider-record inspection](NET-01-service-info-ports.md).
+
 Service signature inspection and type resolution use bounded worker commands
 and service-channel discovery, with caller-side provider polling. They expose
 canonical type pairs and native selection outcomes, without provider addresses

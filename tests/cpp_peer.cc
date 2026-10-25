@@ -7,6 +7,7 @@
 #include <gz/transport/TopicUtils.hh>
 #include <gz/transport/TopicStorage.hh>
 #include <gz/msgs/stringmsg.pb.h>
+#include <gz/msgs/int32.pb.h>
 #include <gz/msgs/empty.pb.h>
 #include <gz/msgs/discovery.pb.h>
 #include <chrono>
@@ -293,6 +294,32 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::unique_lock<std::mutex> lock(state->mutex);
     if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->received;})) return 5;
+  } else if (mode == "service-info-record-count") {
+    if (value != "2") return 85;
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+    std::vector<gz::transport::ServicePublisher> providers;
+    for (;;) {
+      if (node.ServiceInfo(topic,providers) && providers.size()==2) break;
+      if (std::chrono::steady_clock::now()>=deadline) return 86;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    for (const auto &provider:providers)
+      if (provider.ReqTypeName()!="gz.msgs.Int32" || provider.RepTypeName()!="gz.msgs.Int32") return 87;
+    std::cout << "READY" << std::endl;
+  } else if (mode == "service-info-reference") {
+    if (value == "ordinary") {
+      std::function<bool(const gz::msgs::Int32&,gz::msgs::Int32&)> callback=[](const auto &request,auto &response){response=request;return true;};
+      if (!node.Advertise(topic,callback)) return 80;
+    } else if (value == "inputless") {
+      std::function<bool(gz::msgs::Int32&)> callback=[](auto &response){response.set_data(5);return true;};
+      if (!node.Advertise(topic,callback)) return 81;
+    } else if (value == "outputless") {
+      std::function<void(const gz::msgs::Int32&)> callback=[](const auto &){};
+      if (!node.Advertise(topic,callback)) return 82;
+    } else return 83;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 84;
   } else if (mode == "serve" || mode == "serve-host") {
     std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> callback = [value](const auto &request,auto &response) {
       response.set_data(request.data()+value); return true;

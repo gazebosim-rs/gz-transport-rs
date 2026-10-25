@@ -1,0 +1,51 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/sdformat",
+  "repository": "gz-transport-rs",
+  "base": "4d390a8594bd113a49f04c99d9cd6d2ce25ae4cc",
+  "diff_sha256": "f99b583a7b1d763f733b7f8c74ca4af013e93ff782854b46c83b6ba99fa3cabf",
+  "files": {
+    "README.md": "ecf77c8ae9693d6e580888aa6327c7cd483215088aa893f140be70073d17d75b",
+    "docs/NET-01-service-info-ports.md": "169381e4aa10edc04a3bbaf8e8c559b92074898c3ed0c18e6309bc2823c0c69a",
+    "docs/PROTOCOL.md": "1bcd3f12d2a8459378faf0eb94d119c55bd027eb9694ba64e275976b22c7effe",
+    "docs/TESTING.md": "8c8138c5c6291759d7257e2bf59038436941ad970df9b33a9a46785fe8553e95",
+    "docs/upstream-tests.json": "67357837e094f774a95935def8f3120c22c2e6cf9999d4a143a467edccfaa952",
+    "scripts/verify.py": "91516d4fa04d5fa3749141761b450ea2469c687835e04298daf29ee8bd78f2ba",
+    "src/runtime.rs": "6482d240efea00e237c1ec8602c643072ef33f0a38118323c6d5cd24627d2f06",
+    "tests/cpp_peer.cc": "6933c625a4da3ad5dc1f26ce859c6ae6cb4fef5ffb7b15b2d59b95cbabc127d3",
+    "tests/interop.rs": "6a5050662fe5b758166f3224363e5ec2bcac64699afc6724dca3c183048da766",
+    "tests/support/runtime.rs": "36e484023764e013fa8867052a69a42c9db281174631b7452ade067a5e9f8c13"
+  },
+  "source_packet": "b22ae07fae84f21b72b3885486721c1979a3e101f142de3960f33b9851406ac1",
+  "scope": "Count-preserving per-worker provider type snapshots and three exact ServiceInfo original assertion ports; owned Result API translation accepted. No provider addresses, process-global immediate visibility, full NET acceptance or performance claim.",
+  "independent_checks": {
+    "private_source": "Raw public parent export plus hash-verified ten-file overlay; separate reviewer-owned Cargo target and fresh C++ peer build. Final metadata-only binding verifies all eight other hashes unchanged.",
+    "rust_units": 2,
+    "real_cpp_interop": 4,
+    "native_originals": 3,
+    "original_results": "Each untouched native ServiceInfo case XML one run, zero failures. Source and binary SHA256 values exactly match author prior proof.",
+    "assertion_review": "Compared every original invalid @, absent /bogus, known /foo, actual provider record count and canonical request/response assertion; waitForService 10000 ms/100 ms defaults retained. Inputless is Empty/Int32; outputless asserts request Int32 only. Native mutable false/empty out-parameter maps to typed InvalidName or empty owned result as documented.",
+    "count_fix": "Earlier signature-only prototype was explicitly rejected and unpublished. New API does not deduplicate provider entries; existing signatures retain sort/dedup. Real C++ observes two equal providers; Rust observes 2\u21921\u21920 through graceful withdrawals, while unique signature view stays one until final removal.",
+    "source_review": "Inspected active local/unexpired service-channel peers, kind/topic filters, bounded query errors, dropped receivers and absence of registration permit acquisition. No new unsafe/dependencies/protocol changes or weakened prior assertions.",
+    "setup_failures": "Initial native and interop loader failures for missing libzenohc were preserved. Successful replay uses /home/nkoenig/local/lib plus /opt/ros/jazzy/opt/zenoh_cpp_vendor/lib; no loader failure counted as a test pass."
+  },
+  "mapping_decision": "All three named ServiceInfo originals may be faithful_port within the documented owned Result/no-address API contract. Generic provider-address inspection and discovery timing remain pending. Final metadata correctly distinguishes independent six Rust checks/three native cases from author full121/22 coverage.",
+  "author_evidence_not_independently_recomputed": {
+    "rust_tests": 121,
+    "tooling_tests": 22,
+    "lines": [
+      1543,
+      1565
+    ],
+    "regions": [
+      2356,
+      2422
+    ],
+    "changed_lines": [
+      16,
+      16
+    ]
+  },
+  "publication_requirements": "Matching strict normal staged hook and exact hosted CI remain required; any source/assertion/gate change invalidates this binding."
+}

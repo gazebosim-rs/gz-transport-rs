@@ -1156,3 +1156,103 @@ fn received_generic_five(subscription: &gz_transport::Subscription, executed: &m
     assert!(!message.topic_path().contains('@'));
     assert_eq!(message.topic_path(), "/foo");
 }
+
+// Original twoProcsSrvCall{,WithoutInput,WithoutOutput}.cc ServiceInfo assertions.
+/*
+ * Copyright (C) 2016 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+*/
+// Ordinary fixture retains the original 2014 notice above.
+fn original_service_info_fixture(mode: &str, request_type: &str, response_type: Option<&str>) {
+    let config = config();
+    let mut service = Peer::start(&config, "service-info-reference", "/foo", mode);
+    let node = Node::new(config).unwrap();
+    // Native waitForService uses actual metadata, 10000ms and 100ms polling.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while node.service_provider_types("/foo").unwrap().is_empty() {
+        assert!(
+            Instant::now() < deadline,
+            "native service was not discovered"
+        );
+        thread::sleep(Duration::from_millis(100));
+    }
+    assert_eq!(node.service_provider_types("@"), Err(Error::InvalidName));
+    assert!(node.service_provider_types("/bogus").unwrap().is_empty());
+    let signatures = node.service_provider_types("/foo").unwrap();
+    assert_eq!(signatures.len(), 1);
+    assert_eq!(signatures[0].request_type, request_type);
+    if let Some(response_type) = response_type {
+        assert_eq!(signatures[0].response_type, response_type);
+    }
+    writeln!(service.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    service.success();
+}
+#[test]
+fn original_two_process_service_info() {
+    original_service_info_fixture("ordinary", "gz.msgs.Int32", Some("gz.msgs.Int32"));
+}
+#[test]
+fn original_two_process_inputless_service_info() {
+    original_service_info_fixture("inputless", "gz.msgs.Empty", Some("gz.msgs.Int32"));
+}
+#[test]
+fn original_two_process_outputless_service_info() {
+    original_service_info_fixture("outputless", "gz.msgs.Int32", None);
+}
+
+#[test]
+fn provider_record_multiplicity_matches_native_for_equal_signatures() {
+    let config = config();
+    let mut first = Peer::start(&config, "service-info-reference", "/foo", "ordinary");
+    let mut second = Peer::start(&config, "service-info-reference", "/foo", "ordinary");
+    let mut native = Peer::start(&config, "service-info-record-count", "/foo", "2");
+    native.success();
+    let node = Node::new(config).unwrap();
+    let expected = gz_transport::ServiceTypes {
+        request_type: "gz.msgs.Int32".into(),
+        response_type: "gz.msgs.Int32".into(),
+    };
+    let await_count = |count| {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let records = node.service_provider_types("/foo").unwrap();
+            if records.len() == count {
+                assert!(records.iter().all(|types| types == &expected));
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "provider record count did not reach {count}: {records:?}"
+            );
+            thread::sleep(Duration::from_millis(100));
+        }
+    };
+    await_count(2);
+    assert_eq!(
+        node.service_type_signatures("/foo").unwrap(),
+        std::slice::from_ref(&expected)
+    );
+    writeln!(first.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    first.success();
+    await_count(1);
+    assert_eq!(
+        node.service_type_signatures("/foo").unwrap(),
+        std::slice::from_ref(&expected)
+    );
+    writeln!(second.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    second.success();
+    await_count(0);
+    assert!(node.service_type_signatures("/foo").unwrap().is_empty());
+}

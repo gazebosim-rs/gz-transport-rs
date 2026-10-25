@@ -94,3 +94,8 @@ wrong reference HEAD. Restored reviewed hashes pass again. The independent
 an independent full Rust/coverage rerun. The original live-hook failure evidence
 and quarantined isolated branch remain preserved. Exact staged and hosted gates
 must qualify the published revision.
+
+The selected two-process ServiceInfo assertion ports require the exact ordinary,
+inputless and outputless native originals in every gate. They use real C++
+providers and a bounded provider-record type snapshot; the existing signature
+view still deduplicates type pairs. See [service inspection assertions](NET-01-service-info-ports.md).

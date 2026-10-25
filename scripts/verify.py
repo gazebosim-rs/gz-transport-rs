@@ -252,6 +252,9 @@ def verify(profile):
     run([str(reference / 'build/bin/UNIT_Node_TEST'), '--gtest_filter=NodeTest.ServiceWithoutOutputCallAsync:NodeTest.AdvertiseTwoEqualTopics:NodeTest.AdvertiseSameTopicSameTypeOnSameNode:NodeTest.AdvertiseRelativeTopicTwice:NodeTest.AdvertiseNamespacedTopicTwice:NodeTest.ServiceCallSync:NodeTest.ServiceCallWithoutInputSync:NodeTest.ServiceCallSyncTimeout:NodeTest.ServiceCallWithoutInputSyncTimeout:NodeTest.ServiceCallAsync:NodeTest.ServiceCallWithoutInputAsync:NodeTest.MultipleServiceCallAsync:NodeTest.MultipleServiceCallWithoutInputAsync:NodeTest.MultipleServiceWithoutOutputCallAsync:NodeTest.ResolveServiceTypes:NodeTest.ResolveServiceTypesWaitsForProvider:NodeTest.ResolveServiceTypesAmbiguous:NodeTest.WrongTopicRemap:NodeTest.AdvertiseRemappedTopicTwice:NodeTest.PubSubTwoThreadsSameTopic:NodeTest.PubSubTwoThreadsSameTopicRemap:NodeTest.ScopeAll:NodeTest.ScopeAllRemap:NodeTest.PubWithoutAdvertise:NodeTest.PubSubSameThread:NodeTest.PubSubSameThreadGenericCb'], env=env)
     run([str(reference / 'build/bin/UNIT_NodeOptions_TEST'), '--gtest_filter=NodeOptionsTest.accessors:NodeOptionsTest.ignPartition'], env=env)
     run([str(reference / 'build/bin/INTEGRATION_twoProcsPubSub'), '--gtest_filter=twoProcPubSub.TopicListSubscriberOnly:twoProcPubSub.TopicListRemovesUnsubscribed'], env=env)
+    for suffix in ('', 'WithoutInput', 'WithoutOutput'):
+        run([str(reference / ('build/bin/INTEGRATION_twoProcsSrvCall' + suffix)),
+             '--gtest_filter=twoProcSrvCall' + suffix + '.ServiceInfo'], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
     shutil.rmtree(profiles, ignore_errors=True)

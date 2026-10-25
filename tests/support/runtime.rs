@@ -1953,16 +1953,31 @@ fn service_signature_snapshot_filters_lifetimes_channels_and_kinds() {
         worker.service_signatures("/service"),
         [types("other"), types("req")]
     );
+    assert_eq!(
+        worker.service_provider_types("/service"),
+        [types("other"), types("req"), types("req")]
+    );
     active.store(false, Ordering::Release);
     // The duplicate remote signature still exists after local withdrawal.
     assert_eq!(
         worker.service_signatures("/service"),
         [types("other"), types("req")]
     );
+    assert_eq!(
+        worker.service_provider_types("/service"),
+        [types("other"), types("req")]
+    );
     worker.discovered(1, protocol::discovery("remote-0", Type::Bye, None));
     assert_eq!(worker.service_signatures("/service"), [types("other")]);
     worker.discovered(1, protocol::discovery("remote-1", Type::Bye, None));
     assert!(worker.service_signatures("/service").is_empty());
+    assert!(worker.service_provider_types("/service").is_empty());
+    let (reply, received) = mpsc::sync_channel(1);
+    worker.command(Command::ServiceProviderTypes("/service".into(), reply));
+    assert_eq!(received.recv().unwrap(), []);
+    let (reply, received) = mpsc::sync_channel(1);
+    drop(received);
+    worker.command(Command::ServiceProviderTypes("/service".into(), reply));
     let (reply, received) = mpsc::sync_channel(1);
     worker.command(Command::ServiceSignatures("/service".into(), reply));
     assert_eq!(received.recv().unwrap(), []);
@@ -2691,4 +2706,56 @@ fn duplicate_receivers_share_one_socket_filter_until_final_retirement() {
         .send_multipart([topic.as_bytes(), b"Second", b"retired"], 0)
         .unwrap();
     assert_eq!(worker.subscriber.poll(zmq::POLLIN, 100).unwrap(), 0);
+}
+
+#[test]
+fn provider_record_query_coordination_is_bounded_without_registration_permits() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    assert_eq!(
+        node.service_provider_types("invalid service"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(node.service_provider_types("/service"), Err(Error::Timeout));
+    assert_eq!(
+        node.service_provider_types("/service"),
+        Err(Error::QueueFull)
+    );
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::ServiceProviderTypes(_, _)
+    ));
+    let commands = thread::scope(|scope| {
+        let responder = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(
+            node.service_provider_types("/service"),
+            Err(Error::Shutdown)
+        );
+        responder.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(
+        node.service_provider_types("/service"),
+        Err(Error::Shutdown)
+    );
+    node.cancel();
+    assert_eq!(
+        node.service_provider_types("/service"),
+        Err(Error::Shutdown)
+    );
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 1);
 }

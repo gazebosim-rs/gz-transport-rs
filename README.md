@@ -16,6 +16,8 @@ the [explicit native API disposition](docs/NET-02-service-ownership.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.
+`service_provider_types()` preserves one type entry per known provider record,
+including equal-signature providers; see [service inspection](docs/NET-01-service-info-ports.md).
 `service_type_signatures()` snapshots known canonical service type pairs;
 `resolve_service_types()` selects providers and waits for missing names with
 explicit absence, incompatibility and ambiguity outcomes. These APIs use each
