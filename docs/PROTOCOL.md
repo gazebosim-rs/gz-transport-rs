@@ -7,6 +7,11 @@ Discovery (`src/Discovery.hh`, especially DispatchDiscoveryMsg, SendMsg,
 RecvDiscoveryUpdate) uses IPv4 UDP multicast 239.255.0.7, message port 10317,
 service port 10318. Datagrams contain a native-endian uint16 body length followed
 by canonical `gz.msgs.Discovery` protobuf bytes. Maximum datagram size is 65507.
+The reviewed native-compatible decoder treats known tags with unexpected wire
+types as unknown occurrences, including nested publisher metadata, without
+overwriting known values or changing message/oneof presence. Malformed known
+data still fails. The typed value is cloned for dispatch; discovery relay and
+lossless reencoding remain unclaimed. Application payload bytes are opaque.
 Version 10 is ordinary ZeroMQ; statistics-enabled peers use 110. Mismatched
 versions and malformed delimiters/protobuf are discarded. Unix HOST-scoped
 advertisements and withdrawals are accepted only from an eligible local IPv4

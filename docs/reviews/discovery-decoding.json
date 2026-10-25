@@ -1,0 +1,16 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T02:04:05.297317+00:00",
+  "tracked_diff_sha256": "4cb56f39dc2ba4940d0174624ddbadc975ac1b0dc6f820b5c24bcad2a8b70eba",
+  "additional_file_sha256": {
+    "tests/support/discovery_wire.rs": "d38cacab2e60f6154aa029b39e37449bb5ddde8295c850c4440ed3a27e5e7010",
+    "docs/NET-01-discovery-decoding.md": "1dcb9f70057ef7e9d8d8ad2aeec08014b6bd01b799147c512768ed38487f11c4"
+  },
+  "scope": "Bounded discovery consumer opt-in to reviewed hosted-green msgs e2001a3. Existing delimiter/maximum-datagram checks remain before decode, and version10 validation remains after it. Compatible envelope typed value is explicitly cloned for dispatch; application message/request/reply bytes remain opaque and no lossless discovery relay is claimed. No public transport API, production layout, coverage exclusion or quality policy changes.",
+  "independent_checks": "Read the entire production diff,31 generated-byte/native parser cases, runtime admission assertions and dependency/contract updates. Independently compiled the C++ peer with the strict author flags into a msgs-owned reviewer artifact directory. The31-case differential parser test passes with that explicit peer and a separate reviewer-owned Cargo target. The actual compatible-discovery admission/unknown-scope test passes using local sockets in that same isolated target. All source/test/doc hashes rechecked; only the requested Windows-resolution restoration changed since initial review. Prior Windows package blocks now exactly match HEAD.",
+  "dependency_review": "Only the producer Git revision/path sources and its pinned bytemuck/quick-xml additions remain in lock delta; unrelated Windows solver consolidation was restored. Maintained standard prost trait identity and producer-owned vendored paths remain intact.",
+  "author_reported": "Final full81 Rust/21 tooling gate passes,1286/1307 owned lines1929/1993 regions,4/4 changed executable lines, all real native peers/original filters. Reported and inspected, not independently recomputed.",
+  "limits": "Finite Linux generated-native corpus and bounded consumer task only; no new original mapping or full NET acceptance. Strict direct-prost/reflection limits remain producer contracts. Fresh producer staged/hosted gate and final evidence metadata binding remain required. Reviewer used no producer Cargo target and made no transport edits."
+}

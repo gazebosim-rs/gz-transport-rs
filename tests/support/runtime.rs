@@ -1173,6 +1173,36 @@ fn typed_discovery_rejects_wrong_publisher_kind_and_unknown_scope() {
 }
 
 #[test]
+fn compatible_discovery_preserves_runtime_admission_and_unknown_scope_rejection() {
+    use gz_msgs::prost::Message;
+    for (scope, peers) in [(Scope::All as i32, 1), (500, 0)] {
+        let (mut worker, _) = state(2);
+        let mut publication = worker.wire_publisher(
+            "/wire".into(),
+            PubType::MsgPub(MessagePublisher {
+                msg_type: "gz.msgs.StringMsg".into(),
+                ..Default::default()
+            }),
+        );
+        publication.process_uuid = "remote-process".into();
+        publication.node_uuid = "remote-node".into();
+        publication.scope = scope;
+        let expected = protocol::advertisement("remote-process", publication);
+        let mut body = expected.encode_to_vec();
+        // A wrong-wire occurrence of process_uuid must not erase the known string.
+        body.extend([0x18, 1]);
+        assert!(Discovery::decode(body.as_slice()).is_err());
+        let mut frame = (body.len() as u16).to_ne_bytes().to_vec();
+        frame.extend(body);
+        let decoded = protocol::decode(&frame).unwrap();
+        assert_eq!(decoded, expected);
+        worker.discovered(0, decoded);
+        assert_eq!(worker.peers.len(), peers);
+        assert_eq!(worker.sender.counters.snapshot(), Statistics::default());
+    }
+}
+
+#[test]
 fn oneway_wire_provider_does_not_enqueue_or_connect_a_reply() {
     let (mut worker, commands) = state(2);
     let (tx, rx) = mpsc::sync_channel(1);

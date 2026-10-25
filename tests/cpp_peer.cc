@@ -8,6 +8,7 @@
 #include <gz/transport/TopicStorage.hh>
 #include <gz/msgs/stringmsg.pb.h>
 #include <gz/msgs/empty.pb.h>
+#include <gz/msgs/discovery.pb.h>
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -32,6 +33,14 @@ std::size_t Count(const gz::transport::TopicStorage<Publisher> &storage,
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "decode-discovery") {
+    const std::string input(std::istreambuf_iterator<char>(std::cin), {});
+    gz::msgs::Discovery message;
+    if (!message.ParseFromString(input)) return 30;
+    message.DiscardUnknownFields();
+    if (!message.SerializeToOstream(&std::cout)) return 31;
+    return 0;
+  }
   if (mode == "peer-storage") {
     using namespace gz::transport;
     TopicStorage<MessagePublisher> messages;

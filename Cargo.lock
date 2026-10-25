@@ -48,6 +48,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
+
+[[package]]
 name = "bytes"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -187,14 +193,16 @@ dependencies = [
 [[package]]
 name = "gz-msgs"
 version = "0.1.0"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e1800c3e8d058ce7358b393e5f7aba6dd912920f#e1800c3e8d058ce7358b393e5f7aba6dd912920f"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
 dependencies = [
+ "bytemuck",
  "heck",
  "prost",
  "prost-build",
- "prost-derive 0.14.4 (git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e1800c3e8d058ce7358b393e5f7aba6dd912920f)",
+ "prost-derive 0.14.4 (git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df)",
  "prost-reflect",
  "prost-types",
+ "quick-xml",
  "serde_json",
 ]
 
@@ -471,7 +479,7 @@ dependencies = [
 [[package]]
 name = "prost-derive"
 version = "0.14.4"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e1800c3e8d058ce7358b393e5f7aba6dd912920f#e1800c3e8d058ce7358b393e5f7aba6dd912920f"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
 dependencies = [
  "anyhow",
  "itertools",
@@ -483,7 +491,7 @@ dependencies = [
 [[package]]
 name = "prost-reflect"
 version = "0.16.5"
-source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e1800c3e8d058ce7358b393e5f7aba6dd912920f#e1800c3e8d058ce7358b393e5f7aba6dd912920f"
+source = "git+https://github.com/gazebosim-rs/gz-msgs-rs?rev=e2001a3bc5b54cb15ea1cc16deaefdf14719b2df#e2001a3bc5b54cb15ea1cc16deaefdf14719b2df"
 dependencies = [
  "base64",
  "logos",
@@ -500,6 +508,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f94967dc7688f3054c7fac87473ffae4cc4c3904800e2d9f5b857246d8963b0a"
 dependencies = [
  "prost",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.38.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

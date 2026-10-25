@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::Error;
 use gz_msgs::{
+    WireMessage,
     discovery::{
         Discovery,
         discovery::{DiscContents, Publisher, Type},
@@ -40,7 +41,10 @@ pub(crate) fn decode(frame: &[u8]) -> Result<Discovery, Error> {
     {
         return Err(Error::InvalidFrame);
     }
-    let msg = Discovery::decode(&frame[2..]).map_err(|_| Error::InvalidFrame)?;
+    let msg = WireMessage::<Discovery>::decode_compatible(&frame[2..])
+        .map_err(|_| Error::InvalidFrame)?
+        .value()
+        .clone();
     if msg.version != VERSION {
         return Err(Error::InvalidFrame);
     }
@@ -54,3 +58,7 @@ pub(crate) fn advertisement(process: &str, publisher: Publisher) -> Discovery {
 pub(crate) fn text(frame: &[u8]) -> Result<&str, Error> {
     std::str::from_utf8(frame).map_err(|_| Error::InvalidFrame)
 }
+
+#[cfg(test)]
+#[path = "../tests/support/discovery_wire.rs"]
+mod tests;
