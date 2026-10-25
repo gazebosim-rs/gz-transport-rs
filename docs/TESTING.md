@@ -326,3 +326,19 @@ approves the bounded source and assertions. This is a membership hint, not a
 delivery or readiness guarantee; remote discovery remains eventual, and BYE
 does not clear remembered registrations. No original test is retired by this
 slice. The final protected hook and hosted qualification remain pending.
+
+## Local delivery with a remote subscriber
+
+The pinned `twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber`
+original maps partially through
+`original_local_subscriber_receives_once_with_remote_subscriber`. The Rust
+fixture retains ten ordered local `Vector3d` copies and rejects extras after
+the original bounded wait and quiet period while a real C++ subscriber is
+present. Two topic-info descriptors are only a fixture-specific surrogate
+for two distinct native subscriber process UUIDs. Remote receipt is not
+asserted by either test. The exact one-file source passed the strict staged
+gate with 2260/2307 lines and 3396/3544 regions, zero changed production
+lines; an extra-publish mutant fails. The independent
+[review](reviews/local-remote-once.json) approved this partial scope. See the
+[case contract](NET-02-local-remote-once.md). Normal hook and hosted CI remain
+publication gates.

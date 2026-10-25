@@ -990,10 +990,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_local_subscriber_receives_once_with_remote_subscriber"
+      ],
+      "review": "docs/reviews/local-remote-once.json",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -1002,8 +1004,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned local-and-remote Vector3d case: real remote C++ subscriber and local subscriber are present before ten x=0..9 publishes; local receiver gets exactly ten in order with no extra within the native 5s/10ms wait and 300ms quiet period. Two topic-info descriptors are a fixture-specific surrogate for the native two distinct subscriber process UUIDs; remote delivery is unasserted by both original and port.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-local-remote-once.md; exact native original replayed separately, Rust port required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber",

@@ -1,0 +1,26 @@
+{
+  "author": "/root/transport_fallback",
+  "base": "2a545f1d1983c2f5cb1a82d9fadc18a6278175dd",
+  "decision": "approved",
+  "exact_staged_gate_log_sha256": "d365c99b8fc28aa6d9eb0f02af287ce895319f068e1f2646062ae3ddde7b36ec",
+  "files_sha256": {
+    "tests/interop.rs": "9063c0fe80b3b85cb2e068cd809007beaf569407df5d115d751e5c4a9d5dbf35"
+  },
+  "judgment": "The isolated one-local and one-real-C++ subscriber fixture waits for two Vector3d descriptors before publishing. It verifies exactly ten ordered local Vector3d values x=0..9, y=z=0 within the original five-second receipt bound, then rejects an extra local copy over the native 300 ms quiet period. The native original was replayed 1/0 with no skips; production and API are unchanged.",
+  "limits": [
+    "PARTIAL original port: two public type descriptors are a fixture-specific surrogate for two distinct native process UUIDs; process identities are not exposed.",
+    "The C++ peer only registers its subscription; neither the original nor this port asserts its delivered payloads.",
+    "The exact 5 s outer limit of native settledValue after the last local delivery is not separately exercised; the Rust channel's 300 ms timeout checks the decisive quiet interval.",
+    "No general delivery guarantee, complete original retirement, normal hook, publication, or hosted qualification is implied."
+  ],
+  "private_review": {
+    "source": "Raw public base Git archive plus exact staged tests/interop.rs exported to a separate /tmp tree; exclusive Cargo target and all bound tracked hashes verified.",
+    "selected_positive": "With network-interface access and the unchanged hashed C++ peer, private selected test passed 1/0 in 0.36 s.",
+    "negative": "In separate private source, changing only the publish loop from ten to eleven causes the exact extra-local-copy assertion to fail with an eleventh Vector3d message.",
+    "setup_failure": "First private run in restricted socket sandbox failed before READY with socket creation errors; excluded from positive evidence."
+  },
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Test-only bounded local-once assertion port of pinned twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber.",
+  "staged_diff_sha256": "a6838c7bac84b325337d67963b9e166a3b9c00a88b80c67ea845cea00572b6b0",
+  "staged_tree": "e85383461ffcd880a5592ed012fe86825ff89945"
+}

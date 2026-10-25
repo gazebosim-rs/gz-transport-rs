@@ -17,7 +17,7 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
-use gz_msgs::{prost::Message, stringmsg::StringMsg};
+use gz_msgs::{prost::Message, stringmsg::StringMsg, vector3d::Vector3d};
 use gz_transport::{Config, Error, Node};
 use std::{
     io::{BufRead, BufReader, Write},
@@ -546,6 +546,71 @@ impl Drop for Peer {
         let _ = self.0.kill();
         let _ = self.0.wait();
     }
+}
+
+// twoProcsPubSub.cc:LocalSubscriberReceivesOnceWithRemoteSubscriber.
+// Original assertion adaptation: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_local_subscriber_receives_once_with_remote_subscriber() {
+    let config = config();
+    let topic = "/local_and_remote";
+    let mut peer = Peer::start(&config, "list-vector3d-subscriber", topic, "unused");
+    let node = Node::new(config).unwrap();
+    let subscription = node.subscribe(topic, "gz.msgs.Vector3d").unwrap();
+    let publisher = node.advertise_typed::<Vector3d>(topic).unwrap();
+
+    // Native waits for two distinct subscriber process UUIDs. The public
+    // Rust descriptor snapshot can observe only their two type entries.
+    let discovery_deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let info = node.known_topic_info(topic).unwrap();
+        if info.subscribers == ["gz.msgs.Vector3d", "gz.msgs.Vector3d"] {
+            break;
+        }
+        assert!(
+            Instant::now() < discovery_deadline,
+            "remote subscriber was not discovered"
+        );
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    for index in 0..10 {
+        publisher
+            .publish_typed(&Vector3d {
+                x: f64::from(index),
+                y: 0.0,
+                z: 0.0,
+                ..Default::default()
+            })
+            .unwrap();
+    }
+
+    let receipt_deadline = Instant::now() + Duration::from_secs(5);
+    for index in 0..10 {
+        let delivered = loop {
+            let now = Instant::now();
+            assert!(
+                now < receipt_deadline,
+                "ten local messages were not received"
+            );
+            match subscription.recv_timeout(Duration::from_millis(10)) {
+                Ok(delivered) => break delivered,
+                Err(Error::Timeout) => continue,
+                Err(error) => panic!("local subscription failed: {error:?}"),
+            }
+        };
+        let actual = Vector3d::decode(delivered.data.as_slice()).unwrap();
+        assert_eq!(actual.x, f64::from(index));
+        assert_eq!(actual.y, 0.0);
+        assert_eq!(actual.z, 0.0);
+    }
+    assert_eq!(
+        subscription.recv_timeout(Duration::from_millis(300)),
+        Err(Error::Timeout),
+        "an extra local copy arrived after ten messages"
+    );
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
 }
 
 // Original twoProcsSrvCall*.cc assertions: Copyright (C) 2014 Open Source Robotics Foundation.
