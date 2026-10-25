@@ -279,10 +279,34 @@ fn same_node_service_failure_and_concurrent_cancel() {
 
 #[test]
 fn malformed_discovery_is_ignored_and_counted() {
-    let node = Node::new(config()).unwrap();
+    // Hold a port reservation until the worker owns it, so parallel fixture
+    // workers cannot steal this test's single unicast datagram on shared 10317.
+    let reservation = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::DGRAM,
+        Some(socket2::Protocol::UDP),
+    )
+    .unwrap();
+    reservation.set_reuse_address(true).unwrap();
+    reservation
+        .bind(&std::net::SocketAddrV4::new(std::net::Ipv4Addr::UNSPECIFIED, 0).into())
+        .unwrap();
+    let port = reservation
+        .local_addr()
+        .unwrap()
+        .as_socket_ipv4()
+        .unwrap()
+        .port();
+    let mut isolated = config();
+    isolated.message_port = port;
+    let node = Node::new(isolated).unwrap();
+    drop(reservation);
+    // A later default-port worker reproduces the competing listener that made
+    // the former fixed-port fixture fail under parallel execution.
+    let _competing = Node::new(config()).unwrap();
     let sender = std::net::UdpSocket::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap();
     sender
-        .send_to(&[255], (std::net::Ipv4Addr::LOCALHOST, 10317))
+        .send_to(&[255], (std::net::Ipv4Addr::LOCALHOST, port))
         .unwrap();
     let deadline = Instant::now() + Duration::from_secs(1);
     while node.statistics().malformed_frames == 0 {

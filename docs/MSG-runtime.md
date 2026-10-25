@@ -66,5 +66,7 @@ An exploratory default-parallel reviewer run timed out in the pre-existing
 malformed-discovery fixture, which sends one unicast datagram to a shared UDP
 port. Controlled probes reproduce delivery to a competing worker on both old
 and new pins. This failure is retained separately from the passing declared
-serial gate and requires a separate fixture-isolation repair; it is not a pin
-regression or a waived test. Final exact staged and hosted checks remain required.
+serial gate; it is not a pin regression or a waived test. The subsequent
+[isolated fixture](TESTING.md) preserves the one-send/deadline/exact-count
+assertions with a reserved worker port and a competing default-port worker.
+Each slice still requires its own exact staged and hosted qualification.

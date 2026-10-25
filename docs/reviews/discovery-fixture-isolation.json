@@ -1,0 +1,62 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_owner",
+  "reviewer": "/root/msgs_recovery",
+  "reviewed_at": "2026-10-25T10:56:04.008860+00:00",
+  "base": "7ce88e5fe295cda4620bc503c105ed3250d360b6",
+  "diff_sha256": "2aff29b416832deafd36e8113ae28a80aec8ffe32a767d592297e792387bcd65",
+  "files": {
+    "docs/MSG-runtime.md": "755edcda61b3ecb3bde59a8ee15b6f34206fe325b3a18b52be9f1cc85f7cbe7b",
+    "docs/TESTING.md": "0db5d0cea770f2fe756013456113f756817118d36d5393bcd146a9d4e388793c",
+    "tests/interop.rs": "07b0587838ff766cd7d266726e5c284c84b16e90302e69b312dc2b123ce87d79"
+  },
+  "scope": "Test-only malformed discovery UDP fixture port isolation; no production, dependency, quality gate, coverage policy or assertion changes.",
+  "independent_checks": [
+    {
+      "check": "Frozen raw export and source binding",
+      "result": "82 immutable Git blobs object/type/mode/path-set verified,3frozen SHA256 inputs match before/after checks; separate reviewer source/target,5owned test artifacts freshly built."
+    },
+    {
+      "check": "Independent default-parallel full native replay",
+      "result": "All135 Rust checks pass with fresh C++ peer, including corrected malformed-discovery and existing discovery/pubsub/service/lifecycle/metadata cases."
+    },
+    {
+      "check": "Independent required serial full native replay",
+      "result": "All135 Rust checks pass in unchanged --test-threads=1 gate mode."
+    },
+    {
+      "check": "Causal same-reserved-port competitor negative control",
+      "result": "Only reviewer-owned negative source redirects later competing worker to the reserved test port. Single send/one-second deadline preserved; failure occurs at unchanged deadline with target=0 competitor=1,0pass1fail. Exact positive source remains untouched and bound."
+    },
+    {
+      "check": "Assertion and lifecycle source audit",
+      "result": "SO_REUSEADDR ephemeral IPv4 wildcard reservation held until Node::new synchronously finishes Worker::new binding, then dropped before sending. Later default-port competitor models original conflict. Original one[255] send,one-second deadline,2ms polls and exact malformed_frames==1 remain unchanged."
+    }
+  ],
+  "findings": [],
+  "scope_judgments": [
+    "Approves deterministic port isolation under tested Linux shared-unicast behavior; prior old/new pin failures remain explicit in history.",
+    "No retry converts a failure into a pass: the intentional negative source must fail; both full positive configurations pass against separately verified frozen source.",
+    "Socket reservation/test worker ownership is bounded by RAII; fixed10317 changed only for the tested worker and send destination; competitor remains on default port.",
+    "No runtime protocol or original-case mapping changes; no coverage denominator/threshold/exclusion changes."
+  ],
+  "author_evidence_separate": {
+    "default_parallel_rust_tests": 135,
+    "strict_serial_rust_tests": 135,
+    "tooling_tests": 22,
+    "lines": [
+      1641,
+      1645
+    ],
+    "regions": [
+      2460,
+      2509
+    ],
+    "new_executable_production_lines": "none",
+    "qualification": "Author full instrumentation/tooling evidence inspected; reviewer independently reran both full Rust modes and fresh native peer, not full tooling/coverage."
+  },
+  "limits": [
+    "Final additive metadata binding, normal mandatory staged hook and hosted qualification remain required.",
+    "No broad parallel-test stability, transport runtime parity, MSG-02/NET packet completion or performance claim."
+  ]
+}

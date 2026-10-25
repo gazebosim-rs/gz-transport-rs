@@ -117,3 +117,31 @@ cbInfo observations have an independently approved owned-receive adaptation;
 see the [review receipt](reviews/message-info.json). A separate native/Rust two-Node test asserts the known origin mismatch;
 actual C++ peers cover remote origin in both directions and retirement/recreation.
 Existing raw relay and receiver lifecycle assertions stay in the full gate.
+
+
+The malformed-discovery fixture reserves an ephemeral IPv4 UDP port with
+`SO_REUSEADDR` until its tested worker has bound, then drops the reservation.
+A second worker deliberately binds the usual shared discovery port afterward.
+The original single `[255]` send, one-second deadline, 2ms poll interval and
+exact `malformed_frames == 1` assertion remain unchanged; only the destination
+port follows the isolated worker. This prevents another parallel test worker
+from receiving the fixture's unicast datagram. No production protocol or runtime
+code changes.
+
+The pin review retained the earlier default-parallel timeout and controlled
+old/new pin observations of target0/competing1. The fixture repair's private
+negative control deliberately shares its reserved port with the later worker,
+reproduces target0/competing1, and fails the unchanged deadline predicate.
+Restoring the identical isolated source passes. Evidence and source hashes live
+in `artifacts/udp-fixture`; default-parallel and strict serial full runs,
+independent review, exact staged and hosted qualification are recorded separately.
+
+Independent [fixture review](reviews/discovery-fixture-isolation.json) approved
+the exact frozen inputs, bind/drop ownership and unchanged assertion sequence.
+A raw reviewer export, separate fresh target and native peer passed all 135
+checks in both default-parallel and required serial modes. An independent
+negative-source control failed the original deadline with target0/competing1;
+the hash-bound positive source remained unchanged. The author strict gate also
+passed 135 Rust and 22 tooling checks, with unchanged 1641/1645 production lines
+and 2460/2509 regions; no executable production lines changed. Final exact
+staged and hosted qualification remain required.
