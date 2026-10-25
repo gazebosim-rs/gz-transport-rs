@@ -1,0 +1,16 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/sdformat",
+  "date": "2026-10-25T00:41:16.730259+00:00",
+  "tracked_diff": "5d7f8a1d31b6169df4f8659b4ac56021266b2792cb39b47808c21e1f99a9e1c7",
+  "new_document_sha256": "e81e785b4a4f6291427a94b82f31796f9afe5506f177f3b5de39229e43ab3e4a",
+  "original_reviewed_source_test_diff": "f734bf004fac6eeb17506d02b8b3af45624814b873151bdc9e38afdba3015d32",
+  "scope": "Serialized qualified-topic duplicate check precedes capacity reservation and queue admission. Existing weak active ownership, failed-admission rollback, atomic once-only slot release and cleanup-before-recreation remain sound. Same/different types, relative/absolute aliases, independent nodes and concurrent duplicates preserve the original receiver. Explicit Result API rejection deliberately does not retain the inaccessible native failed-registration callback, as documented; no native bug-side-effect assertion is retired. Final README/protocol/contract metadata matches the bounded behavior. No production exclusions, deps, protocol or threshold changes.",
+  "independent_checks": {
+    "rust": "Four targeted duplicate/lifecycle unit tests and two integration checks passed, including actual C++ requester reaching replacement after rejected duplicate with old receiver retained.",
+    "native": "Saved actual C++ duplicate-side-effect probe independently replayed: first success, second failure, failed-registration callback invoked, exact output matched.",
+    "provenance": "Replayed author gate-built instrumented Rust binaries and saved C++ peer/probe using own LLVM profiles and logs; no independent C++ rebuild or full gate claim. Initial library-prefix/dependency-tail setup failures corrected before passing native runs.",
+    "limits": "Author full 77 Rust/21 tooling gate, 1282/1304 lines, 1926/1991 regions and 3/3 changed lines reported, not independently recomputed. No full NET packet completion or original retirement. Matching normal strict staged gate and hosted checks remain required."
+  }
+}

@@ -146,6 +146,55 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
 }
 
 #[test]
+fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() {
+    let (mut worker, commands) = state(2);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    let results = thread::scope(|scope| {
+        let first = scope.spawn(|| node.serve("/topic", "req", "rep"));
+        let second = scope.spawn(|| node.serve("topic", "req", "other"));
+        [first.join().unwrap(), second.join().unwrap()]
+    });
+    assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+    assert_eq!(
+        results
+            .iter()
+            .filter(|r| matches!(r, Err(Error::AlreadyAdvertised)))
+            .count(),
+        1
+    );
+    let service = results.into_iter().find_map(Result::ok).unwrap();
+    worker.command(commands.recv().unwrap());
+    assert!(commands.try_recv().is_err());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    assert_eq!(worker.services.len(), 1);
+    let Some(PubType::SrvPub(types)) = &worker.services[0].publisher.pub_type else {
+        panic!("wrong kind")
+    };
+    let selected = types.response_type.clone();
+    let (mut request, result) = pending(Instant::now() + Duration::from_secs(1));
+    request.topic = node.topic("/topic").unwrap();
+    request.response_type = selected;
+    worker.command(Command::Request(request));
+    let received = service.recv_timeout(Duration::ZERO).unwrap();
+    assert_eq!(received.data, [1]);
+    received.respond(vec![9], true).unwrap();
+    worker.command(commands.recv().unwrap());
+    assert_eq!(result.recv().unwrap(), Ok((vec![9], true)));
+    assert!(matches!(
+        node.serve("/topic", "different", "different"),
+        Err(Error::AlreadyAdvertised)
+    ));
+    drop(service);
+    let _replacement = node.serve("/topic", "different", "different").unwrap();
+}
+
+#[test]
 fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() {
     let (mut worker, commands) = state(2);
     let node = Node {

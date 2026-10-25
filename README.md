@@ -10,6 +10,9 @@ request correlation/timeouts, local delivery, dropped-handle withdrawal, and
 shutdown. One publisher per qualified topic is allowed on each Node; duplicates
 return `AlreadyAdvertised`. Dropping the lease permits immediate recreation;
 the worker withdraws the old identity before advertising its replacement.
+One service per qualified topic is also allowed on each Node. Duplicate service
+registration returns `AlreadyAdvertised` and preserves the original receiver; see
+the [explicit native API disposition](docs/NET-02-service-ownership.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.

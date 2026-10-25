@@ -256,6 +256,8 @@ impl Node {
         ))?;
         Ok(Subscription { rx, _lease: lease })
     }
+    /// Register one service per qualified topic on this Node. A rejected duplicate
+    /// leaves the original receiver authoritative, including for different types.
     pub fn serve(
         &self,
         topic: &str,
@@ -268,6 +270,9 @@ impl Node {
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
         services.retain(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
+        if services.iter().any(|(name, _)| name == &topic) {
+            return Err(Error::AlreadyAdvertised);
+        }
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
         self.sender.send(Command::Serve(

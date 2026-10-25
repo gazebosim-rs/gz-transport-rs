@@ -109,6 +109,14 @@ service, or publisher releases its registration, removes filters or advertises
 UNADVERTISE. Request deadlines expire without unbounded retries; shutdown drops
 pending reply senders so blocked callers receive Shutdown.
 
+Service registration reserves one live receiver per qualified topic within one
+Node. Same-topic duplicates, including different descriptors, return
+`AlreadyAdvertised` before consuming queue/registration capacity. Dropping the
+receiver or explicitly withdrawing releases ownership for immediate recreation.
+This Result API preserves the original receiver instead of retaining native
+C++'s inaccessible callback from a failed duplicate registration; see the
+[reviewed disposition](NET-02-service-ownership.md). No original cases are retired.
+
 # Remaining retained scope
 
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:

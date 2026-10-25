@@ -568,10 +568,17 @@ fn advertised_service_topics_are_local_qualified_and_drop_aware() {
     let node = Node::new(config.clone()).unwrap();
     let other = Node::new(config).unwrap();
     let _foreign = other.serve("/foreign", TYPE, TYPE).unwrap();
+    let _independent = other.serve("relative", TYPE, TYPE).unwrap();
     let absolute = node.serve("/absolute", TYPE, TYPE).unwrap();
     let relative = node.serve("relative", TYPE, TYPE).unwrap();
-    // Rust currently permits duplicate service handlers; listing remains unique.
-    let duplicate = node.serve("relative", TYPE, TYPE).unwrap();
+    assert!(matches!(
+        node.serve("relative", TYPE, TYPE),
+        Err(Error::AlreadyAdvertised)
+    ));
+    assert!(matches!(
+        node.serve("/ns/relative", "gz.msgs.Int32", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
     assert_eq!(
         node.advertised_services().unwrap(),
         ["/absolute", "/ns/relative"]
@@ -579,7 +586,7 @@ fn advertised_service_topics_are_local_qualified_and_drop_aware() {
     node.unadvertise_service("/absent").unwrap();
     node.unadvertise_service("relative").unwrap();
     assert_eq!(node.advertised_services().unwrap(), ["/absolute"]);
-    drop((relative, duplicate, absolute));
+    drop((relative, absolute));
     assert!(node.advertised_services().unwrap().is_empty());
     let replacement = node.serve("relative", TYPE, TYPE).unwrap();
     assert_eq!(node.advertised_services().unwrap(), ["/ns/relative"]);
@@ -600,6 +607,10 @@ fn cpp_requester_reaches_service_recreated_before_old_receiver_is_dropped() {
     let retired = node.serve("/recreated_service", TYPE, TYPE).unwrap();
     node.unadvertise_service("/recreated_service").unwrap();
     let replacement = node.serve("/recreated_service", TYPE, TYPE).unwrap();
+    assert!(matches!(
+        node.serve("/recreated_service", "gz.msgs.Int32", "gz.msgs.Int32"),
+        Err(Error::AlreadyAdvertised)
+    ));
     let mut peer = Peer::start(&config, "request", "/recreated_service", "cpp");
     let request = replacement.recv_timeout(Duration::from_secs(5)).unwrap();
     assert_eq!(request.data, data("cpp"));
