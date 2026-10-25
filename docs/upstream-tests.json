@@ -823,10 +823,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicList",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.TopicList",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_topic_list"
+      ],
+      "review": "docs/reviews/two-process-topic-list.json",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -835,8 +837,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original real Vector3d /foo and Bytes /large_msg remote advertisements, up-to-10s discovery wait at 100ms intervals, first nonempty list containing /foo, cleared list, second nonempty list containing /foo, and second-call latency strictly below2ms map to a command-woken Rust worker and known_topics(). C++ helper uses an explicit QUIT barrier rather than the original auxiliary's fixed lifetime; no message payload observation is claimed.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-topic-list.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.TopicListSubscriberOnly",

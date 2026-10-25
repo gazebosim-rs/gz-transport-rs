@@ -1900,3 +1900,32 @@ fn message_info_partition_spelling_matches_native() {
         assert_eq!(received.data, [0, 255, 128]);
     }
 }
+
+// twoProcsPubSub.cc:twoProcPubSub.TopicList.
+// Original assertion sequence: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_two_process_topic_list() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut publisher = Peer::start(&config, "list-two-publishers", "/foo", "unused");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if node.known_topics().unwrap().contains(&"/foo".to_owned()) {
+            break;
+        }
+        assert!(Instant::now() < deadline);
+        thread::sleep(Duration::from_millis(100));
+    }
+    let mut topics = node.known_topics().unwrap();
+    assert!(!topics.is_empty());
+    assert!(topics.contains(&"/foo".to_owned()));
+    topics.clear();
+    let start = Instant::now();
+    topics = node.known_topics().unwrap();
+    let elapsed = start.elapsed();
+    assert!(!topics.is_empty());
+    assert!(topics.contains(&"/foo".to_owned()));
+    assert!(elapsed < Duration::from_millis(2), "elapsed={elapsed:?}");
+    writeln!(publisher.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    publisher.success();
+}

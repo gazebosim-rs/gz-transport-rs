@@ -1671,7 +1671,10 @@ impl Worker {
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
             self.subscriber_interests
                 .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
-            thread::sleep(Duration::from_millis(2));
+            // Wake for commands while retaining the bounded socket poll interval.
+            if let Ok(cmd) = rx.recv_timeout(Duration::from_millis(2)) {
+                self.command(cmd);
+            }
         }
         // Graceful Node shutdown withdraws subscriptions before process BYE.
         // Native publishers intentionally retain registration on BYE alone.

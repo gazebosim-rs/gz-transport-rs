@@ -229,3 +229,13 @@ uses two real C++ Vector3d peers, a local Int32 subscription, and the existing
 endpoint metadata, complete vector contents and process-global sharing remain
 unqualified. The [independent receipt](reviews/two-process-all-topic-info.json)
 approved this partial mapping.
+
+The pinned `twoProcPubSub.TopicList` original checks remote `/foo` discovery,
+both list contents and a second list call under 2 ms. Its exact assertion port
+uses a real C++ peer with the original `/foo` Vector3d and `/large_msg` Bytes
+advertisements. The command-woken worker keeps its 2 ms idle socket poll bound
+while answering queued list commands promptly. See the
+[two-process topic list contract](NET-02-two-process-topic-list.md).
+The [independent receipt](reviews/two-process-topic-list.json) approves the
+original assertion sequence and bounded worker wake semantics; the final hook and
+hosted run remain pending.

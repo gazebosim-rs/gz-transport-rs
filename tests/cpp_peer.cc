@@ -25,6 +25,7 @@
 #include <gz/msgs/stringmsg.pb.h>
 #include <gz/msgs/int32.pb.h>
 #include <gz/msgs/vector3d.pb.h>
+#include <gz/msgs/bytes.pb.h>
 #include <gz/msgs/empty.pb.h>
 #include <gz/msgs/discovery.pb.h>
 #include <atomic>
@@ -396,6 +397,13 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::string command;
     if (!std::getline(std::cin, command) || command != "QUIT") return 111;
+  } else if (mode == "list-two-publishers") {
+    auto publisher=node.Advertise<gz::msgs::Vector3d>(topic);
+    auto large=node.Advertise<gz::msgs::Bytes>("/large_msg");
+    if (!publisher || !large) return 115;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin, command) || command != "QUIT") return 116;
   } else if (mode == "service-info-record-count") {
     if (value != "2") return 85;
     const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);

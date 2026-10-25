@@ -1,0 +1,76 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "37858508ce734be53099fd2e66d1cc308aa75868",
+  "tree": "1a44f0b3428f693337798a697089bae4f89f8f5f",
+  "diff_sha256": "209a518cee4b709c015790bffd188279c4c12bdc297a7552088b40ac11c48e26",
+  "files": {
+    "docs/NET-02-two-process-topic-list.md": "8debb363b34cb2becc8bf1c37c57644a32800489bdf0d0b9012e04af4b297559",
+    "docs/TESTING.md": "6e58b1e0c3915c6efa0293269aefdf3706624f225434cb186200c5d6a6819558",
+    "docs/upstream-tests.json": "5767e50bcd6a1ebcef49be33b05b5b2e4a7a95fcfcd9f0058873c9e709c954b4",
+    "scripts/verify.py": "124a3d51f2b4507047747f521af69ba2d5f91a936a55c9233c2037563e37b73a",
+    "src/runtime.rs": "deb9a766764eae1aaf6b8b452cbbbe95986a3084297218b5d6399549ed53f9da",
+    "tests/cpp_peer.cc": "05bb43f71cad673c8ede90fb6b5d841552932e4e30e339b9c733560bc44b7a97",
+    "tests/interop.rs": "824331dcfc8d5ad0ace6afad3950ed44efe97cd11aafda3c66a4ca253ec97b47"
+  },
+  "scope": "Faithful twoProcPubSub.TopicList assertion port: pinned real two-process Vector3d /foo and Bytes /large_msg advertisements; up-to-10 s / 100 ms discovery wait; first and cleared second nonempty list each containing /foo; second call <2 ms. Explicit QUIT barrier replaces unobserved fixed auxiliary lifetime; no payload or general latency guarantee.",
+  "worker_review": "At loop tail, recv_timeout(2 ms) wakes on a command and processes it immediately; same maximum idle socket-poll interval as former sleep(2 ms). Initial bounded drain, both UDP channels, publication/request/response paths, heartbeat/expiry and top-of-loop shutdown remain in prior order. Receiver is live via Sender owned by worker; no new network wait, API, unsafe, protocol, dependency or coverage-threshold change.",
+  "native": {
+    "source_revision": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+    "test_source_sha256": "9ca097a1a5231d67ffb9e0885a232204ef287801703d5b4b658dc0a17b882060",
+    "aux_source_sha256": "34295cb748b4841dd2518b055d8dd67ffaee6b995eb8c532d777d453f904ebf3",
+    "binary_sha256": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319",
+    "author_log_sha256": "3998893f26a22bcd11f0650a4469fda306d962df49a353e4d3ea4077fb528449",
+    "reviewer_log_sha256": "b7ed42fd4dd9bbf3f0cdf3529fce0d842cfc963de9bb901df856a85d8b167721",
+    "reviewer_xml_sha256": "a7cafaa35112c38acf734d30aca3ce160d0c3656e7a4dbf8a37bb18d714e2887",
+    "result": "Pinned original independently replayed 1/0/no skips"
+  },
+  "reviewer_replay": {
+    "method": "Private exact raw Git tree export, separate Cargo target, separately compiled real C++ peer from frozen source",
+    "cpp_peer_binary_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+    "selected_log_sha256": "4bb5cf6ca50534eeca3927c52282810019efe4e5a22daa5c124d8c4b30c7685d",
+    "repeat10_log_sha256": "7f2866e013d922ba4651904b5af2a5844759145f3c80f263d0aacfb7aa4b5d11",
+    "result": "selected 1/0 plus ten exact repeats 1/0 each",
+    "mutant_log_sha256": "b12de5ad56d244337823d75da1a2ea6fdc86a509861d3057cbf5f958926aac76",
+    "mutant": "Separate raw source/target restoration of unconditional sleep(2 ms) fails original <2 ms assertion at elapsed=2.196595 ms",
+    "invalid_setup_log_sha256": "2adcec0463e0f9d7546514828b93b2ffd4e24a2d850201118e3b8c6e7f48311c",
+    "invalid_setup_disposition": "First private mutation command ran git archive outside a Git repository, then Cargo found parent positive source and passed; this is excluded from source evidence."
+  },
+  "author_gate": {
+    "working_log": "artifacts/topic-list-latency/working-gate.log",
+    "working_sha256": "28622176acc08619518055f4d29f52fa6363242025015a414e64efbebbfb81af",
+    "staged_log": "artifacts/topic-list-latency/staged-gate.log",
+    "staged_sha256": "9b3fa76e022de1983e625935cc9a74fa4466163fe8a6859f40185b76df93c748",
+    "rust_tests": 156,
+    "tools": 22,
+    "lines": [
+      1816,
+      1840
+    ],
+    "regions": [
+      2756,
+      2837
+    ],
+    "changed_lines": [
+      3,
+      3
+    ]
+  },
+  "author_negative": {
+    "mutation": "replace command-woken recv_timeout(2 ms) with original unconditional thread::sleep(2 ms), in separate /tmp source and target",
+    "log": "artifacts/topic-list-latency/negative.log",
+    "log_sha256": "cafac4abcec523cd42ed1791380967cee67da4fa16cac635873d5238f4e33573",
+    "result": "original_two_process_topic_list fails at elapsed=2.091207ms"
+  },
+  "author_repeatability": {
+    "log": "artifacts/topic-list-latency/repeat20.log",
+    "sha256": "0e5120859aaadecd0cf585c9ec9605dcc17aeb2e0a55d1c7979c0313a689fff2",
+    "result": "20 selected exact assertion replays pass"
+  },
+  "findings": [],
+  "limits": [
+    "The 22\u201335 us 50-call observation is exploratory on one host, not a general latency guarantee.",
+    "Final metadata binding, normal commit hook, public push and hosted CI pending."
+  ]
+}
