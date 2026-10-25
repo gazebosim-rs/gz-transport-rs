@@ -143,6 +143,12 @@ struct Sender {
     slots: Arc<AtomicUsize>,
     capacity: usize,
     counters: Arc<Counters>,
+    identity: Arc<OnceLock<WorkerIdentity>>,
+}
+struct WorkerIdentity {
+    process: String,
+    node: String,
+    address: String,
 }
 impl Sender {
     fn send(&self, cmd: Command) -> Result<(), Error> {
@@ -305,8 +311,11 @@ impl MessageDomain {
 struct LocalPublication {
     domain: MessageDomain,
     topic: String,
+    key: PeerKey,
+    type_name: String,
     active: Weak<AtomicBool>,
     stopped: Weak<AtomicBool>,
+    retired_at: Option<Instant>,
 }
 impl LocalPublication {
     fn live(&self) -> bool {
@@ -318,10 +327,51 @@ impl LocalPublication {
                 .upgrade()
                 .is_some_and(|stopped| !stopped.load(Ordering::Acquire))
     }
+    fn retain_for_peer_expiry(&mut self) -> bool {
+        // Keep a retired key through the worker's three-second peer window so
+        // an old multicast copy cannot resurrect a dropped local endpoint.
+        if self.live() {
+            self.retired_at = None;
+            true
+        } else {
+            self.retired_at.get_or_insert_with(Instant::now).elapsed() < Duration::from_secs(3)
+        }
+    }
 }
 static LOCAL_PUBLICATIONS: OnceLock<Mutex<Vec<LocalPublication>>> = OnceLock::new();
 fn local_publications() -> &'static Mutex<Vec<LocalPublication>> {
     LOCAL_PUBLICATIONS.get_or_init(|| Mutex::new(Vec::new()))
+}
+struct LocalInterest {
+    domain: MessageDomain,
+    topic: String,
+    key: SubscriberInterestKey,
+    active: Weak<AtomicBool>,
+    stopped: Weak<AtomicBool>,
+    retired_at: Option<Instant>,
+}
+impl LocalInterest {
+    fn live(&self) -> bool {
+        self.active
+            .upgrade()
+            .is_some_and(|active| active.load(Ordering::Acquire))
+            && self
+                .stopped
+                .upgrade()
+                .is_some_and(|stopped| !stopped.load(Ordering::Acquire))
+    }
+    fn retain_for_peer_expiry(&mut self) -> bool {
+        if self.live() {
+            self.retired_at = None;
+            true
+        } else {
+            self.retired_at.get_or_insert_with(Instant::now).elapsed() < Duration::from_secs(3)
+        }
+    }
+}
+static LOCAL_INTERESTS: OnceLock<Mutex<Vec<LocalInterest>>> = OnceLock::new();
+fn local_interests() -> &'static Mutex<Vec<LocalInterest>> {
+    LOCAL_INTERESTS.get_or_init(|| Mutex::new(Vec::new()))
 }
 
 /// Dropping the node cancels its worker and joins it. Handles never own sockets.
@@ -334,6 +384,12 @@ pub struct Node {
     services: Mutex<Vec<(String, Weak<AtomicBool>)>>,
 }
 impl Node {
+    fn identity(&self) -> Result<&WorkerIdentity, Error> {
+        self.sender
+            .identity
+            .get()
+            .ok_or_else(|| Error::Native("worker identity unavailable".into()))
+    }
     pub fn new(config: Config) -> Result<Self, Error> {
         config.validate()?;
         let (tx, rx) = mpsc::sync_channel(config.capacity);
@@ -343,6 +399,7 @@ impl Node {
             slots: Arc::new(AtomicUsize::new(0)),
             capacity: config.capacity,
             counters: Arc::new(Counters::default()),
+            identity: Arc::new(OnceLock::new()),
         };
         let state = Worker::new(config.clone(), sender.clone())?;
         let stop = sender.stop.clone();
@@ -410,12 +467,22 @@ impl Node {
         let mut local = local_publications()
             .lock()
             .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
-        local.retain(LocalPublication::live);
+        local.retain_mut(LocalPublication::retain_for_peer_expiry);
+        let identity = self.identity()?;
         local.push(LocalPublication {
             domain: MessageDomain::from_config(&self.config),
             topic: path.into(),
+            key: PeerKey {
+                channel: 0,
+                process: identity.process.clone(),
+                node: identity.node.clone(),
+                topic: topic.clone(),
+                address: identity.address.clone(),
+            },
+            type_name: type_name.into(),
             active: Arc::downgrade(&lease.active),
             stopped: Arc::downgrade(&self.sender.stop),
+            retired_at: None,
         });
         Ok(Publisher {
             _lease: lease,
@@ -441,7 +508,32 @@ impl Node {
             tx,
             lease.active.clone(),
         ))?;
-        subscriptions.push((topic, Arc::downgrade(&lease.active)));
+        subscriptions.push((topic.clone(), Arc::downgrade(&lease.active)));
+        drop(subscriptions);
+        let (_, path) = decompose_fully_qualified_topic(&topic)?;
+        let mut local = local_interests()
+            .lock()
+            .map_err(|_| Error::Native("process-local subscriber registry poisoned".into()))?;
+        local.retain_mut(LocalInterest::retain_for_peer_expiry);
+        let identity = self.identity()?;
+        local.push(LocalInterest {
+            domain: MessageDomain::from_config(&self.config),
+            topic: path.into(),
+            key: SubscriberInterestKey {
+                process: identity.process.clone(),
+                node: identity.node.clone(),
+                topic,
+                address: identity.address.clone(),
+                type_name: if type_name.is_empty() {
+                    "google.protobuf.Message".into()
+                } else {
+                    type_name.into()
+                },
+            },
+            active: Arc::downgrade(&lease.active),
+            stopped: Arc::downgrade(&self.sender.stop),
+            retired_at: None,
+        });
         Ok(Subscription { rx, _lease: lease })
     }
     /// This Node's live publisher topics, sorted without partition prefixes.
@@ -458,54 +550,112 @@ impl Node {
     }
     /// Sorted topic paths advertised locally or by discovered message peers.
     /// Same-process live publishers are visible before multicast discovery. The
-    /// worker snapshot does not include subscriber-only topics or wait for
-    /// remote discovery. `advertised_topics` remains local handle inspection.
+    /// worker snapshot does not wait for remote discovery. `advertised_topics`
+    /// remains local handle inspection.
     pub fn known_publisher_topics(&self) -> Result<Vec<String>, Error> {
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender.send(Command::KnownPublisherTopics(tx))?;
-        let mut topics = rx
+        let mut records = rx
             .recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)?;
-        self.merge_process_local_publications(&mut topics)?;
-        Ok(topics)
+        self.merge_process_local_publications(&mut records)?;
+        Ok(records.into_names())
     }
     /// Sorted paths with a known publisher or subscription interest.
-    /// Live same-process publishers are immediate; a nonblocking subscriber
-    /// query refreshes remote interests eventually without waiting for replies.
+    /// Live same-process publishers and subscriptions are immediate; a
+    /// nonblocking subscriber query refreshes remote interests eventually.
     pub fn known_topics(&self) -> Result<Vec<String>, Error> {
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender.send(Command::KnownTopics(tx))?;
-        let mut topics = rx
+        let mut records = rx
             .recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)?;
-        self.merge_process_local_publications(&mut topics)?;
-        Ok(topics)
+        self.merge_process_local_publications(&mut records)?;
+        let domain = MessageDomain::from_config(&self.config);
+        let mut interests = local_interests()
+            .lock()
+            .map_err(|_| Error::Native("process-local subscriber registry poisoned".into()))?;
+        interests.retain_mut(LocalInterest::retain_for_peer_expiry);
+        for interest in interests
+            .iter()
+            .filter(|interest| interest.domain == domain)
+        {
+            records.subscribers.remove(&interest.key);
+        }
+        records.subscribers.extend(
+            interests
+                .iter()
+                .filter(|interest| interest.domain == domain && interest.live())
+                .map(|interest| (interest.key.clone(), interest.topic.clone())),
+        );
+        Ok(records.into_names())
     }
-    fn merge_process_local_publications(&self, topics: &mut Vec<String>) -> Result<(), Error> {
+    fn merge_process_local_publications(
+        &self,
+        records: &mut TopicNameRecords,
+    ) -> Result<(), Error> {
         let domain = MessageDomain::from_config(&self.config);
         let mut local = local_publications()
             .lock()
             .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
-        local.retain(LocalPublication::live);
-        topics.extend(
+        local.retain_mut(LocalPublication::retain_for_peer_expiry);
+        for publication in local
+            .iter()
+            .filter(|publication| publication.domain == domain)
+        {
+            records.publishers.remove(&publication.key);
+        }
+        records.publishers.extend(
             local
                 .iter()
-                .filter(|publication| publication.domain == domain)
-                .map(|publication| publication.topic.clone()),
+                .filter(|publication| publication.domain == domain && publication.live())
+                .map(|publication| (publication.key.clone(), publication.topic.clone())),
         );
-        topics.sort();
-        topics.dedup();
         Ok(())
     }
     /// Snapshot message descriptor names for known endpoints on an original topic.
-    /// Equal names from distinct endpoints remain separate. The worker requests
-    /// subscriber interests without waiting for remote replies.
+    /// Same-process endpoints are immediate. Equal names from distinct
+    /// endpoints remain separate; remote subscriber replies are eventual.
     pub fn known_topic_info(&self, topic: &str) -> Result<TopicEndpointTypes, Error> {
+        let topic = self.topic(topic)?;
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender
-            .send(Command::KnownTopicInfo(self.topic(topic)?, tx))?;
-        rx.recv_timeout(self.config.reply_timeout)
-            .map_err(receive_error)
+            .send(Command::KnownTopicInfo(topic.clone(), tx))?;
+        let mut records = rx
+            .recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)?;
+        let domain = MessageDomain::from_config(&self.config);
+        {
+            let mut publications = local_publications()
+                .lock()
+                .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
+            publications.retain_mut(LocalPublication::retain_for_peer_expiry);
+            for p in publications.iter().filter(|p| p.domain == domain) {
+                records.publishers.remove(&p.key);
+            }
+            records.publishers.extend(
+                publications
+                    .iter()
+                    .filter(|p| p.domain == domain && p.key.topic == topic && p.live())
+                    .map(|p| (p.key.clone(), p.type_name.clone())),
+            );
+        }
+        {
+            let mut interests = local_interests()
+                .lock()
+                .map_err(|_| Error::Native("process-local subscriber registry poisoned".into()))?;
+            interests.retain_mut(LocalInterest::retain_for_peer_expiry);
+            for s in interests.iter().filter(|s| s.domain == domain) {
+                records.subscribers.remove(&s.key);
+            }
+            records.subscribers.extend(
+                interests
+                    .iter()
+                    .filter(|s| s.domain == domain && s.key.topic == topic && s.live())
+                    .map(|s| (s.key.clone(), s.key.type_name.clone())),
+            );
+        }
+        Ok(records.into_types())
     }
     /// This Node's live subscription interests, including topics with no publisher.
     /// Duplicate receivers share one sorted entry; dropping the last removes it.
@@ -749,9 +899,9 @@ impl Drop for Node {
 
 enum Command {
     Advertise(String, String, Arc<AtomicBool>),
-    KnownPublisherTopics(SyncSender<Vec<String>>),
-    KnownTopics(SyncSender<Vec<String>>),
-    KnownTopicInfo(String, SyncSender<TopicEndpointTypes>),
+    KnownPublisherTopics(SyncSender<TopicNameRecords>),
+    KnownTopics(SyncSender<TopicNameRecords>),
+    KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<ReceivedMessage>, Arc<AtomicBool>),
     Unsubscribe(String),
@@ -785,7 +935,7 @@ struct ServiceState {
     tx: SyncSender<Request>,
     active: Arc<AtomicBool>,
 }
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 struct PeerKey {
     channel: usize,
     process: String,
@@ -793,13 +943,47 @@ struct PeerKey {
     topic: String,
     address: String,
 }
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 struct SubscriberInterestKey {
     process: String,
     node: String,
     topic: String,
     address: String,
     type_name: String,
+}
+#[derive(Default)]
+struct TopicEndpointRecords {
+    publishers: HashMap<PeerKey, String>,
+    subscribers: HashMap<SubscriberInterestKey, String>,
+}
+#[derive(Default)]
+struct TopicNameRecords {
+    publishers: HashMap<PeerKey, String>,
+    subscribers: HashMap<SubscriberInterestKey, String>,
+}
+impl TopicNameRecords {
+    fn into_names(self) -> Vec<String> {
+        let mut names: Vec<_> = self
+            .publishers
+            .into_values()
+            .chain(self.subscribers.into_values())
+            .collect();
+        names.sort();
+        names.dedup();
+        names
+    }
+}
+impl TopicEndpointRecords {
+    fn into_types(self) -> TopicEndpointTypes {
+        let mut publishers: Vec<_> = self.publishers.into_values().collect();
+        let mut subscribers: Vec<_> = self.subscribers.into_values().collect();
+        publishers.sort();
+        subscribers.sort();
+        TopicEndpointTypes {
+            publishers,
+            subscribers,
+        }
+    }
 }
 struct Worker {
     config: Config,
@@ -969,12 +1153,22 @@ impl Worker {
             udp(&config, config.message_port)?,
             udp(&config, config.service_port)?,
         ];
+        let process = Uuid::new_v4().to_string();
+        let node = Uuid::new_v4().to_string();
+        sender
+            .identity
+            .set(WorkerIdentity {
+                process: process.clone(),
+                node: node.clone(),
+                address: address.clone(),
+            })
+            .map_err(|_| Error::Native("worker identity already initialized".into()))?;
         Ok(Self {
             config,
             host_interfaces,
             sender,
-            process: Uuid::new_v4().to_string(),
-            node: Uuid::new_v4().to_string(),
+            process,
+            node,
             udp,
             publisher,
             subscriber,
@@ -1115,6 +1309,7 @@ impl Worker {
         names.dedup();
         names
     }
+    #[cfg(test)]
     fn known_topic_names(&self) -> Vec<String> {
         let mut names = self.known_names(0);
         for subscriber in &self.subscriptions {
@@ -1135,14 +1330,83 @@ impl Worker {
         names.dedup();
         names
     }
-    fn topic_endpoint_types(&self, topic: &str) -> TopicEndpointTypes {
-        let mut publishers = Vec::new();
+    fn topic_name_records(&self, include_subscribers: bool) -> TopicNameRecords {
+        let mut records = TopicNameRecords::default();
+        for (publisher, active) in &self.advertisements {
+            if active.load(Ordering::Acquire)
+                && matches!(publisher.pub_type, Some(PubType::MsgPub(_)))
+                && let Some(path) = self.known_topic_path(&publisher.topic)
+            {
+                records.publishers.insert(
+                    PeerKey {
+                        channel: 0,
+                        process: publisher.process_uuid.clone(),
+                        node: publisher.node_uuid.clone(),
+                        topic: publisher.topic.clone(),
+                        address: publisher.address.clone(),
+                    },
+                    path.into(),
+                );
+            }
+        }
+        for (key, (publisher, stamp)) in &self.peers {
+            if key.channel == 0
+                && stamp.elapsed() < Duration::from_secs(3)
+                && matches!(publisher.pub_type, Some(PubType::MsgPub(_)))
+                && let Some(path) = self.known_topic_path(&publisher.topic)
+            {
+                records.publishers.insert(key.clone(), path.into());
+            }
+        }
+        if include_subscribers {
+            for subscriber in &self.subscriptions {
+                if subscriber.active.load(Ordering::Acquire)
+                    && let Some(path) = self.known_topic_path(&subscriber.topic)
+                {
+                    let type_name = if subscriber.type_name.is_empty() {
+                        "google.protobuf.Message"
+                    } else {
+                        &subscriber.type_name
+                    };
+                    records.subscribers.insert(
+                        SubscriberInterestKey {
+                            process: self.process.clone(),
+                            node: self.node.clone(),
+                            topic: subscriber.topic.clone(),
+                            address: self.address.clone(),
+                            type_name: type_name.into(),
+                        },
+                        path.into(),
+                    );
+                }
+            }
+            for (key, stamp) in &self.subscriber_interests {
+                if stamp.elapsed() < Duration::from_secs(3)
+                    && let Some(path) = self.known_topic_path(&key.topic)
+                {
+                    records.subscribers.insert(key.clone(), path.into());
+                }
+            }
+        }
+        records
+    }
+    fn topic_endpoint_records(&self, topic: &str) -> TopicEndpointRecords {
+        let mut records = TopicEndpointRecords::default();
         for (publisher, active) in &self.advertisements {
             if active.load(Ordering::Acquire)
                 && publisher.topic == topic
                 && let Some(PubType::MsgPub(info)) = &publisher.pub_type
             {
-                publishers.push(info.msg_type.clone());
+                records.publishers.insert(
+                    PeerKey {
+                        channel: 0,
+                        process: publisher.process_uuid.clone(),
+                        node: publisher.node_uuid.clone(),
+                        topic: publisher.topic.clone(),
+                        address: publisher.address.clone(),
+                    },
+                    info.msg_type.clone(),
+                );
             }
         }
         for (key, (publisher, stamp)) in &self.peers {
@@ -1151,11 +1415,11 @@ impl Worker {
                 && publisher.topic == topic
                 && let Some(PubType::MsgPub(info)) = &publisher.pub_type
             {
-                publishers.push(info.msg_type.clone());
+                records
+                    .publishers
+                    .insert(key.clone(), info.msg_type.clone());
             }
         }
-        let mut subscribers = Vec::new();
-        let mut local_types = HashSet::new();
         for subscriber in &self.subscriptions {
             if subscriber.active.load(Ordering::Acquire) && subscriber.topic == topic {
                 let type_name = if subscriber.type_name.is_empty() {
@@ -1163,25 +1427,30 @@ impl Worker {
                 } else {
                     &subscriber.type_name
                 };
-                if local_types.insert(type_name) {
-                    subscribers.push(type_name.to_owned());
-                }
+                records.subscribers.insert(
+                    SubscriberInterestKey {
+                        process: self.process.clone(),
+                        node: self.node.clone(),
+                        topic: subscriber.topic.clone(),
+                        address: self.address.clone(),
+                        type_name: type_name.into(),
+                    },
+                    type_name.into(),
+                );
             }
         }
-        subscribers.extend(
-            self.subscriber_interests
-                .iter()
-                .filter(|(key, stamp)| {
-                    key.topic == topic && stamp.elapsed() < Duration::from_secs(3)
-                })
-                .map(|(key, _)| key.type_name.clone()),
-        );
-        publishers.sort();
-        subscribers.sort();
-        TopicEndpointTypes {
-            publishers,
-            subscribers,
+        for (key, stamp) in &self.subscriber_interests {
+            if key.topic == topic && stamp.elapsed() < Duration::from_secs(3) {
+                records
+                    .subscribers
+                    .insert(key.clone(), key.type_name.clone());
+            }
         }
+        records
+    }
+    #[cfg(test)]
+    fn topic_endpoint_types(&self, topic: &str) -> TopicEndpointTypes {
+        self.topic_endpoint_records(topic).into_types()
     }
     fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
         let local = self.services.iter().filter_map(|service| {
@@ -1237,21 +1506,21 @@ impl Worker {
                 self.advertisements.push((p, active));
             }
             Command::KnownPublisherTopics(reply) => {
-                let _ = reply.try_send(self.known_names(0));
+                let _ = reply.try_send(self.topic_name_records(false));
             }
             Command::KnownTopics(reply) => {
                 self.announce(
                     0,
                     protocol::discovery(&self.process, Type::SubscribersReq, None),
                 );
-                let _ = reply.try_send(self.known_topic_names());
+                let _ = reply.try_send(self.topic_name_records(true));
             }
             Command::KnownTopicInfo(topic, reply) => {
                 self.announce(
                     0,
                     protocol::discovery(&self.process, Type::SubscribersReq, None),
                 );
-                let _ = reply.try_send(self.topic_endpoint_types(&topic));
+                let _ = reply.try_send(self.topic_endpoint_records(&topic));
             }
             Command::Publish(topic, type_name, data) => {
                 self.sender.counters.sent(self.publisher.send_multipart(

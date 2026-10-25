@@ -590,6 +590,7 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
         slots: Arc::new(AtomicUsize::new(0)),
         capacity,
         counters: Arc::new(Counters::default()),
+        identity: Arc::new(OnceLock::new()),
     };
     (Worker::new(config, sender).unwrap(), rx)
 }

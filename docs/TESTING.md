@@ -269,3 +269,16 @@ mapping after private native/Rust and old-runtime negative replays; the
 ledger remains partial. The exact staged gate passed 163 Rust tests,
 22 tooling checks and strict 1875/1901 line, 2838/2930 region coverage.
 Final staged verification, normal hook and hosted CI remain pending.
+
+## Four Node topic information original
+
+`NodeTest.AllTopicInfo` is mapped partially by
+`original_four_node_all_topic_info`: all original immediate four Node topic
+names and endpoint count assertions are retained, while native one-vector
+`MessagePublisher` metadata and atomicity remain unqualified. The frozen
+seven-file source passed the exact staged native/Rust/strict coverage gate
+(166 Rust; 2085/2124 production lines, 3142/3271 regions, 249/251 changed
+lines). Independent [review](reviews/four-node-topic-info.json) replayed the
+original and Rust selected cases, both supplemental cases, serial full Rust
+and two boundary mutants. Native Publisher lifetime after Node destruction
+remains open. Normal final hook and hosted CI are pending at this review point.

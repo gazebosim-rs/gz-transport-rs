@@ -1,0 +1,46 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Partial NodeTest.AllTopicInfo mapping: immediate same-process publisher/subscriber names and descriptor counts via existing public known_topics/known_topic_info; no new public API or full native vector claim",
+  "base_commit": "1aecfc92d051ae6ed9862942becc026c3890219d",
+  "proposal_sha256": "96943758e6f416c16083e687bd616ced25c0cc0480588d9ab58ba0f48fd87fd4",
+  "staged_tree": "0d205871c583dd0796f4d55855f139dd8fb45955",
+  "staged_diff_sha256": "8f83342ac4616448dfa9d62d8e0932e79230c39c44b56e63118f94a0881afd92",
+  "files": {
+    "README.md": "d369cb634173e8254bfc25743c72bd66bbec41e3f3088517e21a796f9349b7dc",
+    "docs/NET-02-four-node-topic-info.md": "a02e3493c869958cfc17ecd9cf739be56b3ca89154261ccbc199d5c888494e04",
+    "docs/NET-02-topic-info.md": "6cdfeeae5c9fb6f82939be4f4b53fc550399da27a2cfe11c05097acc2dfd4088",
+    "scripts/verify.py": "b3ce6d3ca47aaa1000b57e44f2d814bd10cde201b308524f6e13d3958666df5b",
+    "src/runtime.rs": "87cb9bedf2bebca9a24c4cffe1079a003be84f73980f0e3de2dbad2f9130302e",
+    "tests/interop.rs": "3f061a74a992c864467b1460adfd90147703bcbc818c97ec70b7bc930f43d715",
+    "tests/support/runtime.rs": "23da4068d68614a9d3c9311fcc1484749aad6d1e0ffc28352b1ea220aae026ff"
+  },
+  "author_evidence": {
+    "exact_staged_gate_sha256": "31825b11b34a02c9167132764f7dfc02a9f702b82945f774d37e8c275e73fcc7",
+    "native_original_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "native_original_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "source_gate": "166 Rust, native original 1/0, 2085/2124 production lines, 3142/3271 regions, 249/251 changed lines"
+  },
+  "reviewer_evidence": {
+    "native-original.log": "7bd04ada36fc024ac20be9c92c453ce9447a746f6e89fc8aeaef5738e17c307c",
+    "selected.log": "55f7aeb9ed03cf6faeceb68f047ea013eb4c0b2f745cc7fba8ab56a5fd011bdc",
+    "supplemental.log": "427e8dfdef78ae74c61b0fe4c88eb34203fae5008093866afbc16d0003744374",
+    "full-rust-serial-cpu31.log": "47a39b27b70b38f2c5cac27e0400f82f33a3d82b880553d1830efe1f187f308c",
+    "full-rust-wrong-abi.log": "7e1444ad5badc93c8ad76645ed2752f6a48a2e502bfc867162c2bdec97ef957b",
+    "full-rust-missing-zenoh-path.log": "d8c6db9d76c8cb6cf2a77ec536bf5a5e087b4a09230368410694d124d889fb55",
+    "full-rust-unpinned-cpu.log": "ab2ec11b65d6eb08aca13ec5346f41a2aeee938ce00597b5fc203ca683ef236a",
+    "service-latency-repeat.log": "c110447b1e18c17f1d08c98c1c99e2feb678fcbf47cd86343c0b4a16ee3e8c0a",
+    "missing-subscriber-mutant.log": "afaad3f2e04a9a533cec4b9aa31b5cae5a5bb329ba2131db19bf58f4dc1ee548",
+    "missing-subscriber-mutant.diff": "6dcc5765af86d25a030413dc0e3b4475f1fc93636904df54451ac53b57ca9a34",
+    "multiplicity-mutant.log": "9e2d69940847efb3274be4c3508886a9806c2b92e0b2eec1b7df7eaee30fbcdb",
+    "multiplicity-mutant.diff": "1e2ba9ab8bf981102ebfff2990362fb6262b9bc598d3f8861492bb4a0367bf79"
+  },
+  "checks": [
+    "All seven staged source/index hashes and the binary diff/tree match the frozen proposal. A private raw Git export with the seven files and exclusive target passed the pinned unchanged native NodeTest.AllTopicInfo original 1/0 and the exact Rust four-Node mapping 1/0; both supplemental domain/lifecycle/identity controls passed 2/0.",
+    "Worker replies retain publisher PeerKey and subscriber SubscriberInterestKey through the caller merge; process-local weak live leases use the matching wire process/node/topic/address/type identities. The merge removes multicast copies and retired local keys before projecting sorted public name/type vectors. Worker reply errors remain authoritative, registry locks are acquired only after reply, and service APIs/wire protocol are unchanged.",
+    "Private full Rust suite passed all 166 tests with the repository-required serial execution on CPU31 and pinned local C++ peer/libraries. A private source mutant removing subscriber-only names failed original topic count 2 versus 3; a separate mutant deduplicating equal descriptor strings failed the distinct-Node 2 versus 1 assertion.",
+    "An initial private full attempt used a different ABI library tree, another omitted inherited Zenoh search paths, and a later unpinned serial full run failed an unchanged two-process ServiceList wall-time assertion at 2.759939 ms. These are retained and excluded as positive evidence. That exact ServiceList test passed 20 private CPU31 replays, and the full serial CPU31 suite passed without assertion changes. The author exact staged gate also passed."
+  ],
+  "limits": "Native AllTopicInfo returns one full MessagePublisher vector snapshot; Rust uses separate name and descriptor queries, with no atomic cross-query vector or address metadata claim. Remote discovery remains eventual. Native Publisher lifetime after Node destruction remains a separate gap; explicit Rust shutdown invalidates handles. No general global registry, timing guarantee, or broader original parity claimed. Final metadata binding, normal hook and hosted CI pending."
+}

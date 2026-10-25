@@ -18,12 +18,13 @@ in this process and already-discovered remote advertisements in the same
 explicit message domain and partition. `known_services()` retains its bounded
 worker snapshot; see the
 [bounded discovered listing contract](docs/NET-02-known-lists.md).
-`known_topics()` also includes those same-process publishers and snapshots
-local and eventually discovered remote subscriber-only interests; see the
+`known_topics()` also includes live same-process subscriptions and snapshots
+eventually discovered remote subscriber-only interests; see the
 [bounded subscriber contract](docs/NET-02-subscriber-lists.md) and
-[two-Node topic listing](docs/NET-02-two-node-topic-list.md).
+[four-Node topic information mapping](docs/NET-02-four-node-topic-info.md).
 `known_topic_info()` returns known publisher and subscriber descriptor names for
-one original topic path; see the [bounded topic information contract](docs/NET-02-topic-info.md).
+one original topic path, with immediate same-process endpoint identity;
+see the [bounded topic information contract](docs/NET-02-topic-info.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.

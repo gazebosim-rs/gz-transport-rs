@@ -91,6 +91,133 @@ fn original_two_node_topic_list() {
     assert!(elapsed.as_millis() < 2, "second list: {elapsed:?}");
 }
 
+// Node_TEST.cc:NodeTest.AllTopicInfo (2014 OSRF/Apache-2.0). The native
+// original queries immediately after four same-process Node registrations.
+#[test]
+fn original_four_node_all_topic_info() {
+    let config = config();
+    let node1 = Node::new(config.clone()).unwrap();
+    let node2 = Node::new(config.clone()).unwrap();
+    let node3 = Node::new(config.clone()).unwrap();
+    let node4 = Node::new(config).unwrap();
+    let _pub1 = node1.advertise("/topic1", "gz.msgs.Int32").unwrap();
+    let _pub2 = node2.advertise("/topic2", "gz.msgs.Int32").unwrap();
+    let _sub2 = node2.subscribe("/topic1", "gz.msgs.Int32").unwrap();
+    let _sub3 = node3.subscribe("/topic3", "gz.msgs.Int32").unwrap();
+
+    let topics = node4.known_topics().unwrap();
+    assert_eq!(topics.len(), 3);
+    for (topic, publishers, subscribers) in
+        [("/topic1", 1, 1), ("/topic2", 1, 0), ("/topic3", 0, 1)]
+    {
+        assert!(topics.iter().any(|name| name == topic));
+        let info = node4.known_topic_info(topic).unwrap();
+        assert_eq!(info.publishers.len(), publishers, "{topic} publishers");
+        assert_eq!(info.subscribers.len(), subscribers, "{topic} subscribers");
+    }
+}
+
+#[test]
+fn process_local_topic_info_endpoint_identity_and_lifecycle() {
+    let config = config();
+    let observer = Node::new(config.clone()).unwrap();
+    let first = Node::new(config.clone()).unwrap();
+    let second = Node::new(config.clone()).unwrap();
+    let _third = Node::new(config.clone()).unwrap();
+    let pub1 = first.advertise("/shared", "gz.msgs.Int32").unwrap();
+    let pub2 = second.advertise("/shared", "gz.msgs.Int32").unwrap();
+    let sub1 = first.subscribe("/shared", "gz.msgs.Int32").unwrap();
+    let sub1_duplicate = first.subscribe("/shared", "gz.msgs.Int32").unwrap();
+    let sub2 = second.subscribe("/shared", "gz.msgs.Int32").unwrap();
+    let check = |publishers, subscribers| {
+        let info = observer.known_topic_info("/shared").unwrap();
+        assert_eq!(info.publishers, vec!["gz.msgs.Int32"; publishers]);
+        assert_eq!(info.subscribers, vec!["gz.msgs.Int32"; subscribers]);
+    };
+    check(2, 2);
+    // Allow multicast peer copies to arrive; their wire identities must not
+    // double-count the same endpoints already present in the local index.
+    thread::sleep(Duration::from_millis(200));
+    check(2, 2);
+    drop(sub1);
+    check(2, 2);
+    drop(sub1_duplicate);
+    check(2, 1);
+    drop(sub2);
+    check(2, 0);
+    drop(pub1);
+    check(1, 0);
+    drop(pub2);
+    check(0, 0);
+    assert!(!observer.known_topics().unwrap().contains(&"/shared".into()));
+}
+
+#[test]
+fn process_local_topic_info_isolated_by_domain_remap_and_shutdown() {
+    let config = config();
+    let observer = Node::new(config.clone()).unwrap();
+    let mut mapped = config.clone();
+    mapped.add_topic_remap("/raw", "/mapped").unwrap();
+    let mut publisher = Node::new(mapped.clone()).unwrap();
+    let _pub = publisher.advertise("/raw", "gz.msgs.Int32").unwrap();
+    let _sub = publisher.subscribe("/raw", "gz.msgs.Int32").unwrap();
+    assert_eq!(
+        observer.known_topic_info("/mapped").unwrap().publishers,
+        ["gz.msgs.Int32"]
+    );
+    assert_eq!(
+        observer.known_topic_info("/mapped").unwrap().subscribers,
+        ["gz.msgs.Int32"]
+    );
+    assert_eq!(
+        observer.known_topic_info("/raw").unwrap().publishers.len(),
+        0
+    );
+    assert_eq!(
+        observer.known_topic_info("/raw").unwrap().subscribers.len(),
+        0
+    );
+    let mut foreign = mapped;
+    foreign.partition.push_str("-other");
+    let outside = Node::new(foreign).unwrap();
+    assert!(
+        outside
+            .known_topic_info("/mapped")
+            .unwrap()
+            .publishers
+            .is_empty()
+    );
+    assert!(
+        outside
+            .known_topic_info("/mapped")
+            .unwrap()
+            .subscribers
+            .is_empty()
+    );
+    let mut other_port = config;
+    other_port.message_port += 1;
+    other_port.service_port += 1;
+    let separate_domain = Node::new(other_port).unwrap();
+    let separate = separate_domain.known_topic_info("/mapped").unwrap();
+    assert!(separate.publishers.is_empty());
+    assert!(separate.subscribers.is_empty());
+    publisher.shutdown();
+    assert!(
+        observer
+            .known_topic_info("/mapped")
+            .unwrap()
+            .publishers
+            .is_empty()
+    );
+    assert!(
+        observer
+            .known_topic_info("/mapped")
+            .unwrap()
+            .subscribers
+            .is_empty()
+    );
+}
+
 #[test]
 fn process_local_topic_list_domain_and_lifecycle() {
     let mut config = config();

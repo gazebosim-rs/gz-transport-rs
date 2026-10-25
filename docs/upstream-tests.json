@@ -4943,10 +4943,12 @@
       "id": "UNIT_Node_TEST:NodeTest.AllTopicInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AllTopicInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_four_node_all_topic_info"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-25; seven-file source/API/assertion review approved on tree 0d205871; private native original1/0, selected1/0, supplements2/0, serial full166/0 and two focused mutant failures. Receipt docs/reviews/four-node-topic-info.json. Partial: separate bounded name/descriptor queries lack native atomic full MessagePublisher vector and metadata; remote discovery/timing and Publisher-after-Node-drop lifetime unqualified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4955,8 +4957,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original four-Node immediate topic count3, exact /topic1 /topic2 /topic3 presence and per-topic publisher/subscriber counts (1,1), (1,0), (0,1) retained via known_topics plus known_topic_info. No one-vector atomicity, MessagePublisher address metadata, remote timing or native Publisher lifetime retirement.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-four-node-topic-info.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceList",

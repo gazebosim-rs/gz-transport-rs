@@ -1,7 +1,8 @@
 # Bounded topic information descriptor snapshot
 
 `Node::known_topic_info(topic)` returns sorted vectors of publisher and
-subscriber descriptor names from one bounded worker snapshot. It qualifies
+subscriber descriptor names from a bounded worker snapshot merged with live
+same-process endpoint records. It qualifies
 the original query with the Node's partition and namespace. Native
 `Node::TopicInfoHelper` does not remap the query; registration and subscription
 still apply the configured remap before discovery. A valid absent topic has
