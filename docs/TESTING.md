@@ -145,3 +145,10 @@ the hash-bound positive source remained unchanged. The author strict gate also
 passed 135 Rust and 22 tooling checks, with unchanged 1641/1645 production lines
 and 2460/2509 regions; no executable production lines changed. Final exact
 staged and hosted qualification remain required.
+
+
+The three selected same-Node raw metadata assertion ports additionally require
+the unchanged native RawPubSubSameThreadMessageInfo,
+RawPubRawSubSameThreadMessageInfo and PubRawSubSameThreadMessageInfo originals in
+every gate. Exact versus wildcard receive filters and raw versus typed
+publication remain distinct; see the [raw assertion contract](NET-01-raw-message-info.md).

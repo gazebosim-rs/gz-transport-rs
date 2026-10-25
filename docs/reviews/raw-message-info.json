@@ -1,0 +1,64 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_owner",
+  "reviewer": "/root/msgs_recovery",
+  "reviewed_at": "2026-10-25T11:06:39.608337+00:00",
+  "base": "fb55f8edd83d9ecc2dc48d84729503ad10830a9e",
+  "diff_sha256": "df79e2f2860ca3600eef67a19e94267ee810bf0388dcd28de9d51c1f65cbff1e",
+  "files": {
+    "docs/NET-01-raw-message-info.md": "091c91d352a14182e1aa955a40e7e04a8b9cdeb54d38bb8eb5098a78b4327923",
+    "docs/TESTING.md": "e29388137a7e7bf7c97e076d9fd2085ad1e43a953862480191bc4111d3429e14",
+    "docs/upstream-tests.json": "a04897b428c0e0a7d18e2f0734f77642a84ff7921880932f1ed8ba1e7d43e481",
+    "scripts/verify.py": "0058e6875329db6deb609c3302921c278e3e0c67ec6442cfc4cd36ddfb7b509a",
+    "tests/interop.rs": "f7e0273473ea0829f38574fa9b60aff508e28761eccbb574ad5b46901766a680"
+  },
+  "scope": "Three selected same-Node raw metadata original assertion/API mappings only; no production/dependency/coverage-policy changes. Mandatory native filters add3cases.",
+  "independent_checks": [
+    {
+      "check": "Raw immutable export and frozen input binding",
+      "result": "83Git blobs verified by object hash/type/mode/path set;5frozen SHA256 values unchanged before/after tests. Separate reviewer source/new target,5owned test binaries freshly built."
+    },
+    {
+      "check": "Independent default-parallel full Rust/native replay",
+      "result": "All138Rust checks pass with freshly compiled actual C++ peer, including3new original ports and accepted UDP fixture."
+    },
+    {
+      "check": "Independent required serial full Rust/native replay",
+      "result": "All138Rust checks pass in unchanged --test-threads=1 gate mode."
+    },
+    {
+      "check": "Unchanged selected native originals",
+      "result": "Fresh execution of selected3 yields XML3run0fail. Upstream SHA and all Node_TEST/MessageInfo/TopicUtils/Node.hh/WaitHelpers/native binary hashes match frozen proof. Fourth lambda baseline is not counted as a port."
+    },
+    {
+      "check": "Original assertion and source semantics comparison",
+      "result": "Each retains valid typed Int32 advertisement/subscription, /foo, data5, original HasConnections10000ms/10ms bound, two independently reset single publications and execution assertions. Complete byte slice decode preserves native pointer/size ParseFromArray success; shared helper retains topic, normalized partition, type, data and intra-process observations. Additional type/counter assertions in raw callbacks are supplemental."
+    }
+  ],
+  "findings": [],
+  "scope_judgments": [
+    "Approve UNIT_Node_TEST RawPubSubSameThreadMessageInfo,RawPubRawSubSameThreadMessageInfo,PubRawSubSameThreadMessageInfo as faithful_port mappings within stated owned-receive API boundary.",
+    "Raw-pub/typed-sub retains exact Int32 filter; raw/raw and typed/raw use empty wildcard matching native SubscribeRaw default kGenericMessageType. Raw publication uses encoded Int32 bytes and fixed canonical typed publisher descriptor; typed publication calls publish_typed. No arbitrary PublishRaw descriptor override claimed.",
+    "Fresh owned state/bounded receives replace callback global flags and polling, consistently with earlier accepted same-Node mapping. No callback executor/mutex schedule, raw pointer exposure, mutable standalone MessageInfo or native process-global two-Node origin acceptance.",
+    "Original full2014 Apache/OSRF notice preserved. Only three required native filters added; no baseline gate/assertion or existing UDP isolation removed.",
+    "Producer private library-path/mode/environment-clearing peer setup failures remain documented separately; reviewer compiled native peer at private source/artifacts expected path and had no setup failure."
+  ],
+  "author_evidence_separate": {
+    "rust_tests": 138,
+    "tooling_tests": 22,
+    "lines": [
+      1641,
+      1645
+    ],
+    "regions": [
+      2460,
+      2509
+    ],
+    "new_executable_production_lines": "none",
+    "qualification": "Inspected author strict evidence; independently reran138Rust in both modes plus3native originals/fresh peer, not full instrumentation/tooling gate."
+  },
+  "limits": [
+    "Final additive approval/ledger/receipt binding, normal strict staged hook and hosted qualification remain required.",
+    "Lambda metadata adaptation remains pending; no wider raw callback/descriptor override/global origin/NET-01/NET-02/performance acceptance."
+  ]
+}

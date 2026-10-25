@@ -1387,6 +1387,59 @@ fn original_pub_sub_same_thread_message_info() {
     }
 }
 
+// Node_TEST.cc raw metadata cases share the same two single-publication sequence.
+// SubscribeRaw's default generic descriptor maps to an empty Rust type filter;
+// rawCbInfo's pointer/size parse maps to decoding the complete received byte slice.
+fn raw_message_info_original(raw_publication: bool, raw_subscription: bool) {
+    let config = config();
+    let partition = config.partition.clone();
+    let node = Node::new(config).unwrap();
+    let publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let type_name = if raw_subscription {
+        ""
+    } else {
+        "gz.msgs.Int32"
+    };
+    let subscription = node.subscribe("/foo", type_name).unwrap();
+    await_publication_membership(&publisher);
+    let value = gz_msgs::int32::Int32 {
+        data: 5,
+        ..Default::default()
+    };
+    let (mut executed, mut counter) = (false, 0);
+    for _ in 0..2 {
+        assert!(!executed);
+        assert_eq!(counter, 0);
+        if raw_publication {
+            publisher.publish(value.encode_to_vec()).unwrap();
+        } else {
+            publisher.publish_typed(&value).unwrap();
+        }
+        received_five_with_info(&subscription, &partition, &mut executed, &mut counter);
+        assert!(executed);
+        assert_eq!(counter, 1);
+        executed = false;
+        counter = 0;
+    }
+}
+
+#[test]
+fn original_raw_pub_sub_same_thread_message_info() {
+    raw_message_info_original(true, false);
+}
+
+#[test]
+fn original_raw_pub_raw_sub_same_thread_message_info() {
+    raw_message_info_original(true, true);
+}
+
+#[test]
+fn original_pub_raw_sub_same_thread_message_info() {
+    raw_message_info_original(false, true);
+}
+
 #[test]
 fn same_process_two_node_origin_is_an_explicit_native_mismatch() {
     let config = config();

@@ -3674,10 +3674,12 @@
       "id": "UNIT_Node_TEST:NodeTest.RawPubSubSameThreadMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.RawPubSubSameThreadMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_raw_pub_sub_same_thread_message_info"
+      ],
+      "review": "/root/msgs_recovery; 2026-10-25; raw83 baseline/five frozen hashes verified; fresh own source/target/native peer passes138 default-parallel and138 serial checks; selected native XML3run0fail and all source/header/helper/binary hashes verified. Exact/wildcard subscription and raw/typed publication paths, whole-slice parse/data/metadata/reset/two single publications approved within owned-receive mapping. Receipt docs/reviews/raw-message-info.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3686,17 +3688,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Reviewed same-Node owned receive port retains valid typed advertisement, successful subscription, original HasConnections 10000ms/10ms bound, two independently reset single publications, execution flags and all rawCbInfo/cbInfo topic /foo, partition and intra-process true assertions; decoding the complete byte slice preserves ParseFromArray success and Int32 data5. Exact canonical Int32 filter maps the typed Subscribe. Both original PublishRaw calls use encoded Int32 bytes with its canonical bound descriptor. Existing shared helper adds exact type/counter observations as supplements. Native process-global multi-Node origin and callback executor remain outside this mapping.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-raw-message-info.md; artifacts/raw-message-info-next/proof.json and original.xml; unchanged native cases required by full gate. Independent assertion/API review approved in docs/reviews/raw-message-info.json."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.RawPubRawSubSameThreadMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.RawPubRawSubSameThreadMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_raw_pub_raw_sub_same_thread_message_info"
+      ],
+      "review": "/root/msgs_recovery; 2026-10-25; raw83 baseline/five frozen hashes verified; fresh own source/target/native peer passes138 default-parallel and138 serial checks; selected native XML3run0fail and all source/header/helper/binary hashes verified. Exact/wildcard subscription and raw/typed publication paths, whole-slice parse/data/metadata/reset/two single publications approved within owned-receive mapping. Receipt docs/reviews/raw-message-info.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3705,17 +3710,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Reviewed same-Node owned receive port retains valid typed advertisement, successful subscription, original HasConnections 10000ms/10ms bound, two independently reset single publications, execution flags and all rawCbInfo/cbInfo topic /foo, partition and intra-process true assertions; decoding the complete byte slice preserves ParseFromArray success and Int32 data5. Empty Rust type filter maps native SubscribeRaw default generic descriptor. Both original PublishRaw calls retain encoded canonical Int32 bytes. Existing shared helper adds exact type/counter observations as supplements. Native process-global multi-Node origin and callback executor remain outside this mapping.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-raw-message-info.md; artifacts/raw-message-info-next/proof.json and original.xml; unchanged native cases required by full gate. Independent assertion/API review approved in docs/reviews/raw-message-info.json."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubRawSubSameThreadMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubRawSubSameThreadMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_raw_sub_same_thread_message_info"
+      ],
+      "review": "/root/msgs_recovery; 2026-10-25; raw83 baseline/five frozen hashes verified; fresh own source/target/native peer passes138 default-parallel and138 serial checks; selected native XML3run0fail and all source/header/helper/binary hashes verified. Exact/wildcard subscription and raw/typed publication paths, whole-slice parse/data/metadata/reset/two single publications approved within owned-receive mapping. Receipt docs/reviews/raw-message-info.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3724,8 +3732,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Reviewed same-Node owned receive port retains valid typed advertisement, successful subscription, original HasConnections 10000ms/10ms bound, two independently reset single publications, execution flags and all rawCbInfo/cbInfo topic /foo, partition and intra-process true assertions; decoding the complete byte slice preserves ParseFromArray success and Int32 data5. Empty Rust type filter maps native SubscribeRaw default generic descriptor. Both original typed Publish calls use publish_typed on canonical Int32 values. Existing shared helper adds exact type/counter observations as supplements. Native process-global multi-Node origin and callback executor remain outside this mapping.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-raw-message-info.md; artifacts/raw-message-info-next/proof.json and original.xml; unchanged native cases required by full gate. Independent assertion/API review approved in docs/reviews/raw-message-info.json."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadLambda",
