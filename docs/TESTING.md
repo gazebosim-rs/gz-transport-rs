@@ -383,4 +383,22 @@ with 2395/2448 production lines, 3566/3717 regions and 132/132 changed
 executable lines. [Independent review](reviews/process-local-direct.json)
 approved the bounded port. The original lost-output status101 from the prior
 Publisher-lifetime gate remains unclassified; it is not explained by this
-slice. Final metadata binding, normal hook and hosted CI are pending.
+slice. The reviewed direct-delivery commit `2d810f8` passed its normal hook
+and exact hosted run `40237034528`.
+
+## Service responses under publication flood
+
+The [response-lane contract](NET-02-service-response-lane.md) records a
+publication-flood regression: on public `2d810f8`, the server received one
+request but `Request::respond` returned `QueueFull` and the client timed out.
+The reviewed source gives responses a separate bounded queue and interleaves
+them with ordinary commands. The same tracked cross-Node test now observes
+publication queue pressure, one admitted response, and the exact client reply.
+The exact staged gate passed with 2421/2475 production lines, 3594/3746
+regions and 28/29 changed executable lines.
+[Independent review](reviews/service-response-lane.json)
+replayed the old failure, the fixed service test, and all 45 frozen Sim unit
+tests using only a private Transport dependency redirect. Root separately
+replayed all 15 real C++ Sim client scenarios against the frozen source. The
+response-only worker poll and downstream queue limits remain in the contract;
+normal hook, public commit and hosted CI are separate acceptance steps.

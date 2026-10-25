@@ -68,6 +68,9 @@ mandatory routing until an explicit deadline. This is not complete upstream tran
 relay/all-interface discovery, the full CLI and other retained behaviors remain
 listed in [the protocol contract](docs/PROTOCOL.md) and the 418-case
 [upstream ledger](docs/upstream-tests.json).
+Service responses enter a separate bounded worker queue so a publication
+command flood cannot consume their admission slots; see the
+[response-lane contract](docs/NET-02-service-response-lane.md).
 
 ```rust,no_run
 use gz_msgs::stringmsg::StringMsg;

@@ -1,0 +1,44 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "2d810f898d9e3fc1c3be265b03355d6b881865d0",
+  "staged_tree": "93612052bc85995d9b756af978e3a32f888939a1",
+  "staged_diff_sha256": "1ac34f7fae83a4423b42aaaf54b37b1c421f517c63ee10f32092bd78fdcabab6",
+  "files_sha256": {
+    "src/runtime.rs": "ae0358b5b769997a4388ab005c082308c697399fcbd115dcb75f115effbf03e1",
+    "tests/service_flood_probe.rs": "31e5fd3ffccf2a56c794ba7c2b18d83b793d3be0bf441c879d4bddc959d8d426",
+    "tests/support/runtime.rs": "2026f99fcc6937f3e86650cdae33aa83fa4daa05c280c46ac69788d599c83d15"
+  },
+  "scope": "Separate bounded service-response admission from the ordinary publish command queue. Request::respond alone uses min(Config.capacity,64) response slots; worker interleaves one response before each ordinary command. No public API, wire format, deadline, or existing assertion change.",
+  "source_review": "Verified nonzero Config.capacity, bounded try_send, QueueFull counter and Shutdown, worker-only response handling, cross-Node five-frame reply path, and ordinary-command interleaving. Source has no finding in this bounded scope.",
+  "author_evidence": {
+    "proposal_sha256": "7fd2daf35d53f9e5abc01f533c544898f2e3a5bc4a0b111e708d4af2cca0d4a8",
+    "exact_staged_gate_sha256": "e684bd3374b50c36cd83284d97e68e5940ebd319450e740c100abbeafc617af0",
+    "exact_staged_gate": "EXIT0; 2421/2475 production lines, 3594/3746 regions, 28/29 changed executable lines; full lib79/0 and interop88/0 plus flood1/0.",
+    "baseline_log_sha256": "5fdd9ee97f12410bb26fa75f0d8007c68bfc277734c3ae94693b6aabe4bbd199",
+    "candidate_flood_log_sha256": "4529e506fd60f191a42782b76f5723137411cb853b8adfd9fd4e90e779983d51",
+    "frozen_sim45_log_sha256": "4f2cf64d72f33156ffc79378c124a1bce574bfc055aaf339a6aa18043866650f"
+  },
+  "private_review": {
+    "method": "Raw Git archive of exact staged tree in separate reviewer source and exclusive Cargo target; all three hashes, tree/diff and no unstaged diff verified. Separate old-public-runtime export retained only the new frozen flood regression as a negative.",
+    "flood_pass": "Cross-Node clock+pose flood selected1/0; 410150 publish attempts, 406124 enqueue failures, exactly one request, Respond Ok, actual client reply Ok in309ms.",
+    "old_runtime_failure": "Unmodified public2d runtime plus identical new regression fails at 5.014s: one request received, Respond QueueFull, client Timeout; no assertion or deadline change.",
+    "sim_service_pass": "Private exact frozen Sim f816 source with only Cargo Transport path/lock redirection: unchanged real_transport_commands_report_acceptance_and_exact_step_completion 1/0.",
+    "sim_first_imu_pass": "Same private Sim source: first-IMU direct and once 1/0.",
+    "sim_lib_pass": "Same private Sim source: all45 library tests pass, including old service and new first-IMU.",
+    "logs_sha256": {
+      "private_flood_pass": "3abc5d33f0b7da7f78f95e86245cd45f614ca8e89e9a6ae85d2bd7459cf7d1d4",
+      "private_old_runtime_failure": "b0a67e023d2879fe3b549bf91c4569f7a58b744ee230562b3dd525920db73090",
+      "private_sim_service_pass": "db63c10c828fed5d39b3f1bdba89896ac924fa8ade01b43b83c66a01aba505b3",
+      "private_sim_first_imu_pass": "8ec36ff85679f697653597ca6f9a72a87864f95b8d22ec98fbfbff6ac75c1077",
+      "private_sim_lib45_pass": "a7ba02f55d1f3e418c4b6cf095b972564008e84c4abe2d8070cf2ecc0661447b"
+    }
+  },
+  "findings": [],
+  "limits": [
+    "Response-only bursts can drain roughly one per worker idle poll, with up to 2ms wait per poll; no unconditional latency guarantee.",
+    "Downstream replies queue capacity and ROUTER send can still fail independently; success is established for the exact flood and Sim cases.",
+    "Private Sim path redirection is a reviewer control, not public consumer adoption. Transport metadata binding, final exact gate, normal protected hook, public push and hosted qualification remain required before Root adopts a public pin."
+  ]
+}

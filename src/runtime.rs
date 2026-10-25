@@ -142,6 +142,7 @@ pub enum ServiceTypeResolution {
 #[derive(Clone)]
 struct Sender {
     tx: SyncSender<Command>,
+    response_tx: SyncSender<Command>,
     stop: Arc<AtomicBool>,
     slots: Arc<AtomicUsize>,
     capacity: usize,
@@ -159,6 +160,20 @@ impl Sender {
             return Err(Error::Shutdown);
         }
         self.tx.try_send(cmd).map_err(|e| match e {
+            TrySendError::Full(_) => {
+                self.counters.queue_drops.fetch_add(1, Ordering::Relaxed);
+                Error::QueueFull
+            }
+            TrySendError::Disconnected(_) => Error::Shutdown,
+        })
+    }
+
+    // A publication flood cannot consume the bounded service-response slots.
+    fn send_response(&self, cmd: Command) -> Result<(), Error> {
+        if self.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        self.response_tx.try_send(cmd).map_err(|error| match error {
             TrySendError::Full(_) => {
                 self.counters.queue_drops.fetch_add(1, Ordering::Relaxed);
                 Error::QueueFull
@@ -389,7 +404,7 @@ impl Request {
             return Err(Error::Shutdown);
         }
         self.sender
-            .send(Command::Respond(self.route, data, success))
+            .send_response(Command::Respond(self.route, data, success))
     }
 }
 fn receive_error(e: mpsc::RecvTimeoutError) -> Error {
@@ -534,8 +549,10 @@ impl Node {
     pub fn new(config: Config) -> Result<Self, Error> {
         config.validate()?;
         let (tx, rx) = mpsc::sync_channel(config.capacity);
+        let (response_tx, response_rx) = mpsc::sync_channel(config.capacity.min(64));
         let sender = Sender {
             tx,
+            response_tx,
             stop: Arc::new(AtomicBool::new(false)),
             slots: Arc::new(AtomicUsize::new(0)),
             capacity: config.capacity,
@@ -543,7 +560,12 @@ impl Node {
             identity: Arc::new(OnceLock::new()),
         };
         let owner_dead = Arc::new(AtomicBool::new(false));
-        let state = Worker::new(config.clone(), sender.clone(), owner_dead.clone())?;
+        let state = Worker::new(
+            config.clone(),
+            sender.clone(),
+            owner_dead.clone(),
+            response_rx,
+        )?;
         let stop = sender.stop.clone();
         let state_stop = sender.stop.clone();
         let worker = thread::Builder::new()
@@ -1220,6 +1242,7 @@ struct Worker {
     config: Config,
     host_interfaces: Vec<Ipv4Addr>,
     sender: Sender,
+    response_rx: Receiver<Command>,
     owner_dead: Arc<AtomicBool>,
     process: String,
     node: String,
@@ -1361,7 +1384,12 @@ fn local_interfaces() -> Result<Vec<Ipv4Addr>, Error> {
 }
 
 impl Worker {
-    fn new(config: Config, sender: Sender, owner_dead: Arc<AtomicBool>) -> Result<Self, Error> {
+    fn new(
+        config: Config,
+        sender: Sender,
+        owner_dead: Arc<AtomicBool>,
+        response_rx: Receiver<Command>,
+    ) -> Result<Self, Error> {
         #[cfg(unix)]
         let host_interfaces = local_interfaces()?;
         #[cfg(not(unix))]
@@ -1399,6 +1427,7 @@ impl Worker {
             config,
             host_interfaces,
             sender,
+            response_rx,
             owner_dead,
             process,
             node,
@@ -2316,6 +2345,9 @@ impl Worker {
             self.retire_owner_requests();
             self.cleanup();
             for _ in 0..self.config.capacity {
+                if let Ok(response) = self.response_rx.try_recv() {
+                    self.command(response);
+                }
                 match rx.try_recv() {
                     Ok(cmd) => self.command(cmd),
                     Err(_) => break,

@@ -407,7 +407,8 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
     let received = service.recv_timeout(Duration::ZERO).unwrap();
     assert_eq!(received.data, [1]);
     received.respond(vec![9], true).unwrap();
-    worker.command(commands.recv().unwrap());
+    let response = worker.response_rx.try_recv().unwrap();
+    worker.command(response);
     assert_eq!(result.recv().unwrap(), Ok((vec![9], true)));
     assert!(matches!(
         node.serve("/topic", "different", "different"),
@@ -616,8 +617,10 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
         ..Default::default()
     };
     let (tx, rx) = mpsc::sync_channel(capacity);
+    let (response_tx, response_rx) = mpsc::sync_channel(capacity.min(64));
     let sender = Sender {
         tx,
+        response_tx,
         stop: Arc::new(AtomicBool::new(false)),
         slots: Arc::new(AtomicUsize::new(0)),
         capacity,
@@ -625,9 +628,41 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
         identity: Arc::new(OnceLock::new()),
     };
     (
-        Worker::new(config, sender, Arc::new(AtomicBool::new(false))).unwrap(),
+        Worker::new(
+            config,
+            sender,
+            Arc::new(AtomicBool::new(false)),
+            response_rx,
+        )
+        .unwrap(),
         rx,
     )
+}
+
+#[test]
+fn service_response_admission_is_bounded_and_independent_of_publication_queue() {
+    let (worker, ordinary_rx) = state(1);
+    let publication = || Command::Publish("topic".into(), "gz.msgs.Int32".into(), vec![5]);
+    assert_eq!(worker.sender.send(publication()), Ok(()));
+    assert_eq!(worker.sender.send(publication()), Err(Error::QueueFull));
+
+    let respond = || Request {
+        data: Vec::new(),
+        sender: worker.sender.clone(),
+        route: vec![b"id".to_vec()],
+        max: 16,
+        owner_dead: Arc::new(AtomicBool::new(false)),
+    };
+    assert_eq!(respond().respond(vec![1], true), Ok(()));
+    assert_eq!(respond().respond(vec![2], true), Err(Error::QueueFull));
+    assert!(matches!(ordinary_rx.try_recv(), Ok(Command::Publish(..))));
+    assert!(matches!(
+        worker.response_rx.try_recv(),
+        Ok(Command::Respond(route, data, true)) if route == [b"id".to_vec()] && data == [1]
+    ));
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 2);
+    worker.sender.stop.store(true, Ordering::Release);
+    assert_eq!(respond().respond(vec![3], true), Err(Error::Shutdown));
 }
 
 #[test]
