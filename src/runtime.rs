@@ -168,6 +168,33 @@ struct Lease {
     active: Arc<AtomicBool>,
     slots: Arc<AtomicUsize>,
 }
+// Only Node and Publishers own this value. The worker owns Sender, never this
+// Arc, so the final publisher can stop and join without an ownership cycle.
+struct WorkerLifetime {
+    stop: Arc<AtomicBool>,
+    worker: Mutex<Option<JoinHandle<()>>>,
+}
+impl WorkerLifetime {
+    fn stop_and_join(&self) {
+        self.stop.store(true, Ordering::Release);
+        let worker = self
+            .worker
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take();
+        if let Some(worker) = worker {
+            // A worker never owns this lifetime. Keep the join guard explicit.
+            if worker.thread().id() != thread::current().id() {
+                let _ = worker.join();
+            }
+        }
+    }
+}
+impl Drop for WorkerLifetime {
+    fn drop(&mut self) {
+        self.stop_and_join();
+    }
+}
 impl Drop for Lease {
     fn drop(&mut self) {
         release(&self.active, &self.slots);
@@ -181,6 +208,7 @@ fn release(active: &AtomicBool, slots: &AtomicUsize) {
 pub struct Publisher {
     _lease: Lease,
     sender: Sender,
+    _lifetime: Arc<WorkerLifetime>,
     topic: String,
     type_name: String,
     max: usize,
@@ -223,6 +251,7 @@ impl Publisher {
 pub struct Subscription {
     rx: Receiver<ReceivedMessage>,
     _lease: Lease,
+    owner_dead: Arc<AtomicBool>,
 }
 impl Subscription {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Message, Error> {
@@ -232,15 +261,22 @@ impl Subscription {
     /// Receive owned bytes with a borrowed metadata view, using the same bounded
     /// queue, timeout and shutdown behavior as the raw receive method.
     pub fn recv_with_info_timeout(&self, timeout: Duration) -> Result<ReceivedMessage, Error> {
+        if self.owner_dead.load(Ordering::Acquire) {
+            return self.rx.try_recv().map_err(|_| Error::Shutdown);
+        }
         self.rx.recv_timeout(timeout).map_err(receive_error)
     }
 }
 pub struct Service {
     rx: Receiver<Request>,
     _lease: Lease,
+    owner_dead: Arc<AtomicBool>,
 }
 impl Service {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Request, Error> {
+        if self.owner_dead.load(Ordering::Acquire) {
+            return self.rx.try_recv().map_err(|_| Error::Shutdown);
+        }
         self.rx.recv_timeout(timeout).map_err(receive_error)
     }
 }
@@ -249,6 +285,7 @@ pub struct Request {
     sender: Sender,
     route: Vec<Vec<u8>>,
     max: usize,
+    owner_dead: Arc<AtomicBool>,
 }
 impl Request {
     /// Gazebo services with response type `gz.msgs.Empty` never send a reply.
@@ -263,6 +300,9 @@ impl Request {
         let data = data.into();
         if data.len() > self.max {
             return Err(Error::InvalidFrame);
+        }
+        if self.owner_dead.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
         }
         self.sender
             .send(Command::Respond(self.route, data, success))
@@ -374,10 +414,12 @@ fn local_interests() -> &'static Mutex<Vec<LocalInterest>> {
     LOCAL_INTERESTS.get_or_init(|| Mutex::new(Vec::new()))
 }
 
-/// Dropping the node cancels its worker and joins it. Handles never own sockets.
+/// Publishers can retain the worker after ordinary Node destruction. Explicit
+/// shutdown still cancels and joins it, including when Publisher handles live.
 pub struct Node {
     sender: Sender,
-    worker: Option<JoinHandle<()>>,
+    lifetime: Arc<WorkerLifetime>,
+    owner_dead: Arc<AtomicBool>,
     config: Config,
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
     subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
@@ -401,14 +443,20 @@ impl Node {
             counters: Arc::new(Counters::default()),
             identity: Arc::new(OnceLock::new()),
         };
-        let state = Worker::new(config.clone(), sender.clone())?;
+        let owner_dead = Arc::new(AtomicBool::new(false));
+        let state = Worker::new(config.clone(), sender.clone(), owner_dead.clone())?;
         let stop = sender.stop.clone();
+        let state_stop = sender.stop.clone();
         let worker = thread::Builder::new()
             .name("gz-transport-io".into())
             .spawn(move || state.run(rx, stop))?;
         Ok(Self {
             sender,
-            worker: Some(worker),
+            lifetime: Arc::new(WorkerLifetime {
+                stop: state_stop,
+                worker: Mutex::new(Some(worker)),
+            }),
+            owner_dead,
             config,
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
@@ -487,6 +535,7 @@ impl Node {
         Ok(Publisher {
             _lease: lease,
             sender: self.sender.clone(),
+            _lifetime: self.lifetime.clone(),
             topic,
             type_name: type_name.into(),
             max: self.config.max_message_bytes,
@@ -534,7 +583,11 @@ impl Node {
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
         });
-        Ok(Subscription { rx, _lease: lease })
+        Ok(Subscription {
+            rx,
+            _lease: lease,
+            owner_dead: self.owner_dead.clone(),
+        })
     }
     /// This Node's live publisher topics, sorted without partition prefixes.
     /// Local inspection performs no worker command or network operation.
@@ -723,7 +776,11 @@ impl Node {
             lease.active.clone(),
         ))?;
         services.push((topic, Arc::downgrade(&lease.active)));
-        Ok(Service { rx, _lease: lease })
+        Ok(Service {
+            rx,
+            _lease: lease,
+            owner_dead: self.owner_dead.clone(),
+        })
     }
     /// This Node's live service topics, without partition prefixes, sorted uniquely.
     pub fn advertised_services(&self) -> Result<Vec<String>, Error> {
@@ -882,9 +939,7 @@ impl Node {
     }
     pub fn shutdown(&mut self) {
         self.cancel();
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
-        }
+        self.lifetime.stop_and_join();
     }
     /// Cancel all pending operations; the owner joins the worker on shutdown/drop.
     pub fn cancel(&self) {
@@ -893,7 +948,30 @@ impl Node {
 }
 impl Drop for Node {
     fn drop(&mut self) {
-        self.shutdown();
+        self.owner_dead.store(true, Ordering::Release);
+        for (_, active) in self
+            .subscriptions
+            .get_mut()
+            .unwrap_or_else(|e| e.into_inner())
+            .drain(..)
+        {
+            if let Some(active) = active.upgrade() {
+                release(&active, &self.sender.slots);
+            }
+        }
+        for (_, active) in self
+            .services
+            .get_mut()
+            .unwrap_or_else(|e| e.into_inner())
+            .drain(..)
+        {
+            if let Some(active) = active.upgrade() {
+                release(&active, &self.sender.slots);
+            }
+        }
+        if self.sender.stop.load(Ordering::Acquire) || Arc::strong_count(&self.lifetime) == 1 {
+            self.lifetime.stop_and_join();
+        }
     }
 }
 
@@ -989,6 +1067,7 @@ struct Worker {
     config: Config,
     host_interfaces: Vec<Ipv4Addr>,
     sender: Sender,
+    owner_dead: Arc<AtomicBool>,
     process: String,
     node: String,
     udp: [UdpSocket; 2],
@@ -1129,7 +1208,7 @@ fn local_interfaces() -> Result<Vec<Ipv4Addr>, Error> {
 }
 
 impl Worker {
-    fn new(config: Config, sender: Sender) -> Result<Self, Error> {
+    fn new(config: Config, sender: Sender, owner_dead: Arc<AtomicBool>) -> Result<Self, Error> {
         #[cfg(unix)]
         let host_interfaces = local_interfaces()?;
         #[cfg(not(unix))]
@@ -1167,6 +1246,7 @@ impl Worker {
             config,
             host_interfaces,
             sender,
+            owner_dead,
             process,
             node,
             udp,
@@ -1617,6 +1697,10 @@ impl Worker {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));
             }
             Command::Request(pending) => {
+                if self.owner_dead.load(Ordering::Acquire) {
+                    let _ = pending.reply.try_send(Err(Error::Shutdown));
+                    return;
+                }
                 if Instant::now() >= pending.deadline {
                     let _ = pending.reply.try_send(Err(Error::Timeout));
                     return;
@@ -1643,6 +1727,7 @@ impl Worker {
                                     vec![id.as_bytes().to_vec()]
                                 },
                                 max: self.config.max_message_bytes,
+                                owner_dead: self.owner_dead.clone(),
                             })
                             .is_err()
                         {
@@ -1957,6 +2042,7 @@ impl Worker {
         let mut heartbeat = Instant::now();
         let mut buffer = vec![0; protocol::MAX_DATAGRAM];
         while !stop.load(Ordering::Acquire) {
+            self.retire_owner_requests();
             self.cleanup();
             for _ in 0..self.config.capacity {
                 match rx.try_recv() {
@@ -1984,8 +2070,11 @@ impl Worker {
             self.receive_publications();
             self.receive_requests();
             self.receive_responses();
-            self.send_requests();
-            self.send_replies();
+            self.retire_owner_requests();
+            if !self.owner_dead.load(Ordering::Acquire) {
+                self.send_requests();
+                self.send_replies();
+            }
             if heartbeat.elapsed() >= Duration::from_secs(1) {
                 for channel in 0..2 {
                     self.announce(
@@ -2042,8 +2131,18 @@ impl Worker {
                 );
             }
         }
+        // The ordered END controls above own final subscription withdrawal.
+        // Retire inactive publications and services before process BYE.
+        self.subscriptions.clear();
+        self.cleanup();
         for channel in 0..2 {
             self.announce(channel, protocol::discovery(&self.process, Type::Bye, None));
+        }
+    }
+    fn retire_owner_requests(&mut self) {
+        if self.owner_dead.load(Ordering::Acquire) {
+            self.pending.clear();
+            self.replies.clear();
         }
     }
     fn receive_publications(&self) {
@@ -2118,6 +2217,8 @@ impl Worker {
             }
             keep
         });
+        let mut topics: Vec<_> = topics.into_iter().collect();
+        topics.sort();
         for topic in topics {
             if !self.subscriptions.iter().any(|s| s.topic == topic) {
                 let _ = self.subscriber.set_unsubscribe(topic.as_bytes());
@@ -2189,6 +2290,7 @@ impl Worker {
                         sender: self.sender.clone(),
                         route,
                         max: self.config.max_message_bytes,
+                        owner_dead: self.owner_dead.clone(),
                     }));
                     break;
                 }

@@ -260,7 +260,11 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
     let (worker, commands) = state(2);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -304,7 +308,11 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
     let (mut worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -350,7 +358,11 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
     let (mut worker, commands) = state(2);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -400,7 +412,11 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
     let (mut worker, commands) = state(2);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -511,7 +527,11 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
     let (mut worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -592,7 +612,49 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
         counters: Arc::new(Counters::default()),
         identity: Arc::new(OnceLock::new()),
     };
-    (Worker::new(config, sender).unwrap(), rx)
+    (
+        Worker::new(config, sender, Arc::new(AtomicBool::new(false))).unwrap(),
+        rx,
+    )
+}
+
+#[test]
+fn owner_retirement_cancels_pending_and_queued_requests() {
+    let (mut worker, _) = state(2);
+    let (request, pending_reply) = pending(Instant::now() + Duration::from_secs(5));
+    worker.command(Command::Request(request));
+    assert_eq!(worker.pending.len(), 1);
+    worker.owner_dead.store(true, Ordering::Release);
+    worker.retire_owner_requests();
+    assert!(worker.pending.is_empty());
+    assert!(matches!(
+        pending_reply.try_recv(),
+        Err(mpsc::TryRecvError::Disconnected)
+    ));
+
+    let (queued, queued_reply) = pending(Instant::now() + Duration::from_secs(5));
+    worker.command(Command::Request(queued));
+    assert_eq!(queued_reply.try_recv(), Ok(Err(Error::Shutdown)));
+    assert!(worker.pending.is_empty());
+}
+
+#[test]
+fn last_publisher_releases_worker_lifetime_after_node_drop() {
+    for _ in 0..8 {
+        let node = Node::new(Config {
+            partition: Uuid::new_v4().to_string(),
+            ..Default::default()
+        })
+        .unwrap();
+        let worker = Arc::downgrade(&node.lifetime);
+        let publisher = node.advertise("/survivor", "gz.msgs.Int32").unwrap();
+        drop(node);
+        assert!(worker.upgrade().is_some());
+        let start = Instant::now();
+        drop(publisher);
+        assert!(start.elapsed() < Duration::from_secs(1));
+        assert!(worker.upgrade().is_none());
+    }
 }
 type ReplyReceiver = Receiver<Result<(Vec<u8>, bool), Error>>;
 fn pending(deadline: Instant) -> (Pending, ReplyReceiver) {
@@ -838,8 +900,32 @@ fn bounds_and_invalid_configuration() {
         sender: worker.sender.clone(),
         route: vec![b"local-request-id".to_vec()],
         max: 1,
+        owner_dead: worker.owner_dead.clone(),
     };
     assert_eq!(request.respond(vec![0; 2], true), Err(Error::InvalidFrame));
+    worker.owner_dead.store(true, Ordering::Release);
+    let oversized_after_drop = Request {
+        data: vec![],
+        sender: worker.sender.clone(),
+        route: vec![b"local-request-id".to_vec()],
+        max: 1,
+        owner_dead: worker.owner_dead.clone(),
+    };
+    assert_eq!(
+        oversized_after_drop.respond(vec![0; 2], true),
+        Err(Error::InvalidFrame)
+    );
+    let bounded_after_drop = Request {
+        data: vec![],
+        sender: worker.sender.clone(),
+        route: vec![b"local-request-id".to_vec()],
+        max: 1,
+        owner_dead: worker.owner_dead.clone(),
+    };
+    assert_eq!(
+        bounded_after_drop.respond(vec![0], true),
+        Err(Error::Shutdown)
+    );
 }
 #[test]
 fn discovery_lifecycle_and_capacity() {
@@ -2193,7 +2279,11 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
     let (worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -2267,7 +2357,11 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
     config.add_topic_remap("alias", "relative").unwrap();
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2303,7 +2397,11 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
     long.add_topic_remap("alias", &"a".repeat(65535)).unwrap();
     let long = Node {
         sender: node.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: long,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2597,7 +2695,11 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
     let (mut worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -2686,6 +2788,38 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
 }
 
 #[test]
+fn final_publisher_retirement_sends_unadvertise_before_bye() {
+    let (mut worker, commands) = state(1);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let active = Arc::new(AtomicBool::new(true));
+    worker.command(Command::Advertise(
+        "/survivor".into(),
+        "gz.msgs.Int32".into(),
+        active.clone(),
+    ));
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    while receiver.recv(&mut buffer).is_ok() {}
+    active.store(false, Ordering::Release);
+    let stop = worker.sender.stop.clone();
+    stop.store(true, Ordering::Release);
+    worker.run(commands, stop);
+    let mut types = Vec::new();
+    while let Ok(len) = receiver.recv(&mut buffer) {
+        let message = protocol::decode(&buffer[..len]).unwrap();
+        if let Some(DiscContents::Pub(publication)) = message.disc_contents {
+            assert_eq!(publication.topic, "/survivor");
+        }
+        types.push(message.r#type);
+    }
+    assert_eq!(types, [Type::Unadvertise as i32, Type::Bye as i32]);
+}
+
+#[test]
 fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
     let (mut worker, commands) = state(3);
     let mut config = worker.config.clone();
@@ -2693,7 +2827,11 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
     config.add_topic_remap("alias", "mapped").unwrap();
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2811,7 +2949,11 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
     let (worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -2918,7 +3060,11 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
     let (worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: Config {
             reply_timeout: Duration::from_millis(5),
             ..worker.config.clone()
@@ -3010,7 +3156,11 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     let (mut worker, commands) = state(8);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3107,7 +3257,11 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
     worker.config.message_port = receiver.local_addr().unwrap().port();
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3154,7 +3308,11 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
     let (mut worker, commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
@@ -3186,7 +3344,11 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
     let (worker, _commands) = state(1);
     let node = Node {
         sender: worker.sender.clone(),
-        worker: None,
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
         config: Config {
             max_message_bytes: 1,
             ..worker.config.clone()

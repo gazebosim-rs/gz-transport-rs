@@ -10,6 +10,10 @@ request correlation/timeouts, local delivery, dropped-handle withdrawal, and
 shutdown. One publisher per qualified topic is allowed on each Node; duplicates
 return `AlreadyAdvertised`. Dropping the lease permits immediate recreation;
 the worker withdraws the old identity before advertising its replacement.
+Ordinary Node destruction retains its worker while a Publisher handle survives;
+that handle can continue publishing, while Node-owned subscriptions, services
+and requests retire. Explicit `cancel()` and `shutdown()` still cancel all
+handles. See the [bounded ownership contract](docs/NET-02-publisher-after-node-drop.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).

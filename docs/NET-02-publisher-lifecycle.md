@@ -49,3 +49,8 @@ source/native binary/peer and failing-before-correction proof hashes. The four
 original duplicate cases are faithful ports; remapping remains pending. The
 author's full gate measurements above are distinguished from that independent
 targeted replay. Exact receipt: [publisher lifecycle review](reviews/publisher-lifecycle.json).
+
+The later [ordinary Node destruction slice](NET-02-publisher-after-node-drop.md)
+adds private Publisher-held worker ownership. The atomic-only Drop description
+above records this earlier duplicate-admission slice; last-Publisher Drop now
+also stops and joins the retained worker after releasing its lease.

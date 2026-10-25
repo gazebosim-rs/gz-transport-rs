@@ -43,6 +43,10 @@ Native Publisher ownership after Node destruction is a separate open gap:
 the existing Rust explicit shutdown cancels its worker even when a handle
 survives. This packet does not change that contract.
 
+The later [Publisher ownership slice](NET-02-publisher-after-node-drop.md)
+covers ordinary Node destruction separately; the partial four-Node descriptor
+mapping and its metadata limits remain unchanged.
+
 Independent source/API/assertion review passed on the frozen seven-file tree
 `0d205871c583dd0796f4d55855f139dd8fb45955`. A separate raw export
 passed the pinned native original 1/0, exact Rust port 1/0, both supplemental

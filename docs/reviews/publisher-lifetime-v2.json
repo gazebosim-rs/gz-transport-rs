@@ -1,0 +1,59 @@
+{
+  "author": "/root/transport_fallback",
+  "base": "cda6f086c8dd49532d6db6a9cb17feb20f70209f",
+  "decision": "approved",
+  "diff_sha256": "df98776e861f0b9abd8d3d687e79fbe168afe8b523ccf55a78750604c1f31ce0",
+  "evidence": {
+    "author_coverage": {
+      "changed_lines": [
+        89,
+        89
+      ],
+      "lines": [
+        2165,
+        2205
+      ],
+      "regions": [
+        3256,
+        3389
+      ]
+    },
+    "author_first_revised_gate_sha256": "f9a645b0d4706f70dfcc62e1b81d893c7f2a65fe2cd86de31689e41a93e493c9",
+    "controlled_readiness_sha256": "6ba5e19b772f2dd6138f0fb748b8a4edcaba833cfb04c9ebb4a869690c152cfb",
+    "private_cpp_peer_binary_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+    "private_cpp_peer_source_sha256": "05bb43f71cad673c8ede90fb6b5d841552932e4e30e339b9c733560bc44b7a97",
+    "private_full_interop_log_sha256": "4b6f2d9dc7c6f6fa1f4383343acd8e7b8eef6aa860a9a8a9109e75ae49344940",
+    "private_full_native_interop": "80/0 serial",
+    "private_mutant_log_sha256": "49f93f7ff7b81943375371ecadd2ba4e25f12b4b6793987f75fbcf1c3271e0e0",
+    "private_mutant_patch_sha256": "8ed673cfcabba741ccdf0327d25279b89c29794fda977e424bf22c0b90781719",
+    "private_native_probe_binary_sha256": "2abbd21908b915faccabe1306199b232c4f80f5983c66ce592f1aa0b780678b4",
+    "private_native_probe_log_sha256": "5aa003ff4ed6ca53e24042f73046e2376032ca33d2f89b35f6aa7e75256f7dfe",
+    "private_native_probe_source_sha256": "4f7425a489d8206cd88c1a341c0319d746f9d09d060b8e186f5581224dbd6fae",
+    "private_native_timed_probe": "EXIT0, all expected true through 10.5s and false after last publisher drop, empty stderr; loaded installed gz-transport16/gz-msgs13",
+    "private_old_drop_mutant": "0/1: exact selected test fails publisher.publish after Node Drop with Err(Shutdown) versus Ok",
+    "private_owner_service_log_sha256": "0d65312161e11d49ad7bbf67a9da9013b32c2887d191ffb29ccd12d6bbe698f8",
+    "private_owner_service_test": "1/0",
+    "private_selected_log_sha256": "955e23988e8fbce21a090734245f21b7c8364c5fc6895dd8edfe7ee403d70d8d",
+    "private_selected_publisher_tests": "6/0",
+    "private_worker_lib_log_sha256": "63dc7934ad64c9c4a05c45513f99aadc4fd869820b600ecd64f18c3452ffb4da",
+    "private_worker_lib_tests": "74/0 serial",
+    "raw_git_export_three_hashes_match": true
+  },
+  "failure_disposition": "The first older instrumented interop failure returned status101 but lost libtest stdout under the old verifier; its failing assertion remains UNCLASSIFIED. New service/subscriber readiness barriers have isolated private positive/negative controls, but those controls do not retroactively classify that failure. Ten later full80/0 runs are supporting stability evidence only.",
+  "files_sha256": {
+    "src/runtime.rs": "f2104eabf25a1b984c4b56e9f92fda3af8916e7bdc544fa3280dc79d8df44ec3",
+    "tests/interop.rs": "60d4f5601649f53d9e4d2a31467cff8c738d6eae2cf6ce1842bcbd02c8b8efa7",
+    "tests/support/runtime.rs": "d9c9381d096d5ed118935a345acd70629c4fc943dbd23b8ead26e74a80f2b735"
+  },
+  "limits": "No claim of process-global native lifetime or universal delivery timing. Independent approval covers this frozen source/API/assertion boundary; final metadata binding, exact final staged gate, normal hook, publication and hosted CI remain pending.",
+  "proposal_sha256": "6ef35d99c4bc5b2fe7674216102a44da4ef7aebf0ac27e689645bb1ce2707551",
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Ordinary Node Drop retains a worker only through live Publisher leases; Node-owned subscriptions, services and requests retire. Explicit cancel/shutdown remain cancel-all. No public API, dependency, UUID or wire change.",
+  "source_review": {
+    "final_discovery": "Inactive publisher/service cleanup and subscription END precede BYE; selected unit asserts UNADVERTISE before BYE.",
+    "native_raii_limit": "Pinned Node.cc/PublisherPrivate and timed actual installed-library probe support Valid/Publish/TopicList through 10.5s after Node destruction; this is bounded observation, not general delivery guarantee.",
+    "owner_dead": "Surviving receivers drain already queued values before Shutdown; request response admission and pending/queued retirement are bounded by owner-dead state.",
+    "worker_lifetime": "Only Node and Publisher own Arc<WorkerLifetime>; worker owns Sender but not lifetime, and final lease release precedes stop/join."
+  },
+  "tree": "75cba84876c36349923d376008e5bc2474ab7257"
+}

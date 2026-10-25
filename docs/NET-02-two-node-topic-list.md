@@ -37,6 +37,10 @@ dropping that handle. Rust's explicit Node shutdown contract invalidates its
 worker and handle; native Publisher-after-Node-drop lifetime remains an open
 compatibility gap outside this listing slice.
 
+The later [Publisher ownership slice](NET-02-publisher-after-node-drop.md)
+covers ordinary Node destruction while preserving explicit shutdown. The
+two-Node listing assertion and its partial ledger scope above are unchanged.
+
 This port covers the original first and second list counts and second-call
 latency for two live same-process publishers. Process-local subscriber-only
 interest, immediate per-topic descriptor snapshots, cross-process discovery

@@ -283,6 +283,11 @@ original and Rust selected cases, both supplemental cases, serial full Rust
 and two boundary mutants. Native Publisher lifetime after Node destruction
 remains open. Normal final hook and hosted CI are pending at this review point.
 
+The later [Publisher ownership review](NET-02-publisher-after-node-drop.md)
+covers ordinary Node destruction with a surviving Publisher and retains the
+earlier staged interop failure as unclassified. That later slice does not
+change the partial AllTopicInfo disposition above.
+
 ## Failed staged test output
 
 When the staged child fails, `scripts/verify.py` retains its complete

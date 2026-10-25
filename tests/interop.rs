@@ -22,6 +22,7 @@ use gz_transport::{Config, Error, Node};
 use std::{
     io::{BufRead, BufReader, Write},
     process::{Child, ChildStdout, Command, Stdio},
+    sync::{Arc, Barrier},
     thread,
     time::{Duration, Instant},
 };
@@ -40,6 +41,163 @@ fn config() -> Config {
         message_port: 10317,
         service_port: 10318,
         ..Default::default()
+    }
+}
+
+// Pinned Node/PublisherPrivate ownership: the native publisher remains valid,
+// publishable and visible after its Node dies, until that publisher is dropped.
+#[test]
+fn publisher_retains_worker_after_ordinary_node_drop() {
+    let config = config();
+    let observer = Node::new(config.clone()).unwrap();
+    let owner = Node::new(config.clone()).unwrap();
+    let publisher = owner.advertise("/survivor", TYPE).unwrap();
+    let subscription = owner.subscribe("/survivor", TYPE).unwrap();
+    let service = owner.serve("/owner-service", TYPE, TYPE).unwrap();
+    assert_eq!(observer.known_topics().unwrap(), ["/survivor"]);
+    assert_eq!(
+        observer.known_topic_info("/survivor").unwrap().publishers,
+        [TYPE]
+    );
+    assert!(publisher.has_connections().unwrap());
+    publisher.publish(data("queued")).unwrap();
+    // Worker replies after the queued publish command, fixing the drain order.
+    publisher.has_connections().unwrap();
+    drop(owner);
+
+    assert_eq!(
+        subscription
+            .recv_timeout(Duration::from_millis(20))
+            .unwrap()
+            .data,
+        data("queued")
+    );
+    assert_eq!(
+        subscription.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Shutdown)
+    );
+    assert!(matches!(
+        service.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(publisher.publish(data("after")), Ok(()));
+    assert_eq!(observer.known_topics().unwrap(), ["/survivor"]);
+    assert_eq!(
+        observer.known_topic_info("/survivor").unwrap().publishers,
+        [TYPE]
+    );
+    let last_lease = Instant::now();
+    drop(publisher);
+    assert!(last_lease.elapsed() < Duration::from_secs(1));
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        if observer.known_topics().unwrap().is_empty() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "last publisher remained visible");
+        thread::sleep(Duration::from_millis(10));
+    }
+    drop(service);
+    drop(subscription);
+}
+
+#[test]
+fn owner_drop_retires_queued_service_reply_with_live_publisher() {
+    let config = config();
+    let owner = Node::new(config.clone()).unwrap();
+    let publisher = owner.advertise("/survivor", TYPE).unwrap();
+    let service = owner.serve("/owner-service", TYPE, TYPE).unwrap();
+    let requester = Node::new(config).unwrap();
+    // Discovery can finish after the requester starts. Establish visibility
+    // before its unchanged 300 ms request deadline begins.
+    let ready_deadline = Instant::now() + Duration::from_secs(2);
+    while requester
+        .service_provider_types("/owner-service")
+        .unwrap()
+        .is_empty()
+    {
+        assert!(
+            Instant::now() < ready_deadline,
+            "provider was not discovered"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    let task = thread::spawn(move || {
+        requester.request(
+            "/owner-service",
+            TYPE,
+            TYPE,
+            data("request"),
+            Duration::from_millis(300),
+        )
+    });
+    let request = service.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert_eq!(request.data, data("request"));
+    drop(owner);
+    assert_eq!(request.respond(data("reply"), true), Err(Error::Shutdown));
+    assert!(matches!(
+        service.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(task.join().unwrap(), Err(Error::Timeout));
+    assert_eq!(publisher.publish(data("still-live")), Ok(()));
+}
+
+#[test]
+fn publisher_outlives_node_and_delivers_to_native_peer() {
+    let config = config();
+    let owner = Node::new(config.clone()).unwrap();
+    let publisher = owner.advertise("/survivor-wire", TYPE).unwrap();
+    let mut native = Peer::start(&config, "subscribe", "/survivor-wire", "after-drop");
+    drop(owner);
+    // Native READY confirms local Subscribe admission, before its remote
+    // interest reaches this Publisher. Keep the existing 100 publish attempts.
+    let ready_deadline = Instant::now() + Duration::from_secs(4);
+    while !publisher.has_connections().unwrap() {
+        assert!(
+            Instant::now() < ready_deadline,
+            "native interest was not discovered"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    for _ in 0..100 {
+        publisher.publish(data("after-drop")).unwrap();
+        thread::sleep(Duration::from_millis(20));
+    }
+    native.success();
+}
+
+#[test]
+fn final_publisher_drop_and_concurrent_snapshot_are_bounded() {
+    let config = config();
+    let observer = Node::new(config.clone()).unwrap();
+    let owner = Node::new(config).unwrap();
+    let publisher = owner.advertise("/racing", TYPE).unwrap();
+    drop(owner);
+    let barrier = Arc::new(Barrier::new(2));
+    let dropper = thread::spawn({
+        let barrier = barrier.clone();
+        move || {
+            barrier.wait();
+            drop(publisher);
+        }
+    });
+    barrier.wait();
+    for _ in 0..32 {
+        let names = observer.known_topics().unwrap();
+        assert!(names.is_empty() || names == ["/racing"]);
+    }
+    dropper.join().unwrap();
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        if observer.known_topics().unwrap().is_empty() {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "withdrawal outlived bounded snapshot"
+        );
+        thread::sleep(Duration::from_millis(10));
     }
 }
 
