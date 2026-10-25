@@ -4197,10 +4197,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_async"
+      ],
+      "review": "/root/sdformat; compared exact original/helper assertions and independently replayed both new Rust ports, all three existing batch ports and both exact native originals, all passed. Scoped polling mapping and actual execution/completion counts approved. Receipt docs/reviews/service-async.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4209,17 +4211,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original invalid advertise/request, /foo, Int32 data5 or canonical Empty input, initial unique advertised-service listing, two independent one-call dispatch/completion counts, actual service execution, true result and exact response data, invalid/valid withdrawal and final empty list retained. Rust polling/scoped request threads map callbacks without fabricated flags.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-async.md; mandatory unchanged native originals and exact Rust sequence ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputAsync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutInputAsync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_without_input_async"
+      ],
+      "review": "/root/sdformat; compared exact original/helper assertions and independently replayed both new Rust ports, all three existing batch ports and both exact native originals, all passed. Scoped polling mapping and actual execution/completion counts approved. Receipt docs/reviews/service-async.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4228,8 +4233,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original invalid advertise/request, /foo, Int32 data5 or canonical Empty input, initial unique advertised-service listing, two independent one-call dispatch/completion counts, actual service execution, true result and exact response data, invalid/valid withdrawal and final empty list retained. Rust polling/scoped request threads map callbacks without fabricated flags.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-async.md; mandatory unchanged native originals and exact Rust sequence ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceWithoutOutputCallAsync",

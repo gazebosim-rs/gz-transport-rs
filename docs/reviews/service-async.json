@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/sdformat",
+  "date": "2026-10-25T00:49:44.331555+00:00",
+  "tracked_diff": "bf232d08caa8f014a142148554642f5ece55fd8b92a042f12156a3435bc238ae",
+  "new_document_sha256": "d1fe4016d8e9ebaccfa20c866bf59244a8a15798025e7ba49f434d26d5651bdd",
+  "original_reviewed_source_test_diff": "9bcdb964f57a0cf0c1876d539179da107b0d3f3c145699d97eb738242c59cd70",
+  "scope": "Compared exact NodeTest.ServiceCallAsync and ServiceCallWithoutInputAsync originals at Node_TEST.cc1498-1600 and helper implementations146-185. Rust explicit batches [1,1] preserve independently reset actual dispatch and response completion counts, invalid advertise/request names, /foo, initial unique and final empty listing, canonical Empty input or Int32(5), true result/exact response data and invalid/valid withdrawal. Scoped threads/polling provide real execution/completion evidence. Existing three [1,3] batch ports retain all prior assertions and gain listing checks. No fabricated callback flags, original assertion weakening, production/dependency/exclusion/tolerance/protocol change. Mandatory exact native filter expanded by two cases; final metadata-only mapping/evidence delta verified.",
+  "independent_checks": {
+    "rust": "Two new Rust ports and three existing batch ports independently passed using author instrumented gate binary, own profiles/logs.",
+    "native": "Both exact unchanged native originals independently passed in one XML run: tests=2, failures=0.",
+    "limits": "Author full 79 Rust/21 tools and 1283/1304 lines,1927/1991 regions reported, not independently recomputed. Local-fallback changed-line metric is not new production. No full NET packet acceptance; matching normal strict staged gate and hosted check required."
+  }
+}

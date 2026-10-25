@@ -88,7 +88,7 @@ fn original_service_call_without_input_sync_timeout() {
     sync_timeout(false);
 }
 
-fn multiple_calls(with_input: bool, with_output: bool) {
+fn async_calls(with_input: bool, with_output: bool, batches: &[usize]) {
     let node = node();
     let request_type = if with_input { INT32 } else { EMPTY };
     let response_type = if with_output { INT32 } else { EMPTY };
@@ -98,6 +98,7 @@ fn multiple_calls(with_input: bool, with_output: bool) {
         Err(Error::InvalidName)
     ));
     let service = node.serve("/foo", request_type, response_type).unwrap();
+    assert_eq!(node.advertised_services().unwrap(), ["/foo"]);
     let timeout = Duration::from_secs(1);
     if with_output {
         assert_eq!(
@@ -116,7 +117,7 @@ fn multiple_calls(with_input: bool, with_output: bool) {
             Err(Error::InvalidName)
         );
     }
-    for expected in [1, 3] {
+    for &expected in batches {
         let mut dispatched = 0;
         if with_output {
             thread::scope(|scope| {
@@ -170,17 +171,27 @@ fn multiple_calls(with_input: bool, with_output: bool) {
         Err(Error::InvalidName)
     );
     node.unadvertise_service("/foo").unwrap();
+    assert!(node.advertised_services().unwrap().is_empty());
+}
+
+#[test]
+fn original_service_call_async() {
+    async_calls(true, true, &[1, 1]);
+}
+#[test]
+fn original_service_call_without_input_async() {
+    async_calls(false, true, &[1, 1]);
 }
 
 #[test]
 fn original_multiple_service_call_async() {
-    multiple_calls(true, true);
+    async_calls(true, true, &[1, 3]);
 }
 #[test]
 fn original_multiple_service_call_without_input_async() {
-    multiple_calls(false, true);
+    async_calls(false, true, &[1, 3]);
 }
 #[test]
 fn original_multiple_service_without_output_call_async() {
-    multiple_calls(true, false);
+    async_calls(true, false, &[1, 3]);
 }
