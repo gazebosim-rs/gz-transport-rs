@@ -4372,10 +4372,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallSync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallSync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_sync"
+      ],
+      "review": "/root/msgs; 2026-10-25 UTC; exact original and helper assertions compared, independently replayed4 Rust ports in default parallel execution and4 exact native originals, all passed. Source/native binary hashes verified. Scoped polling thread mapping and unchanged1000ms/<=200ms bound approved. Receipt docs/reviews/service-assertions.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4384,17 +4386,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or canonical Empty input, invalid-service rejection,1000ms deadline, real true result/exact response or absent-service Timeout with unchanged <=200ms absolute elapsed difference retained. Rust polling/scoped request thread replaces C++ service helper syntax.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-assertions.md; mandatory unchanged native originals and exact Rust synchronous service ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputSync",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutInputSync",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_without_input_sync"
+      ],
+      "review": "/root/msgs; 2026-10-25 UTC; exact original and helper assertions compared, independently replayed4 Rust ports in default parallel execution and4 exact native originals, all passed. Source/native binary hashes verified. Scoped polling thread mapping and unchanged1000ms/<=200ms bound approved. Receipt docs/reviews/service-assertions.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4403,17 +4408,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or canonical Empty input, invalid-service rejection,1000ms deadline, real true result/exact response or absent-service Timeout with unchanged <=200ms absolute elapsed difference retained. Rust polling/scoped request thread replaces C++ service helper syntax.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-assertions.md; mandatory unchanged native originals and exact Rust synchronous service ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallSyncTimeout",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallSyncTimeout",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_sync_timeout"
+      ],
+      "review": "/root/msgs; 2026-10-25 UTC; exact original and helper assertions compared, independently replayed4 Rust ports in default parallel execution and4 exact native originals, all passed. Source/native binary hashes verified. Scoped polling thread mapping and unchanged1000ms/<=200ms bound approved. Receipt docs/reviews/service-assertions.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4422,17 +4430,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or canonical Empty input, invalid-service rejection,1000ms deadline, real true result/exact response or absent-service Timeout with unchanged <=200ms absolute elapsed difference retained. Rust polling/scoped request thread replaces C++ service helper syntax.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-assertions.md; mandatory unchanged native originals and exact Rust synchronous service ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputSyncTimeout",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutInputSyncTimeout",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_without_input_sync_timeout"
+      ],
+      "review": "/root/msgs; 2026-10-25 UTC; exact original and helper assertions compared, independently replayed4 Rust ports in default parallel execution and4 exact native originals, all passed. Source/native binary hashes verified. Scoped polling thread mapping and unchanged1000ms/<=200ms bound approved. Receipt docs/reviews/service-assertions.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4441,8 +4452,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original /foo, Int32 data5 or canonical Empty input, invalid-service rejection,1000ms deadline, real true result/exact response or absent-service Timeout with unchanged <=200ms absolute elapsed difference retained. Rust polling/scoped request thread replaces C++ service helper syntax.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-service-assertions.md; mandatory unchanged native originals and exact Rust synchronous service ports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ResolveServiceTypes",

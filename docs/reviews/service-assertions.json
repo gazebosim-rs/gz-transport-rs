@@ -1,0 +1,11 @@
+{
+  "decision": "approved",
+  "author": "/root/transport",
+  "reviewer": "/root/msgs",
+  "date": "2026-10-25T00:09:08.322181+00:00",
+  "tracked_diff": "0dc8ee6f11ce85b6da0eecbdd7a8f31ceb0ce14cd180c40dabcea738d81353b1",
+  "test_sha256": "ca73abdccd5d31c45a793adf0e1106bb4a1c5f23c3e0e834357ead8c9558796e",
+  "document_sha256": "91dac143bcf063f2197cb32dcb5164d65b6d8df49eef154434b8fb3e0c70a0d3",
+  "scope": "Four original synchronous service assertions Node_TEST.cc1877\u20131990 and srvEcho/srvWithoutInput146\u2013163 independently compared. Original /foo, Int32 data5, invalid service, actual result true/response data, 1000ms timeouts and exact<=200ms absolute elapsed tolerance retained. Scoped request thread faithfully maps callbacks to Rust receiver polling, with actual received/executed response and unique UUID partitions for absent-service isolation. No production or tolerance changes, no packet acceptance.",
+  "independent_checks": "Four Rust assertion tests independently pass with default parallel execution(1.01s); four exact native originals rerun(2.10s), XML4run/0fail, pinned source/native binary hashes verified unchanged. Author full73Rust/21tools gate not independently recomputed; matching strict staged gate required after final metadata review."
+}
