@@ -66,6 +66,20 @@ pub struct Message {
     pub type_name: String,
     pub data: Vec<u8>,
 }
+/// Canonical protobuf names advertised for one service signature.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ServiceTypes {
+    pub request_type: String,
+    pub response_type: String,
+}
+/// Provider selection outcomes, separate from queue/runtime failures in [`Error`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ServiceTypeResolution {
+    Resolved(ServiceTypes),
+    NoProviders,
+    IncompatibleTypes,
+    AmbiguousTypes,
+}
 #[derive(Clone)]
 struct Sender {
     tx: SyncSender<Command>,
@@ -366,6 +380,64 @@ impl Node {
         }))?;
         rx.recv_timeout(timeout).map_err(receive_error)?
     }
+    /// Snapshot sorted, unique signatures known to this Node's worker.
+    /// Refreshes discovery without invoking a handler. Newly advertised remote
+    /// providers can arrive after this snapshot; this is not a global registry.
+    pub fn service_type_signatures(&self, topic: &str) -> Result<Vec<ServiceTypes>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::ServiceSignatures(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
+    /// Resolve empty descriptor names from matching providers. Explicit names
+    /// select providers; both explicit names return immediately without lookup.
+    /// The provider wait is polled every 100ms on the caller, never the IO worker.
+    /// Each snapshot additionally has the bounded `Config::reply_timeout` for
+    /// worker coordination. Invalid names and runtime failures return `Error`.
+    pub fn resolve_service_types(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        timeout: Duration,
+    ) -> Result<ServiceTypeResolution, Error> {
+        use ServiceTypeResolution::*;
+        if !request_type.is_empty() && !response_type.is_empty() {
+            return Ok(Resolved(ServiceTypes {
+                request_type: request_type.into(),
+                response_type: response_type.into(),
+            }));
+        }
+        // Validate before creating a deadline, preserving the native bypass.
+        self.topic(topic)?;
+        let deadline = Instant::now()
+            .checked_add(timeout)
+            .ok_or(Error::InvalidConfig)?;
+        loop {
+            let signatures = self.service_type_signatures(topic)?;
+            let mut compatible = signatures.iter().filter(|types| {
+                (request_type.is_empty() || types.request_type == request_type)
+                    && (response_type.is_empty() || types.response_type == response_type)
+            });
+            if let Some(first) = compatible.next() {
+                return Ok(if compatible.next().is_some() {
+                    AmbiguousTypes
+                } else {
+                    Resolved(first.clone())
+                });
+            }
+            let now = Instant::now();
+            if now >= deadline {
+                return Ok(if signatures.is_empty() {
+                    NoProviders
+                } else {
+                    IncompatibleTypes
+                });
+            }
+            thread::sleep((deadline - now).min(Duration::from_millis(100)));
+        }
+    }
     pub fn statistics(&self) -> Statistics {
         self.sender.counters.snapshot()
     }
@@ -391,6 +463,7 @@ enum Command {
     Publish(String, String, Vec<u8>),
     Subscribe(String, String, SyncSender<Message>, Arc<AtomicBool>),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
+    ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     Request(Pending),
     Respond(Vec<Vec<u8>>, Vec<u8>, bool),
 }
@@ -681,6 +754,31 @@ impl Worker {
             }),
         )
     }
+    fn service_signatures(&self, topic: &str) -> Vec<ServiceTypes> {
+        let local = self.services.iter().filter_map(|service| {
+            service
+                .active
+                .load(Ordering::Acquire)
+                .then_some(&service.publisher)
+        });
+        let remote = self.peers.iter().filter_map(|(key, (publisher, stamp))| {
+            (key.channel == 1 && stamp.elapsed() < Duration::from_secs(3)).then_some(publisher)
+        });
+        let mut signatures: Vec<_> = local
+            .chain(remote)
+            .filter(|publisher| publisher.topic == topic)
+            .filter_map(|publisher| match &publisher.pub_type {
+                Some(PubType::SrvPub(types)) => Some(ServiceTypes {
+                    request_type: types.request_type.clone(),
+                    response_type: types.response_type.clone(),
+                }),
+                _ => None,
+            })
+            .collect();
+        signatures.sort();
+        signatures.dedup();
+        signatures
+    }
     fn command(&mut self, command: Command) {
         match command {
             Command::Advertise(topic, type_name, active) => {
@@ -753,6 +851,10 @@ impl Worker {
                     tx,
                     active,
                 });
+            }
+            Command::ServiceSignatures(topic, reply) => {
+                self.subscribe_message(1, &topic);
+                let _ = reply.try_send(self.service_signatures(&topic));
             }
             Command::Request(pending) => {
                 if Instant::now() >= pending.deadline {

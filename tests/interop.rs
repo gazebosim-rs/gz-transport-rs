@@ -753,3 +753,27 @@ fn cpp_subscriber_observes_immediately_recreated_publisher() {
     });
     peer.success();
 }
+
+#[test]
+fn cpp_and_rust_inspect_real_service_signatures_without_execution() {
+    use gz_transport::{ServiceTypeResolution, ServiceTypes};
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let _provider = Peer::start(&config, "serve", "/native", "unused");
+    let types = ServiceTypes {
+        request_type: TYPE.into(),
+        response_type: TYPE.into(),
+    };
+    assert_eq!(
+        node.resolve_service_types("/native", "", "", Duration::from_secs(5)),
+        Ok(ServiceTypeResolution::Resolved(types.clone()))
+    );
+    assert_eq!(node.service_type_signatures("/native").unwrap(), [types]);
+    let service = node.serve("/rust", TYPE, TYPE).unwrap();
+    let mut observer = Peer::start(&config, "inspect-service", "/rust", TYPE);
+    observer.success();
+    assert!(matches!(
+        service.recv_timeout(Duration::from_millis(5)),
+        Err(Error::Timeout)
+    ));
+}

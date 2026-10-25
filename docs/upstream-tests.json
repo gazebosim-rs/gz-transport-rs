@@ -4475,10 +4475,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ResolveServiceTypes",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ResolveServiceTypes",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_resolve_service_types"
+      ],
+      "review": "/root/sdformat; compared original assertions and bounded ownership/API semantics, independently replayed eight focused Rust checks, fresh real C++ metadata inspection in both directions and three exact native originals; all pass. Complete mapping approved. Receipt docs/reviews/service-types.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4487,17 +4489,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Both types from local Int32 provider; explicit request selection preserved; incompatible custom request leaves empty response and supplied name unchanged; both explicit custom names bypass absent provider; invalid service maps to InvalidName; absent provider waits at least 300ms and leaves both empty borrowed inputs unchanged.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-types.md; artifacts/service-types-native.xml (three exact native originals passed); mandatory gate includes these originals"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ResolveServiceTypesWaitsForProvider",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ResolveServiceTypesWaitsForProvider",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_resolve_service_types_waits_for_provider"
+      ],
+      "review": "/root/sdformat; compared original assertions and bounded ownership/API semantics, independently replayed eight focused Rust checks, fresh real C++ metadata inspection in both directions and three exact native originals; all pass. Complete mapping approved. Receipt docs/reviews/service-types.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4506,17 +4511,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate provider starts after original 300ms delay, stays alive until completion; resolves exact Int32 request/response names before original 5000ms bound. Bounded cleanup replaces native testDone polling without changing assertions.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-types.md; artifacts/service-types-native.xml (three exact native originals passed); mandatory gate includes these originals"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ResolveServiceTypesAmbiguous",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ResolveServiceTypesAmbiguous",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial_port",
+      "replacement": [
+        "discovered_resolve_service_types_ambiguous"
+      ],
+      "review": "/root/sdformat; every ambiguity/selection value assertion retained and independently replayed, but the added real-discovery readiness barrier changes the original immediate process-global multi-Node precondition. Reviewed partial only; immediate visibility remains pending. Receipt docs/reviews/service-types.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4525,8 +4533,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Two actual Nodes advertise Int32/Int32 and Int32/StringMsg. Added readiness barrier observes both discovered signatures before original ambiguity, explicit StringMsg response selection and incompatible Vector3d response assertions. Native process-global immediate same-process discovery is not implemented; this asynchronous setup mapping requires independent review.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-01-service-types.md; artifacts/service-types-native.xml (three exact native originals passed); mandatory gate includes these originals"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SigIntTermination",

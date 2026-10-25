@@ -1,0 +1,39 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_recovery",
+  "reviewer": "/root/sdformat",
+  "reviewed_at": "2026-10-25T02:32:11.478621+00:00",
+  "base": "c570e8cdb984bfbb4aafb3f8ca4ff2e4abd54332",
+  "tracked_diff_sha256": "7df8ab153ecff16df3c383f929f5c4e6fb29fea9c7d781b033436c065860f8cd",
+  "contract_sha256": "dea87736ba0243185a318c9aa07365fe2a1e2d260274787f16ce6f1d6646dc98",
+  "scope": "Bounded known-signature snapshot and caller-side type resolution. No process-global registry, CLI, complete discovery or packet acceptance.",
+  "source_review": "Compared Node.cc1213-1278 and Node_TEST.cc1994-2143 against every production/test change. Worker snapshots filter active local services and unexpired service-channel peers. Canonical pair sorting/deduplication, explicit-field selection, both-explicit bypass, bounded command/reply ownership, nonblocking worker responses and caller-only polling match the documented scope. No handler execution, unsafe, dependency, exclusion or tolerance change.",
+  "mappings": {
+    "faithful_port": [
+      "NodeTest.ResolveServiceTypes",
+      "NodeTest.ResolveServiceTypesWaitsForProvider"
+    ],
+    "partial_port": [
+      "NodeTest.ResolveServiceTypesAmbiguous"
+    ],
+    "partial_reason": "Real-discovery readiness barrier changes original synchronous advertisement/immediate multi-Node zero-wait visibility precondition. All ambiguity/selection value assertions remain; process-global immediate visibility stays pending."
+  },
+  "independent_checks": [
+    "Built reviewer-owned Cargo target; all eight focused Rust checks pass: two worker units, five service assertion/lifecycle checks and one both-direction C++ metadata interop.",
+    "Fresh frozen-source C++ peer inspected Rust via native ResolveServiceTypes/ServiceInfo; Rust inspected real C++ provider without execution.",
+    "Three exact unchanged native originals passed independently, XML three tests/zero failures.",
+    "Final metadata-only delta verified; all seven source/assertion/gate hashes unchanged from initial frozen packet."
+  ],
+  "loader_setup": "First C++ replay failed before READY because reviewer omitted inherited libzenoh loader path. Failed log retained; prefix plus inherited tail resolves setup and replay passes. No feature pass inferred from setup failure.",
+  "author_reported": "Full strict local gate: 89 Rust, 21 tooling, 1362/1383 production lines, 2050/2115 regions, 71/71 changed. Coverage not independently recomputed.",
+  "limits": "Matching strict staged hook and hosted CI required. Worker coordination can add bounded reply-timeout overhead. Remote visibility remains asynchronous; no NET-01/NET-02 completion.",
+  "source_sha256": {
+    "src/runtime.rs": "76e74fa26fc9a99dca03a8a60b25c825b8e9e432a80aa237a248cdf15862bf80",
+    "src/lib.rs": "18ff8edd4f8ad32858ae4254cede0c9d7083c8c3770b117a8a9ef8ba8edf4c96",
+    "tests/support/runtime.rs": "b74f49f08bcbc139f0e08b8378899c1380f87d5d0d45f6efc5e120125786d62f",
+    "tests/service_assertions.rs": "2c5fbd0087c4d62e2f032f0d9a7ef4c03220db0402cb4ce9e5ac9dc7d078e76f",
+    "tests/interop.rs": "3cde5ecce07f5c59e343a6d90e9bc281e6353dc566c8cb8644975d3151708cb7",
+    "tests/cpp_peer.cc": "bf0a8f91b3de2974fc3f2190c23781540d7ac61c4c6331cb414f90cba19ff5f1",
+    "scripts/verify.py": "011b2f18af8d8c653de5808ac9f4009a067f2fb557bdf64e9ac585c7126c6c75"
+  }
+}

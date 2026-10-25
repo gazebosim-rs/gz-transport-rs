@@ -16,6 +16,10 @@ the [explicit native API disposition](docs/NET-02-service-ownership.md).
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.
+`service_type_signatures()` snapshots known canonical service type pairs;
+`resolve_service_types()` selects providers and waits for missing names with
+explicit absence, incompatibility and ambiguity outcomes. These APIs use each
+Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01-service-types.md).
 Local counters expose drops and wire errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
 relay/all-interface discovery, the full CLI and other retained behaviors remain

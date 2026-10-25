@@ -73,7 +73,17 @@ int main(int argc, char **argv) {
     return mode == "valid-topic-bytes" || result == value ? 0 : 15;
   }
   gz::transport::Node node;
-  if (mode == "service-lifecycle") {
+  if (mode == "inspect-service") {
+    std::cout << "READY" << std::endl;
+    std::string request, response;
+    if (node.ResolveServiceTypes(topic, request, response, 5000) !=
+        gz::transport::Node::ServiceTypeResolution::kResolved ||
+        request != value || response != value) return 32;
+    std::vector<gz::transport::ServicePublisher> providers;
+    if (!node.ServiceInfo(topic, providers) || providers.empty()) return 33;
+    for (const auto &provider : providers)
+      if (provider.ReqTypeName() != value || provider.RepTypeName() != value) return 34;
+  } else if (mode == "service-lifecycle") {
     if (!node.UnadvertiseSrv(topic) || !node.AdvertisedServices().empty()) return 26;
     std::function<bool(const gz::msgs::StringMsg&,gz::msgs::StringMsg&)> callback=[](const auto &,auto &){return true;};
     if (!node.Advertise(topic,callback)) return 27;

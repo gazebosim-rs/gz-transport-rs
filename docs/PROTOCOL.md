@@ -124,6 +124,11 @@ C++'s inaccessible callback from a failed duplicate registration; see the
 
 # Remaining retained scope
 
+Service signature inspection and type resolution use bounded worker commands
+and service-channel discovery, with caller-side provider polling. They expose
+canonical type pairs and native selection outcomes, without provider addresses
+or a process-global registry. See the [API and timing contract](NET-01-service-types.md).
+
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
 HOST advertisement controls and actual multi-host qualification; process-wide
 multi-node discovery identity;

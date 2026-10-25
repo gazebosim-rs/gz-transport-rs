@@ -1832,3 +1832,142 @@ fn duplicate_or_capacity_rejected_advertisements_cannot_register_new_metadata() 
     assert_eq!(m.msg_type, "correct");
     assert!(receiver.recv(&mut buffer).is_err());
 }
+
+#[test]
+fn service_signature_snapshot_filters_lifetimes_channels_and_kinds() {
+    let (mut worker, _) = state(16);
+    let active = Arc::new(AtomicBool::new(true));
+    let (requests, _) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "req".into(),
+        "rep".into(),
+        requests,
+        active.clone(),
+    ));
+    let local = worker.services[0].publisher.clone();
+    for (index, channel, topic, request, age) in [
+        (0, 1, "/service", "req", 0), // Duplicate type pair, distinct provider.
+        (1, 1, "/service", "other", 0),
+        (2, 0, "/service", "message-channel", 0),
+        (3, 1, "/other", "wrong-topic", 0),
+        (4, 1, "/service", "expired", 4),
+    ] {
+        let mut publisher = local.clone();
+        publisher.topic = topic.into();
+        publisher.process_uuid = format!("remote-{index}");
+        publisher.pub_type = Some(PubType::SrvPub(ServicePublisher {
+            request_type: request.into(),
+            response_type: "rep".into(),
+            ..Default::default()
+        }));
+        worker.peers.insert(
+            PeerKey {
+                channel,
+                process: publisher.process_uuid.clone(),
+                node: publisher.node_uuid.clone(),
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+            },
+            (publisher, Instant::now() - Duration::from_secs(age)),
+        );
+    }
+    let mut wrong = local;
+    wrong.process_uuid = "wrong-kind".into();
+    wrong.pub_type = Some(PubType::MsgPub(MessagePublisher::default()));
+    worker.discovered(1, protocol::advertisement("wrong-kind", wrong));
+    let types = |request: &str| ServiceTypes {
+        request_type: request.into(),
+        response_type: "rep".into(),
+    };
+    assert_eq!(
+        worker.service_signatures("/service"),
+        [types("other"), types("req")]
+    );
+    active.store(false, Ordering::Release);
+    // The duplicate remote signature still exists after local withdrawal.
+    assert_eq!(
+        worker.service_signatures("/service"),
+        [types("other"), types("req")]
+    );
+    worker.discovered(1, protocol::discovery("remote-0", Type::Bye, None));
+    assert_eq!(worker.service_signatures("/service"), [types("other")]);
+    worker.discovered(1, protocol::discovery("remote-1", Type::Bye, None));
+    assert!(worker.service_signatures("/service").is_empty());
+    let (reply, received) = mpsc::sync_channel(1);
+    worker.command(Command::ServiceSignatures("/service".into(), reply));
+    assert_eq!(received.recv().unwrap(), []);
+    let (reply, received) = mpsc::sync_channel(1);
+    drop(received); // A timed out caller cannot block or retain a worker query.
+    worker.command(Command::ServiceSignatures("/service".into(), reply));
+}
+
+#[test]
+fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        worker: None,
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        services: Mutex::new(Vec::new()),
+    };
+    assert_eq!(
+        node.service_type_signatures("invalid service"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(
+        node.resolve_service_types("invalid service", "", "", Duration::ZERO),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(
+        node.resolve_service_types("/service", "", "", Duration::MAX),
+        Err(Error::InvalidConfig)
+    );
+    assert_eq!(
+        node.service_type_signatures("/service"),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        node.service_type_signatures("/service"),
+        Err(Error::QueueFull)
+    );
+    drop(commands.recv().unwrap());
+    let commands = thread::scope(|scope| {
+        let responder = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(
+            node.service_type_signatures("/service"),
+            Err(Error::Shutdown)
+        );
+        responder.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(
+        node.service_type_signatures("/service"),
+        Err(Error::Shutdown)
+    );
+    node.cancel();
+    assert_eq!(
+        node.service_type_signatures("/service"),
+        Err(Error::Shutdown)
+    );
+    assert_eq!(
+        node.resolve_service_types("/service", "", "", Duration::ZERO),
+        Err(Error::Shutdown)
+    );
+    assert_eq!(
+        node.resolve_service_types("invalid service", "custom.Req", "custom.Rep", Duration::MAX),
+        Ok(ServiceTypeResolution::Resolved(ServiceTypes {
+            request_type: "custom.Req".into(),
+            response_type: "custom.Rep".into(),
+        }))
+    );
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 1);
+}
