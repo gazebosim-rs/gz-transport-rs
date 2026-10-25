@@ -356,6 +356,67 @@ fn original_two_process_topic_info() {
         .unwrap();
     publisher.success();
 }
+
+// twoProcsPubSub.cc:twoProcPubSub.AllTopicInfo assertion provenance:
+// Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_two_process_all_topic_info() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut publisher = Peer::start(&config, "list-vector3d-publisher", "/foo", "unused");
+    let mut subscriber = Peer::start(
+        &config,
+        "list-vector3d-subscriber",
+        "/subscriber_only",
+        "unused",
+    );
+    let _local_subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+
+    // Each native waitForTopic call has a five-second deadline and 100ms poll.
+    for target in ["/foo", "/subscriber_only"] {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            if node
+                .known_topics()
+                .unwrap()
+                .iter()
+                .any(|topic| topic == target)
+            {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "topic {target} was not discovered"
+            );
+            thread::sleep(Duration::from_millis(100));
+        }
+    }
+
+    // Native AllTopicInfo collects TopicList, then TopicInfoHelper per topic.
+    let info: Vec<_> = node
+        .known_topics()
+        .unwrap()
+        .into_iter()
+        .map(|topic| {
+            let endpoints = node.known_topic_info(&topic).unwrap();
+            (topic, endpoints)
+        })
+        .collect();
+    let foo = info.iter().find(|(topic, _)| topic == "/foo").unwrap();
+    assert_eq!(foo.1.publishers.len(), 1);
+    assert_eq!(foo.1.subscribers.len(), 1);
+    let subscriber_only = info
+        .iter()
+        .find(|(topic, _)| topic == "/subscriber_only")
+        .unwrap();
+    assert_eq!(subscriber_only.1.publishers.len(), 0);
+    assert_eq!(subscriber_only.1.subscribers.len(), 1);
+
+    for peer in [&mut publisher, &mut subscriber] {
+        peer.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+        peer.success();
+    }
+}
 #[test]
 fn cpp_publisher_rust_subscriber() {
     let config = config();

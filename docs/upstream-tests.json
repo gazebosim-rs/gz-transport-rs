@@ -908,10 +908,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.AllTopicInfo",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.AllTopicInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_process_all_topic_info"
+      ],
+      "review": "docs/reviews/two-process-all-topic-info.json",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -920,8 +922,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned two-process /foo Vector3d publisher, /subscriber_only Vector3d subscriber and local /foo Int32 subscriber; each topic discovered within5s/100ms poll, both name searches and four publisher/subscriber counts map through known_topics then known_topic_info. Complete vector contents, native endpoint metadata, process-global sharing and extra timing are unqualified.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-two-process-all-topic-info.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubTwoProcsScopedPub",

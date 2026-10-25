@@ -384,6 +384,12 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::string command;
     if (!std::getline(std::cin, command) || command != "QUIT") return 89;
+  } else if (mode == "list-vector3d-subscriber") {
+    std::function<void(const gz::msgs::Vector3d&)> callback = [](const auto &) {};
+    if (!node.Subscribe(topic, callback)) return 112;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin, command) || command != "QUIT") return 113;
   } else if (mode == "list-vector3d-publisher") {
     auto publisher=node.Advertise<gz::msgs::Vector3d>(topic);
     if (!publisher) return 110;

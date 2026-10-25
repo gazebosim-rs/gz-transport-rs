@@ -219,3 +219,13 @@ port preserve its discovery wait, invalid `@`, absent `/bogus`, and exact one
 The [independent receipt](reviews/two-process-topic-info.json) approved the
 bounded partial mapping. The C++ output-vector state after a failed query
 remains unqualified.
+
+The retained `twoProcPubSub.AllTopicInfo` original additionally checks two
+discovered topic entries: `/foo` has one publisher and one subscriber, while
+`/subscriber_only` has no publisher and one subscriber. A Rust assertion port
+uses two real C++ Vector3d peers, a local Int32 subscription, and the existing
+`known_topics()` then `known_topic_info()` sequence. See the
+[two-process all-topic scope](NET-02-two-process-all-topic-info.md). Native
+endpoint metadata, complete vector contents and process-global sharing remain
+unqualified. The [independent receipt](reviews/two-process-all-topic-info.json)
+approved this partial mapping.

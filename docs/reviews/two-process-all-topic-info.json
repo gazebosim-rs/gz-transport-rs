@@ -1,0 +1,50 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "9a378daf4693f11ccb4c90bfea27ba37ef4df59e",
+  "tree": "2069ed164cf12e48689ec277ccd688b1159f43b3",
+  "diff_sha256": "088765d2b48090e2a8d1ce34facc209e236fcc6d5defcfea9178edfb5f774809",
+  "files": {
+    "docs/NET-02-two-process-all-topic-info.md": "01b0dd314a20b642caf239e86d53cceca897ac5362e38e119e0f6c7e4d4012b0",
+    "docs/TESTING.md": "cb95243065d49d8d8a8c9e041694b5ae12ec01e1359ead822fff08d7ab958815",
+    "docs/upstream-tests.json": "bc652e841d93957be3541eb0816ce448ebd4bfd2ce07b87dad3ccfffd7c9fe87",
+    "scripts/verify.py": "05db6cb2fae4dd9a05f9e3e87bbebf843be933e5a3131e7cefa0f79245402526",
+    "tests/cpp_peer.cc": "0c0ac3b4fb3ddce8e19ba3a3753ac73aae15c5f256b7a6b8fb5af207b7ce1ff5",
+    "tests/interop.rs": "9983210e58a1baa57749222a45da2f828752599231639bbc32f2f0ddea5703df"
+  },
+  "scope": "Bounded partial port of pinned twoProcPubSub.AllTopicInfo: two discovered names after separate 5 s / 100 ms waits, /foo pub1/sub1, /subscriber_only pub0/sub1. Existing known_topics then known_topic_info maps the native TopicList then TopicInfoHelper sequence. Real C++ Vector3d publisher/subscriber and local Rust Int32 subscriber. Production source, API, dependency and coverage threshold unchanged.",
+  "native": {
+    "source_sha256": "9ca097a1a5231d67ffb9e0885a232204ef287801703d5b4b658dc0a17b882060",
+    "binary_sha256": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319",
+    "author_log_sha256": "0e6d58673e73aa92892f7773a8b64e9fbeedf7d8b11ae723eed514081c1005ba",
+    "author_xml_sha256": "4afbef0650082d79ac29b5dbb7bf6cc8c2156ed286b3648716e609c6a5ddb914",
+    "reviewer_log_sha256": "0e6d58673e73aa92892f7773a8b64e9fbeedf7d8b11ae723eed514081c1005ba",
+    "reviewer_xml_sha256": "aacb30f809390675f3f90b71d9ccf3faac5791c24a90c633f86a266592c3f09c",
+    "result": "original 1/0/no skips, independently replayed"
+  },
+  "reviewer_replay": {
+    "method": "Private raw Git tree export, separate Cargo target and independently compiled real C++ peer",
+    "peer_sha256": "3d12f9cf94ea17fad955acb453164f059e9040590c4d6242f1db78904211ff18",
+    "selected_log_sha256": "ecbcfb271e0037abd3d0fd06eecd9c33d4d93fe859e8605b5d77c14ff2b1177f",
+    "full_serial_log_sha256": "8bf1fcff9f77b4236ee0edf29ab40b823ecd26befcf0805ff3dc49eb9f481ff2",
+    "result": "selected 1/0; full serial 155/0",
+    "negative_log_sha256": "04d05c2a6c7ae2c71b761a1fe616602c9f7eff73dd09f00eed7bec43f967a94f",
+    "negative": "Separate private publisher-only KnownTopics reply mutation fails /subscriber_only discovery at 5 s",
+    "parallel_log_sha256": "188ef7b2b0d859321e06222f8bd36ad3787b51005ec493affd6bf2ce14482609",
+    "parallel_disposition": "One existing original_pub_sub_two_threads_same_topic timed out under parallel private execution; isolated rerun passed, private serial full suite passed. Excluded from positive evidence."
+  },
+  "author_gate": {
+    "log_sha256": "adbbe134b1f35f4b288a20d7afe61073ea470f797096cdb402ecc0b66f86695f",
+    "result": "EXIT0, exact staged export;155 Rust,22 tooling,1814/1838 lines2751/2833 regions,0/0 new production executable; four retained native two-process filters"
+  },
+  "author_negative": {
+    "method": "Private raw staged-tree export changed only Command::KnownTopics reply from known_topic_names() to publisher-only known_names(0); separate Cargo target and exact C++ peer; focused Rust fails /subscriber_only discovery after five seconds.",
+    "source_diff_sha256": "7d3cc0a3a1cade9c0800833b6c0a34d19aa3c265d7a895ac383b09e39660b864",
+    "log_sha256": "8286eb44acc21eb0b9bb1bd0ddf57e09bb0329522a2aea55bc2b2eafb33f75ee",
+    "invalid_setup_log_sha256": "2af5c75c5fc1b6c38dd0e9f53dd6798914212321f34f99178e40df208eec9663",
+    "invalid_setup": "First exploratory command ran cargo from the positive worktree cwd rather than private mutant source and passed; excluded. Corrected run compiled gz-transport from private mutant source and failed as intended."
+  },
+  "limits": "Partial ledger remains correct: native publisher aux also advertises /large_msg and complete result vector/order/metadata are unqualified; native process-global Node sharing and timing outside original bounded waits are unqualified. No full native AllTopicInfo equivalence or endpoint type-name assertion claimed.",
+  "publication": "Metadata binding, normal hook, public push, hosted CI pending."
+}
