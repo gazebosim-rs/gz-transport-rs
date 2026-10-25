@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2014 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+*/
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
@@ -52,6 +68,119 @@ fn original_topic_list_remap() {
     let topics = node.advertised_topics().unwrap();
     assert_eq!(topics.len(), 1);
     assert_eq!(topics[0], "/bar");
+}
+
+// Node_TEST.cc:NodeTest.TopicList (2014 OSRF/Apache-2.0). The native
+// original creates two Nodes in one process and bounds only the second call.
+#[test]
+fn original_two_node_topic_list() {
+    let config = config();
+    let node1 = Node::new(config.clone()).unwrap();
+    let node2 = Node::new(config).unwrap();
+    let _pub1 = node1.advertise("topic1", "gz.msgs.Int32").unwrap();
+    let _pub2 = node2.advertise("topic2", "gz.msgs.Int32").unwrap();
+
+    let mut topics = node1.known_topics().unwrap();
+    assert_eq!(topics.len(), 2);
+    topics.clear();
+
+    let start = Instant::now();
+    topics = node1.known_topics().unwrap();
+    let elapsed = start.elapsed();
+    assert_eq!(topics.len(), 2);
+    assert!(elapsed.as_millis() < 2, "second list: {elapsed:?}");
+}
+
+#[test]
+fn process_local_topic_list_domain_and_lifecycle() {
+    let mut config = config();
+    config.partition = format!("/{}/", config.partition);
+    let first = Node::new(config.clone()).unwrap();
+    let mut second_config = config.clone();
+    second_config.partition = config.partition.trim_matches('/').into();
+    second_config.set_namespace("other").unwrap();
+    second_config.add_topic_remap("/raw", "/mapped").unwrap();
+    let second = Node::new(second_config).unwrap();
+    let first_pub = first.advertise("/same", "gz.msgs.Int32").unwrap();
+    let second_pub = second.advertise("/same", "gz.msgs.Int32").unwrap();
+    let mapped = second.advertise("/raw", "gz.msgs.Int32").unwrap();
+    let namespaced = second.advertise("named", "gz.msgs.Int32").unwrap();
+    assert_eq!(
+        first.known_topics().unwrap(),
+        ["/mapped", "/other/named", "/same"]
+    );
+    assert_eq!(
+        first.known_publisher_topics().unwrap(),
+        ["/mapped", "/other/named", "/same"]
+    );
+
+    let mut foreign_config = config.clone();
+    foreign_config.message_port += 2;
+    let foreign = Node::new(foreign_config).unwrap();
+    let _foreign_pub = foreign.advertise("/foreign", "gz.msgs.Int32").unwrap();
+    let mut other_partition = config.clone();
+    other_partition.partition.push_str("foreign");
+    let partition_peer = Node::new(other_partition).unwrap();
+    let _partition_pub = partition_peer
+        .advertise("/partition-foreign", "gz.msgs.Int32")
+        .unwrap();
+    assert_eq!(
+        first.known_topics().unwrap(),
+        ["/mapped", "/other/named", "/same"]
+    );
+
+    drop(second_pub);
+    drop(mapped);
+    drop(namespaced);
+    drop(second);
+    drop(first_pub);
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        if first.known_topics().unwrap().is_empty() {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "withdrawn topic remained visible"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    let new_pub = first.advertise("/same", "gz.msgs.Int32").unwrap();
+    assert_eq!(first.known_topics().unwrap(), ["/same"]);
+    drop(new_pub);
+
+    let mut retiring = Node::new(config).unwrap();
+    let surviving_handle = retiring.advertise("/retiring", "gz.msgs.Int32").unwrap();
+    assert_eq!(first.known_topics().unwrap(), ["/retiring"]);
+    retiring.shutdown();
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        if first.known_topics().unwrap().is_empty() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "stopped Node remained visible");
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert_eq!(surviving_handle.publish(vec![1]), Err(Error::Shutdown));
+}
+
+#[test]
+fn process_local_topic_list_concurrent_admission_and_query() {
+    let config = config();
+    let query = Node::new(config.clone()).unwrap();
+    let producer = thread::spawn(move || {
+        let node = Node::new(config).unwrap();
+        for _ in 0..32 {
+            let publisher = node.advertise("/cycling", "gz.msgs.Int32").unwrap();
+            thread::yield_now();
+            drop(publisher);
+        }
+    });
+    for _ in 0..64 {
+        let topics = query.known_topics().unwrap();
+        assert!(topics.is_empty() || topics == ["/cycling"]);
+    }
+    producer.join().unwrap();
 }
 
 #[test]

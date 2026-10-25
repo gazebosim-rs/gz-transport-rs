@@ -22,17 +22,20 @@ namespace is already part of the wire name. Multiple providers of one name
 yield one list entry.
 
 A local live handle is visible once its registration command is processed in
-order. A dropped or explicitly withdrawn local handle is omitted by checking its
-active flag before snapshot. A remote record appears only after discovery reaches
-this worker; these methods do not wait for global convergence. Remote withdrawal,
+order. The later process-local publication index also exposes accepted
+same-process advertisements immediately in `known_publisher_topics()`; see
+[two-Node topic listing](NET-02-two-node-topic-list.md). A dropped or explicitly
+withdrawn local handle is omitted by checking its active flag before snapshot.
+A remote record appears only after discovery reaches this worker; these methods
+do not wait for global convergence. Remote withdrawal,
 BYE and expiry remove entries after the corresponding worker event. A worker
 reply timeout returns `Error::Timeout`; a shut-down Node returns `Error::Shutdown`.
 The peer registry's capacity limit and 3-second expiry remain part of the
 existing discovery behavior.
 
 The topic method includes published topics only. Native TopicList also includes
-subscriber-only topics, which remains an explicit gap. Neither method claims a
-process-global shared registry, immediate remote visibility, native second-call
+subscriber-only topics, which remains an explicit gap. Neither method claims
+complete process-global discovery, immediate remote visibility, native second-call
 latency, global completeness, or complete original TopicList/ServiceList
 assertion equivalence. A real C++ publisher and service in separate
 processes verify eventual remote visibility and shutdown disappearance. Local remap, local-only API separation,

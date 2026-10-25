@@ -257,3 +257,15 @@ the [two-process service-list scope](NET-02-two-process-service-lists.md).
 The independent [review](reviews/two-process-service-lists.json) approved
 the three bounded mappings; the ledger remains partial. Final staged
 verification, normal hook and hosted CI remain pending.
+
+The pinned one-process, two-Node `NodeTest.TopicList` original requires both
+advertisements in the first list and bounds only the second list call below
+two integer-truncated milliseconds. A private Rust baseline missed the other
+Node's topic on the first call. The process-local publication index and
+assertion port retain both size checks, clear and timing bound; see the
+[two-Node topic-list scope](NET-02-two-node-topic-list.md). The independent
+[review](reviews/two-node-topic-list.json) approved the scoped assertion
+mapping after private native/Rust and old-runtime negative replays; the
+ledger remains partial. The exact staged gate passed 163 Rust tests,
+22 tooling checks and strict 1875/1901 line, 2838/2930 region coverage.
+Final staged verification, normal hook and hosted CI remain pending.

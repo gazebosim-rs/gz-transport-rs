@@ -4856,9 +4856,11 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicList",
       "baseline": "passed",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "disposition": "partial",
+      "replacement": [
+        "original_two_node_topic_list"
+      ],
+      "review": "docs/reviews/two-node-topic-list.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4867,9 +4869,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Exact native original runs in the required gate as a contextual control for the bounded known-list snapshot API; retained global subscriber/process and second-call latency assertions are not yet ported.",
+      "contract": "Pinned native two live Nodes in one process advertise Int32 topic1/topic2; Rust keeps first list size2, clear, second size2 and integer-truncated second-call <2ms without discovery polling. Weak process-local accepted publisher entries merge with the successful worker snapshot in the same canonical partition and explicit message domain. Native Publisher-after-Node-drop lifetime, subscriber-only immediate sharing, descriptor metadata, remote timing, origin and delivery readiness remain unqualified.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-known-lists.md; native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-two-node-topic-list.md; exact native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicListRemap",

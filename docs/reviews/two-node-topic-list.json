@@ -1,0 +1,48 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "base": "628309fb92d48fa65760cc74a001ab16d8cc3b72",
+  "tree": "f5d2ddcc68c83572a429271fc87f0cfc00c6e212",
+  "diff_sha256": "ff8af4c0a1d2ab5b30509830c0eae5d9f867a4af64fb73f80b0d6e7b69364f0b",
+  "files": {
+    "README.md": "81769998cc4a981db8c7f5880219243a7ca84de0a3cd1784d2615be034fcc2ca",
+    "docs/NET-02-known-lists.md": "97a573dcf232d5d2edda1c8a6e1decca9935099bccfd43e34e9766b49c1f04fc",
+    "docs/NET-02-subscriber-lists.md": "84eee851519e4b1d64aa5b063450c9dfbe77007fc086fec6bd4794351628c615",
+    "docs/NET-02-two-node-topic-list.md": "24a08fe179de509fe8edbb63fc06447f3d8403a07a00f3e6603fbba6df55b31f",
+    "docs/TESTING.md": "2b82e2a58b71a096e867a6e004885c1ad9caac6ea3e21fd4b73ac2215344feb7",
+    "docs/upstream-tests.json": "3a617f9200f861b484d570eb60e689884e7c3bd4436d80d6ea373c2cc3687df4",
+    "src/runtime.rs": "92c5e28875a46c61d4f67b0a354d6c7a30e4c08f7869371821b6d17506b1a2e8",
+    "tests/interop.rs": "ec6d4b5ce441e69f3f1a521535bfa6e4907a663f8e7c44f482b22fe04d371e5f"
+  },
+  "proposal_sha256": "bbb17c9055762d14df37660f236132b84aa7f8ad562ebcc12c2c2f2785b7e03d",
+  "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+  "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+  "native_domain_probe": {
+    "native-domain-probe.cc": "d6242a61c53f1be2fa7ea55b3bcc7067049f19ca249b6842ed0049a0c0679609",
+    "native-domain-probe": "7d39af69d9e9ccc02f5140f049e1190d9a25f436d225098390b25821b6b37160",
+    "native-domain.log": "36361318bd66f2d1beff12ec88207e25ee88644379176c75af31950c811d0e46"
+  },
+  "reviewer_evidence": {
+    "reviewer-selected.log": "fb262e425ef2bb7fb7ff21ea0cdf287224590a918702e895d4a4e552f57f2006",
+    "reviewer-supplemental.log": "d6ffb8c6dfe1c53933b9bc4569cea4c863441c83f848a3ce38de20cd27a3cbbf",
+    "reviewer-native.xml": "a2adb8f89fa115cebd32651f082b0e71270cc58ebf86109264388baf06dc9cc2",
+    "reviewer-native.log": "3b6dd63d5231b040d5a0528891844ae7edba25a514437df69f1ec5ce83b8b23c",
+    "reviewer-old-runtime.diff": "f25936ab327a34abcc9fcdbce53f7fc276fca63ad7dfb31ec97a7841520af49d",
+    "reviewer-old-runtime.log": "6aa3318905a992f616425a2e96f6199c772395868494b3287f80be8a892d1d91",
+    "reviewer-full-rust.log": "2bf316f840d8d8d6e30abc419cde031e6e6cce0d5f14e8aab79fabfff81b784a",
+    "reviewer-full-rust-corrected.log": "2ff2a7631fb4ce57f6d128098a3c8fba69caafe09a6960180522bb3d8745ee38"
+  },
+  "reviewer_cpp_peer_binary_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+  "reviewer_checks": [
+    "Exact eight-file Git-index tree/diff/blob hashes and no unstaged diff reproduced; separate raw Git archive and exclusive reviewer Cargo target used. No producer source/index edits.",
+    "Pinned native NodeTest.TopicList original independently replayed 1/0/no skips on matching Node_TEST.cc and UNIT_Node_TEST hashes; fresh XML and log retained.",
+    "Private selected original Rust port passed1/0; supplemental domain/lifecycle and concurrent admission/query controls passed2/0; after building the required C++ peer in the raw archive, private full cargo test --locked --tests passed163/0.",
+    "Private original-runtime-only reversal in a separate target failed the newly ported first list size: observed1 versus native-required2; exact test and protected source were restored. Initial private full-suite attempt failed only because the raw export lacked artifacts/cpp-peer; retained and excluded as behavioral evidence.",
+    "Source review confirms weak live publisher lease and owner stop checks; registry lock is released before worker wait; canonical partition and explicit interface/multicast/message_port domain filter; local remap at registration; sorted/deduped merge only after successful worker reply. Public APIs and wire/process UUIDs unchanged.",
+    "Pinned assertion mapping keeps two Nodes/two Int32 advertisements, first size2, clear, second size2, integer-truncated second-call <2ms. Native original does not assert names; supplemental tests do."
+  ],
+  "author_gate_log_sha256": "715b13f5b3ae30b3bf6537e4f7ee4c5805addd830af7e765157309f55610f4bb",
+  "scope": "Same-process live publisher visibility in existing known_topics and known_publisher_topics, preserving NodeTest.TopicList first/second counts and second-call latency on two active Nodes.",
+  "limits": "Native live Publisher-after-Node-drop remains different from Rust shutdown invalidation; subscriber-only immediate sharing, remote convergence/timing, full global metadata, has_connections and delivery readiness remain unqualified. Ledger row stays partial until metadata review. Normal hook/hosted pending."
+}

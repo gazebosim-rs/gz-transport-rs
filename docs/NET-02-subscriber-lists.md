@@ -1,7 +1,7 @@
 # Subscriber-only discovered topic snapshot
 
-`Node::known_topics() -> Result<Vec<String>, Error>` as one bounded worker
-snapshot: union active local publishers, already-discovered remote message
+`Node::known_topics() -> Result<Vec<String>, Error>` merges a bounded worker
+snapshot with accepted live same-process publishers: union active local publishers, already-discovered remote message
 publishers, active local subscription interests, and recently received remote
 `SUBSCRIBERS_REP` interests. It returns sorted/deduplicated `/topic` paths whose
 full wire names pass the same canonical partition comparison as the published
@@ -24,8 +24,10 @@ is sent, never on a list query.
 Local-only subscriber topics appear immediately through ordered worker commands
 and disappear after dropping the last subscription or explicit unsubscribe.
 Remote subscriber-only topics are eventually visible after a reply, including
-across processes. Native TopicList immediate discovery, shared process-global
-registry and second-call <2ms latency remain unqualified. A native C++
+across processes. The later
+[two-Node publisher listing](NET-02-two-node-topic-list.md) qualifies one
+immediate same-process publisher case and its second-call <2ms assertion;
+subscriber-only process-global sharing remains unqualified. A native C++
 subscriber-only peer verifies eventual remote visibility and withdrawal. The exact
 NodeTest.TopicListSubscriberOnly original passes 1/0 and
 its one-node size, indexed name, and post-unsubscribe assertions are retained in

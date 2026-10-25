@@ -13,7 +13,7 @@ use std::{
     collections::{HashMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddrV4, UdpSocket},
     sync::{
-        Arc, Mutex, Weak,
+        Arc, Mutex, OnceLock, Weak,
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc::{self, Receiver, SyncSender, TrySendError},
     },
@@ -280,6 +280,50 @@ fn active_topics<'a>(
     topics
 }
 
+#[derive(PartialEq, Eq)]
+struct MessageDomain {
+    partition: String,
+    interface: Ipv4Addr,
+    multicast: Ipv4Addr,
+    port: u16,
+}
+impl MessageDomain {
+    fn from_config(config: &Config) -> Self {
+        let partition = config.partition.trim_matches('/');
+        Self {
+            partition: if partition.is_empty() {
+                String::new()
+            } else {
+                format!("/{partition}")
+            },
+            interface: config.interface,
+            multicast: config.multicast,
+            port: config.message_port,
+        }
+    }
+}
+struct LocalPublication {
+    domain: MessageDomain,
+    topic: String,
+    active: Weak<AtomicBool>,
+    stopped: Weak<AtomicBool>,
+}
+impl LocalPublication {
+    fn live(&self) -> bool {
+        self.active
+            .upgrade()
+            .is_some_and(|active| active.load(Ordering::Acquire))
+            && self
+                .stopped
+                .upgrade()
+                .is_some_and(|stopped| !stopped.load(Ordering::Acquire))
+    }
+}
+static LOCAL_PUBLICATIONS: OnceLock<Mutex<Vec<LocalPublication>>> = OnceLock::new();
+fn local_publications() -> &'static Mutex<Vec<LocalPublication>> {
+    LOCAL_PUBLICATIONS.get_or_init(|| Mutex::new(Vec::new()))
+}
+
 /// Dropping the node cancels its worker and joins it. Handles never own sockets.
 pub struct Node {
     sender: Sender,
@@ -360,6 +404,19 @@ impl Node {
             lease.active.clone(),
         ))?;
         topics.insert(topic.clone(), Arc::downgrade(&lease.active));
+        drop(topics);
+        // Accepted for enqueue, not yet confirmed by the worker or network.
+        let (_, path) = decompose_fully_qualified_topic(&topic)?;
+        let mut local = local_publications()
+            .lock()
+            .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
+        local.retain(LocalPublication::live);
+        local.push(LocalPublication {
+            domain: MessageDomain::from_config(&self.config),
+            topic: path.into(),
+            active: Arc::downgrade(&lease.active),
+            stopped: Arc::downgrade(&self.sender.stop),
+        });
         Ok(Publisher {
             _lease: lease,
             sender: self.sender.clone(),
@@ -400,22 +457,45 @@ impl Node {
         Ok(active_topics(topics.iter()))
     }
     /// Sorted topic paths advertised locally or by discovered message peers.
-    /// This worker snapshot does not include subscriber-only topics or wait for
+    /// Same-process live publishers are visible before multicast discovery. The
+    /// worker snapshot does not include subscriber-only topics or wait for
     /// remote discovery. `advertised_topics` remains local handle inspection.
     pub fn known_publisher_topics(&self) -> Result<Vec<String>, Error> {
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender.send(Command::KnownPublisherTopics(tx))?;
-        rx.recv_timeout(self.config.reply_timeout)
-            .map_err(receive_error)
+        let mut topics = rx
+            .recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)?;
+        self.merge_process_local_publications(&mut topics)?;
+        Ok(topics)
     }
     /// Sorted paths with a known publisher or subscription interest.
-    /// A nonblocking subscriber query refreshes remote interests eventually;
-    /// this snapshot does not wait for replies or alter publisher-only lists.
+    /// Live same-process publishers are immediate; a nonblocking subscriber
+    /// query refreshes remote interests eventually without waiting for replies.
     pub fn known_topics(&self) -> Result<Vec<String>, Error> {
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender.send(Command::KnownTopics(tx))?;
-        rx.recv_timeout(self.config.reply_timeout)
-            .map_err(receive_error)
+        let mut topics = rx
+            .recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)?;
+        self.merge_process_local_publications(&mut topics)?;
+        Ok(topics)
+    }
+    fn merge_process_local_publications(&self, topics: &mut Vec<String>) -> Result<(), Error> {
+        let domain = MessageDomain::from_config(&self.config);
+        let mut local = local_publications()
+            .lock()
+            .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
+        local.retain(LocalPublication::live);
+        topics.extend(
+            local
+                .iter()
+                .filter(|publication| publication.domain == domain)
+                .map(|publication| publication.topic.clone()),
+        );
+        topics.sort();
+        topics.dedup();
+        Ok(())
     }
     /// Snapshot message descriptor names for known endpoints on an original topic.
     /// Equal names from distinct endpoints remain separate. The worker requests

@@ -13,11 +13,15 @@ the worker withdraws the old identity before advertising its replacement.
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).
-`known_publisher_topics()` and `known_services()` snapshot active local and
-already-discovered remote advertisements in this partition; see the
+`known_publisher_topics()` includes accepted live publishers from other Nodes
+in this process and already-discovered remote advertisements in the same
+explicit message domain and partition. `known_services()` retains its bounded
+worker snapshot; see the
 [bounded discovered listing contract](docs/NET-02-known-lists.md).
-`known_topics()` additionally snapshots local and eventually discovered remote
-subscriber-only interests; see the [bounded subscriber contract](docs/NET-02-subscriber-lists.md).
+`known_topics()` also includes those same-process publishers and snapshots
+local and eventually discovered remote subscriber-only interests; see the
+[bounded subscriber contract](docs/NET-02-subscriber-lists.md) and
+[two-Node topic listing](docs/NET-02-two-node-topic-list.md).
 `known_topic_info()` returns known publisher and subscriber descriptor names for
 one original topic path; see the [bounded topic information contract](docs/NET-02-topic-info.md).
 `advertised_services()` reports live local service topics;
