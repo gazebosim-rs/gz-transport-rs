@@ -1785,10 +1785,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgStreamInsertion",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgStreamInsertion",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_stream_insertion"
+      ],
+      "review": "/root/msgs_owner_astra;fresh181raw/89lib+3format;scope/rate/writererror production controls and restored92pass;exact full JSON/LCOV/changed binding in docs/reviews/message-options-format.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1797,8 +1799,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original two exact literal assertions:All/MAX prints scopeAll,ThrottledNo,noRateLine;afterrate10 prints All,ThrottledYes,decimal10msgs/sec. Exacttabs/spaces/newlines preserved. Native24rows and Rustwritererrors are supplements.",
+      "configuration": "Pinned Linux x86_64 native default C-locale stream bytes. Other flags/locales/stream-state/base/service formatting remain unqualified.",
+      "evidence": "docs/NET-01-message-options-format.md;docs/reviews/message-options-format.json;nativeoriginal1+24bytes beforeedits;source250 Rust and 24 tooling tests, 2781/2859 lines and 4081/4272 regions;11/11added;all211reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgAccessors",

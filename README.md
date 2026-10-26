@@ -82,6 +82,8 @@ one Publisher share the limiter. `throttled_update_ready()` reports eligibility
 without consuming an interval, using the qualified native Linux monotonic epoch.
 See the [bounded rate contract](docs/NET-01-publisher-throttle.md) for error,
 queue, callback, clock and concurrency limits.
+`AdvertiseOptions` also implements `Display` with the native default stream
+bytes; see the [formatting contract](docs/NET-01-message-options-format.md).
 Graceful Node shutdown withdraws its subscription topics before process BYE.
 `advertised_topics()` and `subscribed_topics()` inspect this Node's live lease
 ownership without network waits; see [local topic inventory](docs/NET-01-local-topics.md).

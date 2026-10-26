@@ -847,5 +847,30 @@ Full JSON/LCOV and authoritative changed-line policies are recomputed unchanged.
 The first selected run's two absent-peer failures are retained with exact source;
 canonical peer construction allowed an unchanged retry to pass. Metadata path
 assembly failures and a corrected commentary line-total error are also retained.
-No assertions or thresholds are waived. Final metadata binding, the mandatory
-normal hook and exact new hosted success remain required.
+No assertions or thresholds are waived. That rate slice passed final binding
+and the mandatory normal protected hook on public
+`2ef23aa61fba7124397be666b6d7205f32cb5d8f`, followed by exact hosted run
+`40398288785` attempt 1 SUCCESS.
+
+
+## Message-option stream bytes
+
+The [formatting contract](NET-01-message-options-format.md) maps the fixed native
+`AdvertiseOptionsTest.msgStreamInsertion` original to its unchanged two literal
+byte predicates. Before edits, native 1/0 and 24 exact scope/rate output rows
+passed; independent native replay reproduced them. Rust adds the same native-byte
+matrix and prefix/tail writer-error checks. All earlier tests remain required.
+
+The exact source gate passes 250 Rust and 24 tooling tests, 2781/2859 lines and 4081/4272 regions, with
+11/11 changed executable lines covered across
+the same five production sources. Native Node61, message-options6, pub/sub11,
+ordinary-service6, inputless5, outputless2 and the other unchanged required
+groups pass. All 211 source reports are retained.
+Independent [review](reviews/message-options-format.json) replays 89 library and
+three formatting tests on fresh source, verifies scope/rate/writer-error
+production controls and restored tests, and binds the full unfiltered JSON/LCOV
+and automatic changed-line policy. No stream-state, locale, base/service
+formatting or performance claim follows from this bounded default-byte port.
+The native review's stdout hash timing correction is retained; no candidate
+runtime failure, assertion relaxation or coverage waiver applies. Final metadata
+binding, the mandatory normal hook and exact new hosted success remain required.

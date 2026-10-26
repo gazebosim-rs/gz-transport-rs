@@ -438,6 +438,25 @@ impl AdvertiseOptions {
         self.msgs_per_sec != u64::MAX
     }
 }
+impl std::fmt::Display for AdvertiseOptions {
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let scope = match self.scope {
+            Scope::Process => "Process",
+            Scope::Host => "Host",
+            Scope::All => "All",
+        };
+        writeln!(output, "Advertise options:\n\tScope: {scope}")?;
+        if self.throttled() {
+            writeln!(
+                output,
+                "\tThrottled? Yes\n\tRate: {} msgs/sec",
+                self.msgs_per_sec
+            )
+        } else {
+            writeln!(output, "\tThrottled? No")
+        }
+    }
+}
 /// Per-subscription local-delivery policy. The default receives publications
 /// from the owning Node as well as matching wire publishers.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

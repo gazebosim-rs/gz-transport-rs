@@ -1,0 +1,96 @@
+{
+  "reviewer": "/root/msgs_owner_astra",
+  "utc": "2026-10-26T21:21:17.960390+00:00",
+  "verdict": "APPROVED exact source semantics, assertions and full retained strict source evidence. Final metadata binding, mandatory normal hook and exact new hosted success remain required.",
+  "source_tree": "a0789351813695cda1bfa8e54e255c9ca1bf93b3",
+  "manifest_sha256": "5d6dae910b5be8ba6f6a3d049206954ee484e9baf64b228aa0cb28a8b38438e3",
+  "source_files_sha256": {
+    "scripts/verify.py": "9c5262614dedfb9232c5e0dfa10032bd4f0ad9cd6711c77f44138fda5db6d8c5",
+    "src/runtime.rs": "47f5995f94b8f1572f09090ccb4360116cda8cd4dc2ac67284dc2ef90395c90e",
+    "tests/fixtures/message-options-format.json": "61361fa7cefda49cdecef00dd77c89f8992906227b986918997e58cb5baba4dc",
+    "tests/message_options_format_original.rs": "e4f03c34e456d1351a5561d3c6da3924f5ed6627992bc5ce9f580d71e7be8c90"
+  },
+  "assertion_map_sha256": "00dd4363be01089b799daf0559656607bc5cdaaf9b7beab940e92956b6ad0d19",
+  "native_baseline_review_sha256": "a1c82349ff78ce2456d46183f6b6bf246c533f387278515346dc3cd7f4fe3534",
+  "independent_raw_export": {
+    "candidate_files": 181,
+    "parent_files": 179,
+    "unchanged_parent_blobs": 177,
+    "all_files_restored_and_rehashed": true
+  },
+  "fresh_replay": {
+    "library_tests": 89,
+    "format_tests": 3,
+    "failed": 0,
+    "ignored": 0,
+    "restored_library_tests": 89,
+    "restored_format_tests": 3,
+    "separate_empty_target": true,
+    "private_progress_sha256": "3d0544e56c6442af3b5449359d76537ba952b41f2427277a480c77c60ee4109a",
+    "driver_sha256": "d2141e49b7edc25594eec4af01f4400c346908c8e9df17584f7c0c706c544f34",
+    "native_peer_sha256": "3ba70f4aa686beedb7e55ad9733b0ae2c29e64907ca008ec42aeb8c5fa3c3a69"
+  },
+  "production_controls": {
+    "scope_label": {
+      "mutation": "Host prints All",
+      "result": "Native24-byte comparison fails at Host/rate0;2other tests pass",
+      "log_sha256": "42fa7b682edcb559ceab2419f2e2c1bfdf74851a5a383b3756a45fb4a6b3b9cf"
+    },
+    "rate": {
+      "mutation": "Printed rate increments by1",
+      "result": "Original exact10-vs11 assertion and native24-byte comparison fail;writer supplement passes",
+      "log_sha256": "a5c29ee2ba515a4ecf18389667ee1d1ae9d9a4593ed1262a8d68b709906dc62f"
+    },
+    "writer_error": {
+      "mutation": "Swallow unthrottled tail formatter error",
+      "result": "Limited(prefix) must return error assertion fails;2byte tests pass",
+      "log_sha256": "23909dc365f8f3a9b1affec9e193766d3300549caf8373715d78c3c8a10d0ed5"
+    }
+  },
+  "static_assessment": [
+    "Removing exactly new Display implementation restores parent runtime bytes; removing only added native msgStreamInsertion filter restores parent verifier bytes. All177otherparent blobs/modes identical.",
+    "The two original complete literal outputs and original2015 license are retained. Fixture rows exactly match qualified native24rows; Rust writer-error supplement is explicitly separate from native stream failure/flush semantics.",
+    "Implementation uses standard Rust formatter, existing scope/rate and throttled predicate; does not alter options, queue, clocks, protocol, dependencies, pins or policy. Initial prefix and both tail failures propagate."
+  ],
+  "failures": "No author/source review execution failure. Three expected production-mutant assertion failures retained, source restored. Native baseline initial ownstdout proof sampling correction remains retained undera1c receipt; no result discarded. A read-only wildcard lookup for guessed stream filename failed before runtime review, corrected to manifest paths.",
+  "remaining": "Final metadata binding, mandatory normal hook, publication and exact new hosted success remain required. The source full gate is now bound; all existing semantic limits remain unchanged.",
+  "limits": [
+    "Default ordinary C-locale stream bytes only; no native arbitrary flags/width/precision/locale/manipulators/flushing/base/service/copy/scheduler equivalence.",
+    "Rust fmt writer errors only, not native ostream failbit/exception parity.",
+    "No full coverage, timing/performance or new faithful-port acceptance from this pre-gate review."
+  ],
+  "reviewed_at": "2026-10-26T22:54:00.998865+00:00",
+  "pre_gate_source_review_sha256": "e19699b88f3401077e5c984c044f925c2bc3a64c1dba0e7d9e81426380bf3ada",
+  "source_manifest_sha256": "cd65540bcad4cdcb9e132ea31c17ff97adb87732794ee7a50482081ddde71c48",
+  "full_source_evidence": {
+    "audit_sha256": "9089e896b49a3461f558dd8cfbd58af98ad8d781b75396a71d555ba1b8bfc09d",
+    "author_gate_session": 24095,
+    "exit": 0,
+    "rust": [
+      250,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "native": "Mandatory native groups passed, including options6; no duplicate replay",
+    "totals": {
+      "lines": {
+        "covered": 2781,
+        "count": 2859
+      },
+      "regions": {
+        "covered": 4081,
+        "count": 4272
+      }
+    },
+    "changed_lines": {
+      "covered": 11,
+      "count": 11
+    },
+    "retained_files": 211,
+    "retained_hash_manifest_sha256": "23955ac2c46798ca04c706d26c4c3b4f1fb210e2279499a506921e63d1b6e802",
+    "evidence_sha256": "bd4bb6b6c7a697be5ad549d6aaad405fb8a81bebd6003a99517f6b986daa4a1b",
+    "raw_rust_sha256": "d97bc861f7b9c2c30029aa4654978368c5076db52558db6caa09518c50d7bc74",
+    "method": "Unchanged reviewed coverage.check, verify.changed_lines and coverage.changed_check run on full retained JSON/LCOV; only exact staged source root rebound to verified fresh private source. No filtering, exclusion, threshold change or duplicate runtime replay."
+  }
+}
