@@ -626,3 +626,25 @@ result, then failed the retained 300 ms false-flag assertion. Native unbounded
 asynchronous lifetime, C++ callback registration and precise scheduling remain
 unclaimed. See [the bounded contract](NET-02-service-wrong-request.md). Final
 normal protected hook and exact hosted qualification remain separate.
+
+
+## Wrong response types for local services
+
+The mandatory native suite now includes `NodeTest.SrvRequestWrongRep` and
+`NodeTest.SrvWithoutInputRequestWrongRep`. Their shared Rust harness preserves
+same-Node Int32(5) or Empty input, actual asynchronous admission, any-response
+callback flag false after 300 ms, and exact synchronous Timeout with the native
+1000 ms bound. Both observers remain active through the original checkpoints;
+explicit cancellation and joins occur afterward, followed by a supplemental
+false flag. The previously accepted wrong-request case retains its values,
+echo bytes and all observations.
+
+The exact source gate passed 216 Rust tests, native Node54/0, 2645/2714
+production lines and 3893/4071 regions, with no production change. Independent
+[review](reviews/service-wrong-response.json) replayed native2/0 and raw Rust3/0.
+Each valid expected-response Int32 control exercised provider/observer data5 and
+true result, then failed the retained 300 ms false predicate. All source hashes
+were restored and Rust3/0 passed again. Native unbounded asynchronous lifetime,
+C++ callback API and scheduling remain unqualified. See the
+[bounded contract](NET-02-service-wrong-response.md); final normal protected hook
+and exact hosted qualification remain separate.

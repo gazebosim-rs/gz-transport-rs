@@ -1,0 +1,72 @@
+{
+  "decision": "approved_for_fixed_original_wrong_response_predicates",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T10:10:35.717173+00:00",
+  "source_manifest_sha256": "53270bde4e3dfed3ceeeb5ab9046b040e6cc40a8ebfe7cabe5c40d1a9f89ca08",
+  "parent": "b869bc7c3fb88eac16b3dbb65e60b00d0079e678",
+  "source_tree": "b9af1579af5bac6a7ffaf28b8e8f900a6aec0479",
+  "source_diff_sha256": "aefd3e263ad86ccb8a7b8df08c12a3ae6bf320bec9f1c338bcdbb4c7c231b224",
+  "files_sha256": {
+    "scripts/verify.py": "e1c73784758c9ad6dd093cc08701f687564682ce79e626ca2b908f146a6cf69f",
+    "tests/service_wrong_request_original.rs": "f7bf0a63e4c37d840315ba9b8c2a23f5dae5d2fc43928692d8bedc526437832b"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/service_wrong_request_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Compared NodeTest.SrvRequestWrongRep and SrvWithoutInputRequestWrongRep plus the previously accepted wrong-request adaptation. Same-Node Int32(5) echo and Empty-input Int32(5) providers, Vector3d expected response descriptor, successful asynchronous admission,300ms false callback predicate and synchronous1000ms Timeout preserve fixed native observations. Native wrongResponse ignores payload/result, so any successful response flips the owned flag for both new cases. The shared Request branch preserves Vector3d1/2/3, provider requestdata5/echo bytes and observer replydata5/result assertions. Provider/observer readiness precedes checks; unexpected errors and early timeout cannot pass. Terminal cancellation begins only after original checks, followed by joins and supplemental late-false predicate. Existing native filters retained with exactly two additions. No production/API/pin/threshold/exclusion change; original2014 and new2026OSRF/Apache2 notices preserved.",
+  "independent_replay": {
+    "raw_export": "All160 raw staged blobs independently exported without Git metadata; exact tree/diff/modes and all source hashes checked before and after. Exclusive fresh reviewer-owned Cargo2 target; no producer target reuse.",
+    "rust": "Exact three-case test3 passed,0 failed,0 ignored; restored exact source rebuilt and replayed3/0 again.",
+    "native": "Pinned original wrong-response and inputless wrong-response cases2 passed,0 failed,no skips using validated original prefix with matching Zenoh dependency.",
+    "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "sensitivity_control": "Private mutation changes only asynchronous expected response descriptor to Int32, plus control-only response assertions and trace messages. Both new cases execute providers and observers receiving Int32(5)/resulttrue, then fail the retained300msfalse callback checkpoint. Two intended failures, exit101; synchronous wrong-response expectations unchanged. Exact160source hashes restored and checked.",
+    "logs_sha256": {
+      "native.log": "f32632642c6b628763e5d324af0267b77a80a674b826dd0d40a1f3aa482f7203",
+      "exact-rust.log": "ee41ca951dd018dab988970d403f6e3db1a25163455e5329acedb82c48833d39",
+      "control.log": "9e0657dbac29a78fb47839c15c5ca7955eebef33f4242e2283e93d0eeab2eef1",
+      "restored-rust.log": "a9c564199f6cfbcc53f3301f9919e526ebd383c8f8cef8d789196314e9314a02",
+      "control-source.rs": "a7d288cc73f265ebe9af30c8c994b3aa40375a8d67c2baa19ae26ad387fdb062"
+    },
+    "restored_binary_sha256": "b574b954cdfbbdaee178e61faf1fb44af2cab681ea2856ce00ea771074650473",
+    "review_harness_correction": "Initial review driver expected Cargo summary without its 0 measured field; raw control result already showed intended two false-flag failures. Corrected output parser, verified retained control and restored source, then rebuilt exact three tests. No failed run counted as semantic pass.",
+    "overlap": "Ordinary correctness-only Cargo2/native replay after coordinated tight source gate cleared; no scheduler/performance inference."
+  },
+  "producer_full_source_gate": {
+    "result": "EXIT0 on unchanged exact frozen two-file source tree",
+    "log_sha256": "dbc6982b540900bcf5dc1ecc1c4ce5b85cada14d120f516086bd8548b8cc1d9f",
+    "evidence_sha256": "dfeadef8dd5c9e1fa284dfbf82b1401e7988cfa25003d477b8593d5c9e8ed43d",
+    "raw_rust_sha256": "82de93a8865f2f4dccfe013efa9ad8927c5a941173c900bd100eb4db9af66edc",
+    "rust": "216 passed,0 failed,0 ignored",
+    "native": "Node54/0 including both wrong-response originals; unchanged mandatory native suite passed",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "environment": "Explicit pinned original source/prefix and permitted local sockets; coordinated quiet window after Root/Msgs/SDF clear."
+  },
+  "producer_evidence_binding": "Full retained evidence hash and every input hash verified against the independently exported frozen tree.",
+  "parent_hosted": {
+    "headSha": "b869bc7c3fb88eac16b3dbb65e60b00d0079e678",
+    "run": 40299936911,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "limitations": [
+    "Owned async request/observer lifetime is10seconds; native pending lifetime is unbounded. Only fixed original checkpoints are qualified, not general lifetime/scheduler equivalence or C++callback registration.",
+    "Independent reviewer replayed the three selected tests, two native originals and two controls, not the entire216-test coverage suite; producer exact full source gate is separately bound.",
+    "Final metadata binding, mandatory normal protected hook, publication and exact hosted candidate qualification remain required; broader NET01/NET02 and performance remain open."
+  ]
+}

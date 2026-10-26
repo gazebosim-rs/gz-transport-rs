@@ -33,5 +33,6 @@ private control changed only the asynchronous descriptor and payload to valid
 Int32 data 5: provider and observer checked data/result, then the retained
 300 ms false-flag assertion failed. Restoring the exact source passed again.
 The fixed original observable predicates are a faithful port with the lifetime
-and API limits above. Final normal protected hook and exact hosted qualification
-remain separate.
+and API limits above. The final normal protected hook and exact hosted run
+`40299936911` passed on public `b869bc7c3fb88eac16b3dbb65e60b00d0079e678`,
+reviewer-bound tree `84805107`.

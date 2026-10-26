@@ -4826,10 +4826,12 @@
       "id": "UNIT_Node_TEST:NodeTest.SrvRequestWrongRep",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SrvRequestWrongRep",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_request_wrong_response_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/service-wrong-response.json. Native2/0, private raw-source Rust3/0 and two valid expected-response Int32 controls exercised provider/observer data5/resulttrue then failed retained300ms false flag; all source restored/replayed. Native unbounded pending lifetime and C++callback API/scheduling remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4838,17 +4840,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 response service advertisement succeeds; Int32 data 5. Vector3d expected response descriptor: asynchronous request admission succeeds, any-response callback flag stays false after300ms; synchronous wrong-response request returns exact Timeout with1000ms bound, mapping native false. Provider and observer remain live through both checkpoints; native wrongResponse ignores payload/result, so any reply sets flag. Terminal cancellation only afterward, joins and supplemental false flag. Rust async lifetime bounded10seconds; native unbounded lifetime and exact C++callback registration/scheduling unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native originals and owned same-Node service/request adaptation; other backends pending.",
+      "evidence": "docs/NET-02-service-wrong-response.md; docs/reviews/service-wrong-response.json; mandatory pinned wrong-response originals; exact staged source gate216Rust/Node54/0"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SrvWithoutInputRequestWrongRep",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SrvWithoutInputRequestWrongRep",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_without_input_request_wrong_response_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/service-wrong-response.json. Native2/0, private raw-source Rust3/0 and two valid expected-response Int32 controls exercised provider/observer data5/resulttrue then failed retained300ms false flag; all source restored/replayed. Native unbounded pending lifetime and C++callback API/scheduling remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4857,8 +4862,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 response service advertisement succeeds; Empty input. Vector3d expected response descriptor: asynchronous request admission succeeds, any-response callback flag stays false after300ms; synchronous wrong-response request returns exact Timeout with1000ms bound, mapping native false. Provider and observer remain live through both checkpoints; native wrongResponse ignores payload/result, so any reply sets flag. Terminal cancellation only afterward, joins and supplemental false flag. Rust async lifetime bounded10seconds; native unbounded lifetime and exact C++callback registration/scheduling unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native originals and owned same-Node service/request adaptation; other backends pending.",
+      "evidence": "docs/NET-02-service-wrong-response.md; docs/reviews/service-wrong-response.json; mandatory pinned wrong-response originals; exact staged source gate216Rust/Node54/0"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SrvTwoRequestsOneWrong",

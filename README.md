@@ -42,7 +42,10 @@ Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01
 `PendingResponse`; `request()` retains its existing bounded wait through that
 handle. The [wrong-request contract](docs/NET-02-service-wrong-request.md) checks
 asynchronous admission without a response and synchronous Timeout for a
-Vector3d request sent to a local Int32 service. An owned dispatch adaptation covers three native member-service cases,
+Vector3d request sent to a local Int32 service. The
+[wrong-response originals](docs/NET-02-service-wrong-response.md) retain the
+same observations for Int32 and inputless requests expecting Vector3d replies.
+An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration, with
 [explicit callback timing limits](docs/NET-02-class-member-service.md).
 Two local service lambda originals retain their fixed provider and response
