@@ -671,3 +671,26 @@ completions. Secondary thirty-second wrong-observer errors during failed-control
 unwinding are disclosed separately. Exact source restored and Rust2/0 passed.
 See the [bounded contract](NET-02-service-mixed-response.md); final normal hook
 and exact hosted qualification remain required.
+
+
+## Wrong service types across processes
+
+The mandatory ordinary service integration filter adds the unchanged native
+`twoProcSrvCall.SrvRequestWrongReq` and `twoProcSrvCall.SrvRequestWrongRep` plus
+`SrvTwoProcs` as a native-only positive. Existing ServiceInfo/ServiceList filters
+remain. The two Rust ports use a real C++ typed echo peer, bounded READY/QUIT
+ownership, actual empty-filter discovery and provider-liveness checks. Vector3d
+1/2/3 or Int32 data5, actual async admission, original 300 ms false callback and
+exact synchronous Timeout with 1000 ms remain; explicit cancellation follows the
+checks, then a join and supplemental final false flag retain late replies.
+
+The exact source gate passed 220 Rust tests, Node56/0 and ordinary integration5/0,
+with strict unchanged2645/2714 lines3893/4071 regions. Independent
+[review](reviews/remote-service-wrong-types.json) replayed native2+positive1 and
+raw Rust2 against a fresh real C++ peer. Async-only valid Int32(5) controls
+received actual data5/true then failed the retained false flags; all166 hashes
+were restored and Rust2/0 passed again. Ten-second owned async, original native
+six-second provider lifetime, native unbounded pending and C++callback/scheduling
+limits are explicit. Native positive counter/storage predicates receive no Rust
+port credit. See the [bounded contract](NET-02-remote-service-wrong-types.md).
+Final normal protected hook and exact hosted qualification remain required.

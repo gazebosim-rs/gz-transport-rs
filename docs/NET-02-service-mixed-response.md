@@ -37,5 +37,6 @@ ten-second completions with Timeout. Their unchanged wrong observers also hit
 the thirty-second ownership bounds during unwinding; those secondary failures
 are disclosed and are not the sensitivity evidence. All 163 raw source hashes
 were restored and Rust 2/0 passed again. The fixed observable originals are
-faithful ports within the limits above. Final metadata binding, normal protected
-hook and exact hosted qualification remain separate.
+faithful ports within the limits above. The final normal protected hook and
+exact hosted run `40311599435` passed on public
+`1d1eb0ced8cb0d3af5b9e0f56f3cf4f044e1e647`, reviewer-bound tree `2223d358`.

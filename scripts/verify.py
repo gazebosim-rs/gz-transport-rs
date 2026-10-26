@@ -293,8 +293,11 @@ def verify(profile):
     run([str(reference / 'build/bin/UNIT_NodeOptions_TEST'), '--gtest_filter=NodeOptionsTest.accessors:NodeOptionsTest.ignPartition'], env=env)
     run([str(reference / 'build/bin/INTEGRATION_twoProcsPubSub'), '--gtest_filter=twoProcPubSub.TopicList:twoProcPubSub.TopicListSubscriberOnly:twoProcPubSub.TopicListRemovesUnsubscribed:twoProcPubSub.TopicInfo:twoProcPubSub.AllTopicInfo:twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber:twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber'], env=env)
     for suffix in ('', 'WithoutInput', 'WithoutOutput'):
+        cases = 'twoProcSrvCall' + suffix + '.ServiceInfo:twoProcSrvCall' + suffix + '.ServiceList'
+        if not suffix:
+            cases += ':twoProcSrvCall.SrvTwoProcs:twoProcSrvCall.SrvRequestWrongReq:twoProcSrvCall.SrvRequestWrongRep'
         run([str(reference / ('build/bin/INTEGRATION_twoProcsSrvCall' + suffix)),
-             '--gtest_filter=twoProcSrvCall' + suffix + '.ServiceInfo:twoProcSrvCall' + suffix + '.ServiceList'], env=env)
+             '--gtest_filter=' + cases], env=env)
     artifacts = ROOT / 'artifacts'
     profiles = artifacts / 'profraw'
     shutil.rmtree(profiles, ignore_errors=True)

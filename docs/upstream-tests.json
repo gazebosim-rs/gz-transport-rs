@@ -1072,7 +1072,7 @@
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.SrvTwoProcs",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.SrvTwoProcs",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
       "review": "pending",
@@ -1085,16 +1085,19 @@
       ],
       "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "Native-only positive in the remote wrong-type packet: separate fresh native 1/0 verifies two actual data 5/true callbacks, counter 1 after each and pending-handler cleanup. Mandatory native positive retained; no Rust replacement or port credit. Disposition and review remain pending. See docs/NET-02-remote-service-wrong-types.md."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.SrvRequestWrongReq",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.SrvRequestWrongReq",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_service_wrong_request_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/remote-service-wrong-types.json. Fresh native wrong-type 2/0 plus native positive 1/0, raw Rust 2/0 with a fresh C++ peer. Valid async Int32(5) controls receive data 5/true then fail the 300 ms false flag. All 166 raw hashes restored and Rust 2/0 replayed. Provider/pending lifetimes and C++ callback/scheduling remain scoped; native positive receives no Rust credit.",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCall.cc",
@@ -1103,17 +1106,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate real native Int32 echo provider. Vector3d components 1/2/3 request with Int32 expected response; the ordinary response retains Int32 data 5 and true result if invoked. Asynchronous admission succeeds and callback stays false after 300 ms; synchronous wrong type returns exact Timeout with 1000 ms. Bounded READY, actual empty-filter discovery and live provider checks are supplemental. Owned ten-second async observer stays live through both checks; cancellation follows, then join and supplemental late-false assertion. Native six-second provider versus controlled C++ lifetime, unbounded pending lifetime and C++ callback/scheduling identity remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ cross-process C++ provider/Rust requester;other backends pending.",
+      "evidence": "docs/NET-02-remote-service-wrong-types.md; docs/reviews/remote-service-wrong-types.json; exact staged source 220 Rust / Node 56 / ordinary integration 5; complete 208-file source-retained proof."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.SrvRequestWrongRep",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.SrvRequestWrongRep",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_service_wrong_response_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/remote-service-wrong-types.json. Fresh native wrong-type 2/0 plus native positive 1/0, raw Rust 2/0 with a fresh C++ peer. Valid async Int32(5) controls receive data 5/true then fail the 300 ms false flag. All 166 raw hashes restored and Rust 2/0 replayed. Provider/pending lifetimes and C++ callback/scheduling remain scoped; native positive receives no Rust credit.",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCall.cc",
@@ -1122,8 +1128,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate real native Int32 echo provider. Int32 data 5 request with Vector3d expected response; any reply sets the flag because native wrongResponse ignores both arguments. Asynchronous admission succeeds and callback stays false after 300 ms; synchronous wrong type returns exact Timeout with 1000 ms. Bounded READY, actual empty-filter discovery and live provider checks are supplemental. Owned ten-second async observer stays live through both checks; cancellation follows, then join and supplemental late-false assertion. Native six-second provider versus controlled C++ lifetime, unbounded pending lifetime and C++ callback/scheduling identity remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ cross-process C++ provider/Rust requester;other backends pending.",
+      "evidence": "docs/NET-02-remote-service-wrong-types.md; docs/reviews/remote-service-wrong-types.json; exact staged source 220 Rust / Node 56 / ordinary integration 5; complete 208-file source-retained proof."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.SrvTwoRequestsOneWrong",
