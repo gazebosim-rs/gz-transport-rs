@@ -40,5 +40,42 @@ An initial author command replaced the native library path, so both native
 children failed to load libzenohc and both traffic-witness checks timed out.
 That failed output remains retained separately. The unchanged source passed
 after the command preserved the existing native library paths. Final metadata
-binding, the mandatory normal protected hook, publication and exact new hosted
-success remain required. Broader NET-01/NET-02 and performance remain open.
+binding and the mandatory normal hook passed on public
+`9737abdee625bcb6ef9d5b59dbcf3f30550eacca`; exact hosted run `40356975861`
+succeeded for that two-original slice. Broader NET-01/NET-02 and performance remain open.
+
+
+## Matching and generic remote subscribers
+
+The pinned `PubSubWrongTypesTwoSubscribers` and `PubSubWrongTypesTwoRawSubscribers`
+originals each create three Nodes after the original 500 ms settling wait.
+Subscriptions for an incorrect descriptor, Vector3d and a generic descriptor must
+all succeed. The incorrect descriptor is Int32 for the typed case and
+`wrong.msg.type` for the raw case. After the original 2500 ms wait, the wrong flag
+is false and the correct and generic flags are true. Both generic callbacks also
+assert that the received topic contains no `@`, after setting their flag.
+
+The Rust ports retain all three owned subscriptions and joined observers through
+that checkpoint, using the same unchanged native publisher fixture. Received
+Vector3d values 1, 2 and 3, the final wrong flag and bounded child success are
+supplemental. The stop guard runs at the normal tail or assertion unwinding.
+The 2500 ms wait begins after owned observers are ready. C++ typed/raw/ProtoMsg
+callback and storage facades, precise scheduling and publisher-relative timing
+remain unqualified.
+
+The exact source gate passed 227 Rust and 24 tooling tests, native Node 56/0,
+pub/sub 11/0, ordinary service 6/0 and inputless service 5/0, plus every other
+required native group. Coverage remains 2645/2714 production lines and 3893/4071
+regions, with zero production changes. All 209 source reports were retained.
+
+Independent [review](reviews/remote-pubsub-mixed-subscribers.json) verified all
+173 source blobs and replayed native 2/0 and Rust 4/0. Making only the new wrong
+descriptors compatible delivered actual values to those observers and failed both
+primary false flags. Making only the new generic descriptors incompatible failed
+both required true flags. A private production change exposing the qualified
+topic failed both original generic metadata assertions; the two resulting join
+propagations remain retained separately. Each control kept the earlier two tests
+passing. All source and native pins were restored and Rust 4/0 passed again.
+The reviewer rechecked every retained report and the full coverage policies.
+Final metadata binding, normal hook, publication and exact new hosted success
+remain required. Only these two fixed originals are mapped here.

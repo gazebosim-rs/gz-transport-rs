@@ -1,0 +1,98 @@
+{
+  "decision": "approved_bounded_source_and_exact_full_gate",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T17:21:08.075727+00:00",
+  "pre_gate_manifest_sha256": "f3796a29552595d4bcc788847f31227afd490b9db6608cccf2a7c59fb73d5853",
+  "parent": "9737abdee625bcb6ef9d5b59dbcf3f30550eacca",
+  "source_tree": "6032a7fa2b6fa393ca00b7ee6e6eb981949b6c88",
+  "source_diff_sha256": "9fda415ffc2216d273cb14d9b5cf19789a13c8e6a2c56ac0dcd0440617d917ac",
+  "files_sha256": {
+    "scripts/verify.py": "93702a2afdc3f401e49f1295a6795aba89e9bc70efc3c9b410ed017a328d323e",
+    "tests/remote_pubsub_wrong_subscription_originals.rs": "3fe946e0392f024c35e536e22bfc3c659c16274b381d1f13cc21077e439508ce"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/remote_pubsub_wrong_subscription_originals.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Both pinned three-Node typed/raw originals retain500ms pre-Node settle, all three successful subscription admissions, original2500ms checkpoint and false wrong/true correct/true generic flags. Typed wrong expects Int32; raw wrong uses wrong.msg.type; matching Vector3d and generic empty descriptor are preserved. Both original generic Topic-no@ assertions run after their flag is stored, matching native order. Exact native auxiliary/two publications/large-topic traffic remain unchanged. Owned observers stay live through checkpoints, then stop/join; stop-on-unwind guard preserves primary failures. ActualVector3d123 payload checks,latefalse and native child success supplement originals. Original counters are not asserted by these two cases. C++typed/raw callback facades,exact scheduling and publisher-relative timing remain unqualified. Existing two-test source prefix unchanged, original2014 and rewrite2026OSRF/Apache2 notices preserved; no production/CPPpeer/fixture/pin/policy edits.",
+  "independent_replay": {
+    "raw_export": "Fresh173candidate raw blobs versus173parent;171unchanged paths. New empty reviewer-exclusive target, never producer target reuse. All173rawsource and5native source/binary hashes verified before/after and restored.",
+    "native": "Both fixed originals each1passed/0failed",
+    "rust": "4passed/0failed/0ignored",
+    "valid_wrong_control": "Only new wrong descriptor becomes Vector3d plus diagnostic observer identity/payload trace; both actual wrong observers decode123 then both original2500msfalse predicates fail. Old2 pass.",
+    "wrong_generic_control": "Only new generic descriptor becomes incompatible Int32; admission succeeds and both original required generictrue predicates fail. Old2 pass.",
+    "qualified_topic_control": "Private production Message.info returns fully-qualified topic. Both actual generic observers print qualified @ topics, set flags then fail original no@ metadata assertions. Old2 pass.",
+    "metadata_control_propagation": "Two primary observer metadata assertions at private testline194 are followed by two join Result::unwrap propagations atline217. Both are retained separately; expected assertion propagation, not a cleanup/timeout failure. No unexpected subscription errors.",
+    "restored_rust": "4passed/0failed/0ignored",
+    "restored_binary_sha256": "73a36a737197961c8dbff4458a2a8635bb2a6b27535700df724aca5b18ea35af",
+    "logs_sha256": {
+      "native-typed.log": "0430bfe9ff28ea9a24c7b1784f3462759b4dabef77fd1c78aa669c9a44a306a3",
+      "qualified-topic-control-runtime.rs": "f090f758a32acc4992845dd61a53428d1b3701ae67c12bf8f01cd26cc93901f3",
+      "exact-rust.log": "3ed03e712362b0089fbb43e0e0fd8c7f2581cbf6e47141a81dfef918f5187e09",
+      "wrong-generic-control.rs": "e246d09112e545f06ba08893af9d744b26a4c34057e135780da75ebda5ccf138",
+      "qualified-topic-control-test.rs": "a58444815927b742b478b31c9c9a80ba1029ddaa240b4f63f2cb76f48d0e9d93",
+      "valid-wrong-control.rs": "b402529aa759900c0b6a58989e0c85399fddbc04710d12ebdc92d430a24908e0",
+      "reviewer-run.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "restored-rust.log": "ee74e7bf8653ed274bfbc9aa836e2ebfa36bd61a03bb27ab6f004187f3709ef1",
+      "wrong-generic-control.log": "7e00a867b80c057d50ab319f54c30e3430ba4e2a6236a953d9ea7fee7a1aa549",
+      "qualified-topic-control.log": "19a45c44bd674f0504f6da1ca0a65e64d52246f9b69270310d2a43fa52d1cf4a",
+      "valid-wrong-control.log": "ac0662cbbc276953806c801b2fa85816a3b92f765bbad7632962f69e72c71218",
+      "native-raw.log": "5857e751bd753699dd4dbc930afdcce6a66e297bc98970c101087b9475bd3d8a"
+    },
+    "native_files_sha256": {
+      "test/integration/twoProcsPubSub.cc": "9ca097a1a5231d67ffb9e0885a232204ef287801703d5b4b658dc0a17b882060",
+      "test/integration/test_executables/twoProcsPublisher_aux.cc": "34295cb748b4841dd2518b055d8dd67ffaee6b995eb8c532d777d453f904ebf3",
+      "build/bin/INTEGRATION_twoProcsPubSub": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319",
+      "build/bin/twoProcsPublisher_aux": "994dcc90f48519b8713b17cfa0cd6461ac5ae563615b4d2d0ebbef029f85ee1a",
+      "test/test_utils.hh": "d63cc95df93ff755a733704154276212d8624cf0121d27004b056aa6a82a90ba"
+    },
+    "environment": "CanonicalCargo2 with incremental override absent, validated original native prefix prepended with matching Zenoh dependency and local sockets. Root-authorized ordinary overlap; no performance claim.",
+    "excluded_setup_failures": "No reviewer setup/build/native/test failure outside the three deliberate negative controls."
+  },
+  "producer_full_source_gate": {
+    "state": "Exact unchanged source gate passed; all209retained hashes and173raw sources/evidence inputs independently reverified. No duplicate semantic/native replay.",
+    "rust": {
+      "passed": 227,
+      "failed": 0,
+      "ignored": 0
+    },
+    "tooling": 24,
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed_production": {
+      "covered": 0,
+      "count": 0
+    },
+    "independent_recomputation": "Unchanged exact coverage.check and changed_check rerun on full retained JSON/LCOV with verified source-root rebinding only; no source/region filtering.",
+    "log_sha256": "f80dacfc3a87e3181f5a4f07c85d08898c434a21b504c0cbbc5ae6a0c8d8c64b",
+    "retained_manifest_sha256": "0f8810fc087d5500f7aeed2fd24a18589703dc79f9021d1fb4655dbcb57cafa5",
+    "evidence_sha256": "8e5329dd4f3c3a4915d285d93c91d5a40eb8d81127755085c6eba35258d005a4",
+    "raw_rust_sha256": "4c17f953119bf1829cd03579630e236867666344d57966701fc487c44955f364",
+    "private_audit_sha256": "284c213c39700d55642e6cac2217bf0db05436e6b07e59f92fa76b4394ee40c0",
+    "native": "Node56/0,pub/sub11/0 including both new three-subscriber originals,ordinary service6/0,inputless5/0,outputless2/0;all other unchanged required groups passed.",
+    "environment": "CanonicalCargo2,incremental override absent; all-owner execution hold declared for author gate. Evidence binding only,no new performance measurement."
+  },
+  "parent_hosted": {
+    "run": 40356975861,
+    "headSha": "9737abdee625bcb6ef9d5b59dbcf3f30550eacca",
+    "status": "completed",
+    "conclusion": "success",
+    "independently_verified": true
+  },
+  "limitations": [
+    "Only two fixed original observable cases qualify semantically; generic typed/raw callback/storage APIs,unused counters and exact scheduling remain unqualified.",
+    "Supplemental payload and native child completion do not replace original500/2500ms waits or three required flags/metadata predicates.",
+    "Finalmetadata binding,mandatorynormal/public/exacthosted remain required; broaderNET01/NET02/performance open."
+  ],
+  "source_manifest_sha256": "8414ea895e496175c5af7c82fecba6e94953d28eb6d1e4d68d5e37756229002a",
+  "pre_gate_semantic_receipt_sha256": "ff8dedcbf09928bcb79b6f13c3b1312dab459976bd976527a02840f257bc8640"
+}

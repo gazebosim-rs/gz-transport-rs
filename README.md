@@ -122,6 +122,8 @@ checks that only the matching Int32 subscriber receives data 5 across two Nodes.
 Two [remote wrong-subscription originals](docs/NET-01-remote-wrong-subscription.md)
 retain the fixed 1500 ms false callback observations against the unchanged native
 Vector3d publisher.
+The same contract covers [matching and generic remote subscribers](docs/NET-01-remote-wrong-subscription.md#matching-and-generic-remote-subscribers)
+across three Nodes, including the original callback flags and topic metadata.
 
 Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies

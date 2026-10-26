@@ -715,10 +715,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubWrongTypesTwoSubscribers",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubWrongTypesTwoSubscribers",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_remote_pub_sub_wrong_types_two_subscribers"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original semantics and full source evidence approval in docs/reviews/remote-pubsub-mixed-subscribers.json. Fresh raw 173 / native 2 / Rust 4; compatible wrong descriptors receive actual values then fail both primary false flags; incompatible generic descriptors fail both required true flags; qualified Info.topic fails both original no-@ predicates. Old two cases pass throughout; all bytes/native pins restored and Rust 4/0. Expected metadata join propagation retained.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -727,17 +729,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "The original 500 ms wait precedes three-Node construction. Wrong Int32 typed or wrong.msg.type raw, correct Vector3d and generic subscriptions all succeed. All observers stay live through the original 2500 ms wait and wrong=false/correct=true/generic=true flags. Generic callbacks set their flag before checking Topic contains no @. Exact native fixture unchanged; decoded values, late wrong=false and child success supplement originals. Tail/unwind stop guard preserves primary failures and joined ownership. C++ typed/raw/ProtoMsg callback/storage facades and exact scheduling/publisher-relative timing remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native publisher and three Rust subscriber Nodes; other backends pending.",
+      "evidence": "docs/NET-01-remote-wrong-subscription.md#matching-and-generic-remote-subscribers; docs/reviews/remote-pubsub-mixed-subscribers.json; exact source 227 Rust / 24 tools, native Node 56 / pubsub 11 / service 6 / inputless 5; strict 2645/2714 lines, 3893/4071 regions and zero production changes. All 209 source reports retained; only these two fixed originals are mapped."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubWrongTypesTwoRawSubscribers",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubWrongTypesTwoRawSubscribers",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_remote_pub_sub_wrong_types_two_raw_subscribers"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original semantics and full source evidence approval in docs/reviews/remote-pubsub-mixed-subscribers.json. Fresh raw 173 / native 2 / Rust 4; compatible wrong descriptors receive actual values then fail both primary false flags; incompatible generic descriptors fail both required true flags; qualified Info.topic fails both original no-@ predicates. Old two cases pass throughout; all bytes/native pins restored and Rust 4/0. Expected metadata join propagation retained.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -746,8 +751,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "The original 500 ms wait precedes three-Node construction. Wrong Int32 typed or wrong.msg.type raw, correct Vector3d and generic subscriptions all succeed. All observers stay live through the original 2500 ms wait and wrong=false/correct=true/generic=true flags. Generic callbacks set their flag before checking Topic contains no @. Exact native fixture unchanged; decoded values, late wrong=false and child success supplement originals. Tail/unwind stop guard preserves primary failures and joined ownership. C++ typed/raw/ProtoMsg callback/storage facades and exact scheduling/publisher-relative timing remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native publisher and three Rust subscriber Nodes; other backends pending.",
+      "evidence": "docs/NET-01-remote-wrong-subscription.md#matching-and-generic-remote-subscribers; docs/reviews/remote-pubsub-mixed-subscribers.json; exact source 227 Rust / 24 tools, native Node 56 / pubsub 11 / service 6 / inputless 5; strict 2645/2714 lines, 3893/4071 regions and zero production changes. All 209 source reports retained; only these two fixed originals are mapped."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.FastPublisher",

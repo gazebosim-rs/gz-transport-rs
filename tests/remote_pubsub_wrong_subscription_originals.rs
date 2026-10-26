@@ -136,3 +136,86 @@ fn observe_wrong_subscription(raw: bool) {
     });
     publisher.finish();
 }
+
+#[test]
+fn original_remote_pub_sub_wrong_types_two_subscribers() {
+    observe_mixed_subscribers(false);
+}
+
+#[test]
+fn original_remote_pub_sub_wrong_types_two_raw_subscribers() {
+    observe_mixed_subscribers(true);
+}
+
+fn observe_mixed_subscribers(raw: bool) {
+    let config = Config {
+        partition: format!("remote-mixed-subscribers-{}", uuid::Uuid::new_v4()),
+        ..Default::default()
+    };
+    let mut publisher = NativePublisher::start(&config);
+    let wrong_executed = AtomicBool::new(false);
+    let correct_executed = AtomicBool::new(false);
+    let generic_executed = AtomicBool::new(false);
+    let stopping = AtomicBool::new(false);
+    // Both originals settle for 500 ms before constructing the three Nodes.
+    thread::sleep(Duration::from_millis(500));
+    let node1 = Node::new(config.clone()).unwrap();
+    let node2 = Node::new(config.clone()).unwrap();
+    let node3 = Node::new(config).unwrap();
+    let wrong_type = if raw {
+        "wrong.msg.type"
+    } else {
+        "gz.msgs.Int32"
+    };
+    let wrong = node1.subscribe("/foo", wrong_type).unwrap();
+    let correct = node2.subscribe("/foo", "gz.msgs.Vector3d").unwrap();
+    let generic = node3.subscribe("/foo", "").unwrap();
+    let subscriptions = [
+        (wrong, &wrong_executed, false),
+        (correct, &correct_executed, false),
+        (generic, &generic_executed, true),
+    ];
+    thread::scope(|scope| {
+        let _stop_on_exit = StopObserverOnDrop(&stopping);
+        let (ready_tx, ready_rx) = mpsc::sync_channel(3);
+        let mut observers = Vec::new();
+        for (subscription, executed, check_topic) in subscriptions {
+            let ready = ready_tx.clone();
+            let observer_stopping = &stopping;
+            observers.push(scope.spawn(move || {
+                ready.send(()).unwrap();
+                while !observer_stopping.load(Ordering::Acquire) {
+                    match subscription.recv_with_info_timeout(Duration::from_millis(10)) {
+                        Ok(message) => {
+                            executed.store(true, Ordering::Release);
+                            if check_topic {
+                                // Both native generic callbacks assert this metadata.
+                                assert!(!message.info().topic.contains('@'));
+                            }
+                            // Actual payload checks supplement the fixed callback flags.
+                            let value = Vector3d::decode(message.data.as_slice()).unwrap();
+                            assert_eq!((value.x, value.y, value.z), (1.0, 2.0, 3.0));
+                        }
+                        Err(Error::Timeout) => {}
+                        Err(other) => panic!("unexpected subscription error: {other:?}"),
+                    }
+                }
+            }));
+        }
+        drop(ready_tx);
+        for _ in 0..3 {
+            ready_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+        }
+        // Retain all three subscriptions through the original 2500 ms checkpoint.
+        thread::sleep(Duration::from_millis(2500));
+        assert!(!wrong_executed.load(Ordering::Acquire));
+        assert!(correct_executed.load(Ordering::Acquire));
+        assert!(generic_executed.load(Ordering::Acquire));
+        stopping.store(true, Ordering::Release);
+        for observer in observers {
+            observer.join().unwrap();
+        }
+        assert!(!wrong_executed.load(Ordering::Acquire)); // Supplemental quiet check.
+    });
+    publisher.finish();
+}

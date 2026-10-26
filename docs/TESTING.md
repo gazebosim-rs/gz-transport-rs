@@ -764,5 +764,27 @@ Independent [review](reviews/remote-pubsub-wrong-subscription.json) replayed
 native 2/0 and fresh Rust 2/0. Valid-type controls received actual values in both
 wrong observers, then failed both primary 1500 ms false assertions; restored
 source passed 2/0. The reviewer rechecked the full coverage and changed-line
-evidence without filtering any regions. Final binding, normal hook and exact
-new hosted qualification remain required.
+evidence without filtering any regions. Final binding and the normal protected
+hook passed on public `9737abdee625bcb6ef9d5b59dbcf3f30550eacca`; exact hosted
+run `40356975861` succeeded for that two-original slice.
+
+
+## Matching and generic remote subscribers
+
+The mandatory native pub/sub filter adds both three-subscriber originals. Their
+Rust ports retain 500 ms before three-Node construction, three admissions, the
+2500 ms false/true/true flags, and the generic callback's topic-without-`@`
+predicate. All observers remain live through the original checks. Payload and
+child-lifetime checks are supplemental; the existing exact native publisher is
+unchanged. See the [contract](NET-01-remote-wrong-subscription.md#matching-and-generic-remote-subscribers).
+
+The exact source gate passed 227 Rust and 24 tooling tests, native Node 56/0,
+pub/sub 11/0, ordinary service 6/0 and inputless service 5/0. Strict coverage stays
+2645/2714 lines and 3893/4071 regions; zero production changes and all 209 source
+reports are retained. Independent [review](reviews/remote-pubsub-mixed-subscribers.json)
+replayed native 2/0 and fresh Rust 4/0. Compatible wrong and incompatible generic
+descriptor controls fail the original flag predicates; a production topic-view
+control fails the original metadata predicate, with expected join propagation
+retained. Old tests pass throughout; restored source passes 4/0. Full source
+evidence and unchanged coverage policy were independently rechecked. Final
+metadata binding, normal hook and exact new hosted qualification remain required.
