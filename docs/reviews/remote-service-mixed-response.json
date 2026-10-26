@@ -1,0 +1,87 @@
+{
+  "decision": "approved_for_fixed_remote_mixed_response_original_predicates",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T14:36:58.573085+00:00",
+  "source_manifest_sha256": "90805d58e81acaa672c2490a290c1c93ff1312737d4f9642c740aa44ef802ee6",
+  "parent": "8604f912f4707118916f33093258739bcfb171f4",
+  "source_tree": "98fccf173b4bb42d46077e8068fa9a0d14a2749a",
+  "source_diff_sha256": "65f4b0b286ee9f00ad7019fccddf3da3944e7c8a246947c83ba4978014d119b0",
+  "files_sha256": {
+    "scripts/verify.py": "92edacefe55044a38d3c6b5dc23d7b2209059d2943fba87834fda30a274adacd",
+    "tests/remote_service_wrong_types_originals.rs": "d28cba1c5c9246f51a7c534b71efdf615fe5c65a7dc6ec01e075c1d5781a8e79"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/remote_service_wrong_types_originals.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Compared both pinned SrvTwoRequestsOneWrong originals and callbacks/repliers. Retains500ms settle before Node, Int32 request5 or Empty request, wrong synchronous2000ms false mapped to exact Timeout, admitted asynchronous request with wrong expected Vector3d response and false flag after300ms, then good synchronous2000ms success and admitted asynchronous request with expected Int32 response and data5/resulttrue/flag after original300ms. Ten-second pending ownership does not replace300ms observation. The wrong observer stays live through the later good checkpoint; late wrong=false is supplemental. Cancel-on-drop is tail/unwind cleanup only and does not retire observers before passing checkpoints. Native resets between phases are represented by initially false independent flags; fixed false/true observations are retained and late-wrong observation strengthens coverage. Existing three tests are an exact unchanged source prefix. Actual empty-filter discovery, peer liveness, good synchronous payload/result and controlled provider lifecycle are supplemental; native unbounded pending,six-second provider lifetime,callback API and scheduling remain unqualified. No production,peer,pin,policy,threshold or exclusion changes; original2014/2016 and rewrite2026OSRF/Apache2 notices preserved.",
+  "independent_replay": {
+    "raw_export": "Fresh169 candidate raw blobs and169 parent blobs independently compared;167 unchanged paths. Exclusive reviewer Cargo2 target and freshly rebuilt real C++ peer, no producer target reuse.",
+    "native": "Two fixed originals each1passed/0failed",
+    "rust": "5passed/0failed/0ignored against freshly built real C++ peer",
+    "valid_wrong_control": "Only both new wrong async response descriptors become Int32; actual5/true then original300msfalse fails twice; old3 pass.",
+    "wrong_good_control": "Only both new good async response descriptors become Vector3d; admitted then original300mstrue fails twice; old3 pass. Guard cancels on failed-assertion unwind without secondary observer errors.",
+    "restored_rust": "5passed/0failed/0ignored",
+    "restored_binary_sha256": "fbe5f60456ab55e81ccd859a00f9953b258c5b1287d90a2e4aee1fa40809c1c7",
+    "cpp_peer_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+    "logs_sha256": {
+      "native-ordinary.log": "6c8a4c4337337f5ec8753a217f78e16ccfbd43522436a0a6c7aa88e475dca630",
+      "native-inputless.log": "e5632838f40cf8293cfba1fbd1d99e616b63371df70ad6d67b407f50d0bf5477",
+      "valid-wrong-control.rs": "810860a0ebc830bd8e017bc5694b35ee7ad488f31e7399a4ecb37d068497b0bc",
+      "valid-wrong-control.log": "e9522a934b2a2bba6eea72611a469c5d613eb0ca7226bcb3f0ebba75de0c2e6f",
+      "wrong-good-control.rs": "e1c17831e1b82d917005dfc6cdbcddaac374b10fcb3992ab51bc32adc8784771",
+      "wrong-good-control.log": "a37ba004c69f1963ee0b64a4aeadc802f483193468a660d4954d35d210e7438a",
+      "cpp-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cpp-linkage.log": "83549dd6b216d9f70823ebf4be5edf6f47bffcfc2f932dee2b557ecdfe2e1086",
+      "exact-rust.log": "5998f3d4ed0c913e67a89c237a9f584beab4057b6a3c654419dfda83c0463528",
+      "restored-rust.log": "4806ba53d647ca22030cf8a1555054aec7a85b463c612903df11f55c727b7b99"
+    },
+    "all_raw_source_hashes_restored": true,
+    "restoration": "All169 source hashes and9 original source/binary pins reverified after exact restored5/0.",
+    "native_environment": "Validated original prefix with matching Zenoh dependency and permitted local sockets; fresh peer linkage checked.",
+    "overlap": "Ordinary correctness after author tight source and Messages controlled coverage pair cleared; no performance or scheduler inference.",
+    "excluded_setup_failures": "None in this independent replay."
+  },
+  "producer_full_source_gate": {
+    "result": "EXIT0 unchanged exact two-file source tree",
+    "log_sha256": "36f7f4652648c7ad4183a6d9a7e5c7dfcd21dfd5033bc4d8cf3a3afebe638717",
+    "evidence_sha256": "ef07152b86980dff89af5dbbf90f6f7ae57538921ede8d58eeca8d92a989b95c",
+    "raw_rust_sha256": "c500a07f51eb007c0a87b87f45bf9fe8d3ecd717d6ae009a4d71bcecb2213729",
+    "rust": "223 passed,0failed,0ignored",
+    "tooling": "24 passed",
+    "native": "Node56/0,ordinary service6/0,inputless service5/0;all unchanged mandatory groups passed. Both required remote mixed originals executed.",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "source_retained": "All source artifacts/staged copied before metadata or normal",
+    "source_retained_file_count": 208,
+    "source_retained_hash_manifest_sha256": "2e2e2953772b9d64cf939c77bce94d1e4fe232765c8fc83ac2249c1c7dee0744",
+    "environment": "Canonical Cargo2 command/no extra incremental override,explicit pinned original source/prefix,permitted local sockets;Root/Msgs/SDF directCLEAR and held execution throughout.",
+    "remaining": "Independent source/API/assertion review,final metadata binding,normal protected hook,publication and exact new hosted remain required."
+  },
+  "retained_source_binding": "All208 report hashes and all evidence input hashes match exact raw source. Retained test-build output independently sums223 passed,0failed,0ignored. Producer strict coverage/timing gate is bound, not independently rerun.",
+  "parent_hosted": {
+    "headSha": "8604f912f4707118916f33093258739bcfb171f4",
+    "run": 40333621032,
+    "status": "completed",
+    "conclusion": "success",
+    "independently_verified": true
+  },
+  "limitations": [
+    "Only the two fixed original remote ordinary/inputless mixed-response observable predicates qualify; broader API parity is not inferred.",
+    "Owned10s pending versus native unbounded and controlled provider lifetime versus native6s remain unqualified; exact callback scheduling and performance remain open.",
+    "Final metadata binding,mandatory normal protected hook,public push and exact new hosted success remain required before acceptance; broader NET01/NET02 remain open."
+  ]
+}

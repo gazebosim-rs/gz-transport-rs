@@ -238,3 +238,152 @@ fn observe_wrong_type(case: WrongType) {
     });
     peer.finish();
 }
+
+#[test]
+fn original_two_process_service_mixed_response_types() {
+    observe_mixed_response_types(false);
+}
+
+#[test]
+fn original_two_process_inputless_service_mixed_response_types() {
+    observe_mixed_response_types(true);
+}
+
+// Retain the first failed assertion while retiring scoped observers on unwind.
+struct CancelObserversOnDrop<'a> {
+    node: &'a Node,
+    stopping: &'a AtomicBool,
+}
+impl Drop for CancelObserversOnDrop<'_> {
+    fn drop(&mut self) {
+        self.stopping.store(true, Ordering::Release);
+        self.node.cancel();
+    }
+}
+
+fn observe_mixed_response_types(inputless: bool) {
+    let request_type = if inputless {
+        "gz.msgs.Empty"
+    } else {
+        "gz.msgs.Int32"
+    };
+    let payload = if inputless {
+        Vec::new()
+    } else {
+        Int32 {
+            data: 5,
+            ..Default::default()
+        }
+        .encode_to_vec()
+    };
+    let config = Config {
+        partition: format!("remote-mixed-response-{}", uuid::Uuid::new_v4()),
+        ..Default::default()
+    };
+    let mut peer = NativePeer::start(&config, inputless);
+    // Both originals settle for 500 ms before constructing the requester Node.
+    thread::sleep(Duration::from_millis(500));
+    let node = Node::new(config).unwrap();
+    assert_eq!(
+        node.resolve_service_types("/foo", "", "", Duration::from_secs(10)),
+        Ok(ServiceTypeResolution::Resolved(ServiceTypes {
+            request_type: request_type.into(),
+            response_type: "gz.msgs.Int32".into(),
+        }))
+    );
+    peer.assert_alive();
+    let wrong_executed = AtomicBool::new(false);
+    let good_executed = AtomicBool::new(false);
+    let stopping = AtomicBool::new(false);
+    thread::scope(|scope| {
+        let _cancel_on_exit = CancelObserversOnDrop {
+            node: &node,
+            stopping: &stopping,
+        };
+        // The remote originals use 2000 ms, before admitting the wrong async.
+        assert_eq!(
+            node.request(
+                "/foo",
+                request_type,
+                "gz.msgs.Vector3d",
+                payload.clone(),
+                Duration::from_millis(2000),
+            ),
+            Err(Error::Timeout)
+        );
+        let (wrong_ready_tx, wrong_ready_rx) = mpsc::sync_channel(0);
+        let requester = &node;
+        let request_payload = &payload;
+        let wrong_flag = &wrong_executed;
+        let observer_stopping = &stopping;
+        let wrong_observer = scope.spawn(move || {
+            let pending = requester
+                .begin_request(
+                    "/foo",
+                    request_type,
+                    "gz.msgs.Vector3d",
+                    request_payload.clone(),
+                    Duration::from_secs(10),
+                )
+                .unwrap();
+            wrong_ready_tx.send(()).unwrap();
+            match pending.wait(Duration::from_secs(10)) {
+                Ok(_) => wrong_flag.store(true, Ordering::Release),
+                Err(Error::Shutdown) if observer_stopping.load(Ordering::Acquire) => {}
+                Err(other) => panic!("unexpected wrong observer error: {other:?}"),
+            }
+        });
+        wrong_ready_rx
+            .recv_timeout(Duration::from_secs(10))
+            .unwrap();
+        thread::sleep(Duration::from_millis(300));
+        assert!(!wrong_executed.load(Ordering::Acquire));
+
+        // Native requires synchronous success; payload/result checks supplement it.
+        let (good_bytes, good_result) = node
+            .request(
+                "/foo",
+                request_type,
+                "gz.msgs.Int32",
+                payload.clone(),
+                Duration::from_millis(2000),
+            )
+            .unwrap();
+        assert_eq!(Int32::decode(good_bytes.as_slice()).unwrap().data, 5);
+        assert!(good_result);
+        let (good_ready_tx, good_ready_rx) = mpsc::sync_channel(0);
+        let good_flag = &good_executed;
+        let good_observer = scope.spawn(move || {
+            let pending = requester
+                .begin_request(
+                    "/foo",
+                    request_type,
+                    "gz.msgs.Int32",
+                    request_payload.clone(),
+                    Duration::from_secs(10),
+                )
+                .unwrap();
+            good_ready_tx.send(()).unwrap();
+            match pending.wait(Duration::from_secs(10)) {
+                Ok((bytes, result)) => {
+                    assert_eq!(Int32::decode(bytes.as_slice()).unwrap().data, 5);
+                    assert!(result);
+                    good_flag.store(true, Ordering::Release);
+                }
+                Err(Error::Shutdown) if observer_stopping.load(Ordering::Acquire) => {}
+                Err(other) => panic!("unexpected good observer error: {other:?}"),
+            }
+        });
+        good_ready_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+        thread::sleep(Duration::from_millis(300));
+        assert!(good_executed.load(Ordering::Acquire));
+        peer.assert_alive();
+        // Keep the wrong observer live through the later original good check.
+        stopping.store(true, Ordering::Release);
+        node.cancel();
+        wrong_observer.join().unwrap();
+        good_observer.join().unwrap();
+        assert!(!wrong_executed.load(Ordering::Acquire));
+    });
+    peer.finish();
+}

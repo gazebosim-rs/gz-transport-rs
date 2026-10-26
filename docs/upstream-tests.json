@@ -1136,10 +1136,12 @@
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.SrvTwoRequestsOneWrong",
       "target": "INTEGRATION_twoProcsSrvCall",
       "case": "twoProcSrvCall.SrvTwoRequestsOneWrong",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_service_mixed_response_types"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/remote-service-mixed-response.json. Fresh native2/0 and raw Rust5/0 with fresh native peer. Valid-wrong expectedInt32 controls receive actual5/true then both300msfalse fail; wrong-good expectedVector3d controls admitted then both300mstrue fail; old3 pass. No secondary unwind errors; all169 hashes restored and Rust5/0. Native lifetime/API/scheduling/counter facades remain scoped.",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCall.cc",
@@ -1148,8 +1150,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate real native ordinary echo or inputless fixed Int32data5/true provider. Retains500ms settle before Node; Int32data5 or Empty request,wrong synchronous exact Timeout2000ms,wrong asyncadmission and falseflag after300ms,good synchronoussuccess2000ms,good asyncadmission/data5/resulttrue/flag after original300ms. No10s observation substitution. Wrong observer remainslive throughgoodcheck;latefalse,good syncpayload/result and actualdiscovery/liveness supplemental. Cancellation guard only normal tail/failedassertion unwind. Owned10s/nativeunbounded pending,controlled/native6s provider,C++callback/scheduling/counter/storage facades unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ C++ provider/Rust requester;other backends pending.",
+      "evidence": "docs/NET-02-remote-service-wrong-types.md#mixed-wrong-and-good-remote-responses; docs/reviews/remote-service-mixed-response.json; exact source223Rust/24tools/Node56/ordinary6/inputless5,strict2645/2714lines3893/4071regions,0productionedits;all208source reports retained."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCall:twoProcSrvCall.ServiceList",
@@ -1298,10 +1301,12 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.SrvTwoRequestsOneWrong",
       "target": "INTEGRATION_twoProcsSrvCallWithoutInput",
       "case": "twoProcSrvCallWithoutInput.SrvTwoRequestsOneWrong",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_inputless_service_mixed_response_types"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/remote-service-mixed-response.json. Fresh native2/0 and raw Rust5/0 with fresh native peer. Valid-wrong expectedInt32 controls receive actual5/true then both300msfalse fail; wrong-good expectedVector3d controls admitted then both300mstrue fail; old3 pass. No secondary unwind errors; all169 hashes restored and Rust5/0. Native lifetime/API/scheduling/counter facades remain scoped.",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutInput.cc",
@@ -1310,8 +1315,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate real native ordinary echo or inputless fixed Int32data5/true provider. Retains500ms settle before Node; Int32data5 or Empty request,wrong synchronous exact Timeout2000ms,wrong asyncadmission and falseflag after300ms,good synchronoussuccess2000ms,good asyncadmission/data5/resulttrue/flag after original300ms. No10s observation substitution. Wrong observer remainslive throughgoodcheck;latefalse,good syncpayload/result and actualdiscovery/liveness supplemental. Cancellation guard only normal tail/failedassertion unwind. Owned10s/nativeunbounded pending,controlled/native6s provider,C++callback/scheduling/counter/storage facades unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ C++ provider/Rust requester;other backends pending.",
+      "evidence": "docs/NET-02-remote-service-wrong-types.md#mixed-wrong-and-good-remote-responses; docs/reviews/remote-service-mixed-response.json; exact source223Rust/24tools/Node56/ordinary6/inputless5,strict2645/2714lines3893/4071regions,0productionedits;all208source reports retained."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.ServiceList",

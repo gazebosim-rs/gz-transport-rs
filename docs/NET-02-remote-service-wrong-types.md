@@ -80,6 +80,46 @@ setup failures stopped before export/build/native and are retained separately.
 
 The separate native positive checks two data 5/true callbacks and counters 1;
 it receives no Rust replacement or port credit. Only the fixed inputless
-negative predicates are mapped. Final metadata binding, the mandatory normal
-protected hook, publication and exact hosted candidate qualification remain
-required; broader NET-01/NET-02 and performance remain open.
+negative predicates are mapped. Final metadata binding and the mandatory normal
+protected hook passed on public `8604f912f4707118916f33093258739bcfb171f4`;
+exact hosted run `40333621032` succeeded for that inputless slice. Broader
+NET-01/NET-02 and performance remain open.
+
+
+## Mixed wrong and good remote responses
+
+The pinned ordinary and inputless `SrvTwoRequestsOneWrong` originals first
+settle for 500 ms before constructing the requester Node. An Int32 request with
+data 5 or an Empty request must fail synchronously when expecting Vector3d with
+the original 2000 ms bound. A wrong asynchronous request must be admitted and
+leave its callback flag false after 300 ms. A good synchronous request must
+succeed with 2000 ms, then a good asynchronous request must be admitted and
+produce Int32 data 5, true result and a true callback flag after the original
+300 ms. A ten-second ownership bound does not replace that observation.
+
+The shared Rust harness retains the three earlier cases unchanged. It uses the
+existing native echo or inputless fixed-value provider and actual empty-filter
+discovery. The wrong observer remains live through the later good check.
+Initially false independent flags preserve the fixed observations across the
+native reset between phases; a final wrong=false check is supplemental. Good
+synchronous payload/result and provider liveness are supplemental too. An owned
+cancellation guard retires observers only at the normal tail or during failed
+assertion unwinding, keeping failure cleanup bounded without masking the first
+assertion. Both observers have ten-second ownership bounds. Native unbounded
+pending lifetime, the fixture's six-second provider lifetime, C++ callbacks,
+precise scheduling and counter/storage facades remain unqualified.
+
+The exact two-file source gate passed 223 Rust and 24 tooling tests, Node 56/0,
+ordinary service 6/0 and inputless service 5/0, with unchanged strict 2645/2714
+production lines and 3893/4071 regions. No production or C++ peer source changed;
+all 208 source reports were copied before metadata or normal-hook work.
+Independent [review](reviews/remote-service-mixed-response.json) replayed both
+native originals 2/0 and raw Rust 5/0 against a fresh native peer. Valid wrong
+async expected-Int32 controls received data 5/true and failed both retained
+300 ms false checks; wrong good-async expected-Vector3d controls were admitted
+and failed both required 300 ms true checks. The old three cases passed in both
+controls. Failure cleanup produced no secondary observer errors. All 169 source
+hashes were restored and Rust 5/0 passed again; there were no reviewer setup
+failures. Final binding, the mandatory normal protected hook, publication and
+exact hosted candidate qualification remain required. Only the two fixed
+originals are mapped; broad NET-01/NET-02 and performance remain open.

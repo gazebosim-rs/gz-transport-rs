@@ -719,3 +719,28 @@ lifetime and C++ API/scheduling limits remain explicit in the
 [contract](NET-02-remote-service-wrong-types.md#inputless-wrong-response-original).
 Final binding, normal protected hook and exact new hosted qualification remain
 required.
+
+
+## Mixed wrong and good remote service responses
+
+The mandatory ordinary and inputless native filters include their pinned
+`SrvTwoRequestsOneWrong` originals. The shared Rust ports retain the initial
+500 ms settle before Node creation, wrong synchronous 2000 ms Timeout, admitted
+wrong async and false callback after 300 ms, good synchronous 2000 ms success,
+and admitted good async with data 5/true and required flag after 300 ms. The wrong
+observer stays live through the good checkpoint. Synchronous payload/result,
+actual discovery/liveness and late wrong=false are supplemental. Ten-second
+owned pending, native unbounded/fixture-six-second lifetime and C++ API/scheduling
+limits remain explicit; cleanup occurs at the tail or failed-assertion unwind.
+
+The exact source gate passed 223 Rust / 24 tooling tests, native Node 56/0,
+ordinary service 6/0 and inputless service 5/0. Strict coverage remains 2645/2714
+lines and 3893/4071 regions, with zero production edits and all 208 source reports
+retained. Independent [review](reviews/remote-service-mixed-response.json)
+replayed native 2/0 and fresh raw Rust 5/0. Valid wrong-async controls received
+actual data 5/true then failed both false checks; wrong good-async descriptors
+were admitted then failed both required true checks. Both controls kept the
+three earlier cases passing and produced no secondary unwind errors. Source
+restored and Rust 5/0 passed again. The [contract](NET-02-remote-service-wrong-types.md#mixed-wrong-and-good-remote-responses)
+scopes the two fixed originals; final binding, normal hook and exact new hosted
+qualification remain required.
