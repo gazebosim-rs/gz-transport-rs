@@ -1,0 +1,55 @@
+{
+  "reviewer": "/root/msgs_review_fallback",
+  "decision": "correct_two_public_faithful_port_rows_to_partial",
+  "audit_target_public_commit": "e5ae2286c82f0b4fa59f9839304e56a364153854",
+  "superseded_source_receipt_sha256": "6d86951518868f6983cafcda9232dee20d695459c4cc93b66631873c57bbd93b",
+  "pinned_native": {
+    "Node_TEST_cc_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "detail_Node_hh_sha256": "52bd1522d025338ed26ab26684f020f892c003facd7ef7960928115de8a37ab1",
+    "local_request_order": "detail/Node.hh local branch lines501-509 runs provider callback then response callback then returns; Node_TEST.cc lines1642-1710 checks executed immediately after Node::Request returns"
+  },
+  "rust": {
+    "tests_service_lambda_original_rs_sha256": "b73976923f59770dad9f2a65fffc0792ac9184d87a3c309107aade08d93d798a",
+    "order": "request_with_response calls Node::request and awaits its reply, then invokes the response closure at tests/service_lambda_original.rs:50, then returns; original_case checks executed after request_with_response returns at line100. The callback has not been invoked at the Node::request return boundary."
+  },
+  "correct_rows": [
+    {
+      "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsyncLambda",
+      "from": "faithful_port",
+      "to": "partial"
+    },
+    {
+      "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputAsyncLambda",
+      "from": "faithful_port",
+      "to": "partial"
+    }
+  ],
+  "retained_positive_evidence": "The owned provider receives the actual Int32(5) or Empty request and responds with Int32(5), true; the response closure validates actual data/result and executes once before the test helper returns. Native originals2/0, private raw Rust2/0 and callback-removal mutant remain valid for these narrower predicates. No source or assertion needs weakening.",
+  "not_credited": "Native immediate response callback visibility at the actual Node::Request API return, public callback registration/scheduling and exact C++ object identity.",
+  "cross_slice_audit": [
+    {
+      "ids": [
+        "UNIT_Node_TEST:NodeTest.ClassMemberCallbackMessage",
+        "UNIT_Node_TEST:NodeTest.ClassMemberCallbackMessageInfo"
+      ],
+      "current": "faithful_port",
+      "audit": "Native waits after SendSomeData for callback; Rust waits after owned send, preserving the observed wait boundary. No correction from this audit."
+    },
+    {
+      "ids": [
+        "UNIT_Node_TEST:NodeTest.ClassMemberCallbackService",
+        "UNIT_Node_TEST:NodeTest.ClassMemberCallbackServiceWithoutInput"
+      ],
+      "current": "partial",
+      "audit": "Native checks responseExecuted immediately after Request; Rust separate scoped waiter observes later. Ledger already marks partial."
+    },
+    {
+      "ids": [
+        "UNIT_Node_TEST:NodeTest.ClassMemberRequestServiceBeforeAdvertise"
+      ],
+      "current": "faithful_port",
+      "audit": "Native waits up to original bound after request-before-advertise; Rust waits on corresponding response flag. No immediate post-Request assertion; no correction from this audit."
+    }
+  ],
+  "required_action": "Publish metadata-only ledger, NET-02/TESTING/README if needed, and superseding review correction; rerun exact staged gate and normal protected hook. Keep original reviewer receipt as historical evidence with explicit supersession. Hosted CI and tracker qualification separate."
+}

@@ -489,10 +489,13 @@ the actual request through a scoped service thread and invokes the response
 closure from the actual reply before its adapter returns. An exactly-once
 response count is supplemental.
 
-The [independent review](reviews/service-lambda.json) replayed native 2/0 and
-Rust 2/0 from a raw export; removing the response-closure call makes both
-post-call flag assertions fail. The exact staged source gate passed with
-2533/2594 production lines and 3739/3902 regions; no production line changed.
-These two fixed observable originals are faithful ports. Native C++ callback
-registration, exact scheduling/thread identity, remote asynchronous behavior
-and native no-timeout semantics remain outside the claim.
+The [source review](reviews/service-lambda.json) replayed native 2/0 and Rust
+2/0 from a raw export; removing the response-closure call makes both adapter
+flag assertions fail. The exact staged source gate passed with 2533/2594
+production lines and 3739/3902 regions; no production line changed. A
+[superseding disposition review](reviews/service-lambda-disposition-correction.json)
+found that native invokes the response callback before `Node::Request` returns,
+while Rust invokes it after `Node::request` returns and before the test helper
+returns. Both originals are partial. Native callback registration, the actual
+post-request timing predicate, exact scheduling/thread identity, remote
+asynchronous behavior and native no-timeout semantics remain unported.
