@@ -4354,10 +4354,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallAsyncLambda",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallAsyncLambda",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_async_lambda"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact two-file source and mandatory staged native originals approved for fixed observable assertions; private Git-free Rust2/0, pinned native2/0 and callback-removal mutant; receipt docs/reviews/service-lambda.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4366,17 +4368,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned /foo provider lambda receives Int32 data5 and returns Int32 data5. Response closure observes actual Int32 data5 and true result, and executed is true immediately after the owned request-with-response adapter returns; exactly-once count is Rust supplemental. Native local Node.hh invokes provider and response callbacks inline before Request returns. Rust uses a scoped owned Service dispatch thread and blocking request; C++ callback registration, exact scheduling/thread identity, remote asynchronous behavior and native no-timeout semantics remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native local originals and owned Rust request/dispatch adaptation; remote callback paths and other backends pending.",
+      "evidence": "docs/NET-02-service-lambda.md; docs/reviews/service-lambda.json; mandatory pinned native NodeTest lambda originals; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputAsyncLambda",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutInputAsyncLambda",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_without_input_async_lambda"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact two-file source and mandatory staged native originals approved for fixed observable assertions; private Git-free Rust2/0, pinned native2/0 and callback-removal mutant; receipt docs/reviews/service-lambda.json",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4385,8 +4390,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned /foo provider lambda receives canonical Empty input and returns Int32 data5. Response closure observes actual Int32 data5 and true result, and executed is true immediately after the owned request-with-response adapter returns; exactly-once count is Rust supplemental. Native local Node.hh invokes provider and response callbacks inline before Request returns. Rust uses a scoped owned Service dispatch thread and blocking request; C++ callback registration, exact scheduling/thread identity, remote asynchronous behavior and native no-timeout semantics remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native local originals and owned Rust request/dispatch adaptation; remote callback paths and other backends pending.",
+      "evidence": "docs/NET-02-service-lambda.md; docs/reviews/service-lambda.json; mandatory pinned native NodeTest lambda originals; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutOutputAsyncLambda",

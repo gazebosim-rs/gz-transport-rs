@@ -477,3 +477,22 @@ unchanged parent likewise times out. The staged source gate passed with
 2533/2594 production lines, 3739/3902 regions and 60/60 changed lines.
 The ledger credits this one observable original; C++ callback API identity,
 scheduling and remote provider races remain outside the claim.
+
+## Local service lambda observations
+
+`NodeTest.ServiceCallAsyncLambda` and
+`NodeTest.ServiceCallWithoutInputAsyncLambda` now run in the mandatory pinned
+native suite. Each advertises `/foo`, sends Int32 data 5 or Empty, and checks
+the provider and response closures, reply data 5, true result and an executed
+flag immediately after the request call. The owned Rust adaptation dispatches
+the actual request through a scoped service thread and invokes the response
+closure from the actual reply before its adapter returns. An exactly-once
+response count is supplemental.
+
+The [independent review](reviews/service-lambda.json) replayed native 2/0 and
+Rust 2/0 from a raw export; removing the response-closure call makes both
+post-call flag assertions fail. The exact staged source gate passed with
+2533/2594 production lines and 3739/3902 regions; no production line changed.
+These two fixed observable originals are faithful ports. Native C++ callback
+registration, exact scheduling/thread identity, remote asynchronous behavior
+and native no-timeout semantics remain outside the claim.

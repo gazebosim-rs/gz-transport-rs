@@ -43,6 +43,8 @@ Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01
 handle. An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration, with
 [explicit callback timing limits](docs/NET-02-class-member-service.md).
+Two local service lambda originals retain their fixed provider and response
+observations through an [owned request adapter](docs/NET-02-service-lambda.md).
 `Config::add_topic_remap` installs bounded, exact-key substitutions before Node
 creation. Registration, subscriptions and requests apply one substitution;
 service inspection and explicit withdrawal use the advertised name, matching

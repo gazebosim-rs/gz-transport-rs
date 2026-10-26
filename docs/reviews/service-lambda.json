@@ -1,0 +1,43 @@
+{
+  "reviewer": "/root/msgs_review_fallback",
+  "verdict": "approved_faithful_port_for_pinned_observable_assertions",
+  "public_parent": "f99b8784419c60ea8e22754992793010488f72ff",
+  "exact_staged_tree": "2999b3eb4738ebfd4085c974c2d0eefb587dc21e",
+  "staged_diff_sha256": "05ad4a8e737a173ac1d5347041ea6529085c37fd13bb64a0e58212efb2706cfc",
+  "proposal_sha256": "c975c00423249124d04320bac9f66b57da02af429af3e400094b96e4e2cb1570",
+  "source_sha256": {
+    "scripts/verify.py": "c77a434322f3d262b3e676e34546bda1716ddbf277e5c20a947c42821c0f459c",
+    "tests/service_lambda_original.rs": "b73976923f59770dad9f2a65fffc0792ac9184d87a3c309107aade08d93d798a"
+  },
+  "native": {
+    "source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "inline_request_sha256": "52bd1522d025338ed26ab26684f020f892c003facd7ef7960928115de8a37ab1",
+    "binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "originals": [
+      "NodeTest.ServiceCallAsyncLambda",
+      "NodeTest.ServiceCallWithoutInputAsyncLambda"
+    ],
+    "private_replay": "2 passed, 0 failed",
+    "private_log_sha256": "e5dc92c8f9c4cd47287a1e1ae7034c329f68278d525190c5770c5c4bebf1dc48"
+  },
+  "private_raw_export": {
+    "method": "parent Git archive plus exact staged blobs; separate reviewer-owned Cargo target",
+    "file_hashes_match": true,
+    "selected_rust": "2 passed, 0 failed",
+    "selected_log_sha256": "86ab193ffc3e8fc75444aeb2c26e774f99616b8805f7d895459c9a07515b8442",
+    "callback_removal_mutant": "both tests fail exact post-call executed assertion",
+    "mutant_source_sha256": "a5c1952fdbe7b36381e3ae9939e11772f10f77e166243292bb15b58f06581dca",
+    "mutant_log_sha256": "30ecfe8ec710b17d218dc38693b0f8dc0433140969a2a52378cb9245bfe8033d",
+    "first_private_sandbox_result": "Native EPERM before behavioral checks; excluded and rerun with local socket access"
+  },
+  "exact_staged_gate": {
+    "result": "EXIT0",
+    "log_sha256": "18126ee790054977e9ddc02f7c2f3a5ae147ee70e46bd1ef50761d193649b124",
+    "lines": "2533/2594",
+    "regions": "3739/3902",
+    "changed_production": "0/0"
+  },
+  "assertion_mapping": "Both pinned C++ tests advertise /foo with provider lambdas, request Int32(5) or Empty, require the response lambda to observe Int32(5) and true, and require executed true immediately after Request returns. The Rust owned Service dispatcher actually receives and responds; request_with_response calls the response closure from the actual Node::request result before returning, then the test checks the same post-call flag and an additional exactly-once count. The pinned native Node.hh local branch runs both callbacks before Request returns.",
+  "limits": "Faithful observable fixed local cases only. No production callback API, native callback registration, exact scheduling/thread identity, remote asynchronous behavior, or broad callback parity claim. Rust 1-second safety bound is supplemental; the native originals have no explicit timeout bound. The separate historical lost-output101 remains unclassified.",
+  "unstaged_source_diff": false
+}
