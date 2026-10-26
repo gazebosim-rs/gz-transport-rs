@@ -1,0 +1,50 @@
+{
+  "decision": "approved_for_observable_original",
+  "parent": "d477dd767cc524a4187f58fdb55a3bf09a2a75f9",
+  "staged_tree": "6d6f4346fad372f8208b127217e789f845455355",
+  "staged_diff_sha256": "9b5ffbd9970a8e18cedf76f71888e245034fb30168ca7783016a5ae83bf714f6",
+  "source_freeze_sha256": "b4cef672485255c293aa72b0f8c30769f8c2576926a7db6b1d2e71e2bc07990e",
+  "source_files_sha256": {
+    "scripts/verify.py": "8093264d1ce56e1459bef627ec9d9fe9ca8e9b3792d7bbc2fc4e6c34cbc5c65e",
+    "src/runtime.rs": "f5b774e5c58770ad425d84e6235f637def224930ef67aaeaafc65561aacaf53b",
+    "tests/class_member_service_original.rs": "5b09a670775cb393483dfa57cf7e38baf808f5cca63d7880a624a034d03e8570",
+    "tests/support/runtime.rs": "2ef7ff5a10d9708f96e2b8af4410ddf2af5af757003a91a8cd6421569aef9aad"
+  },
+  "index": "Four declared staged paths, no unstaged change; raw parent export overlaid with exact index bytes for independent replay.",
+  "native_original": {
+    "test": "NodeTest.ClassMemberRequestServiceBeforeAdvertise",
+    "result": "1 passed, 0 failed in independent replay",
+    "log_sha256": "9a07a7b5f068b6e118d884d4979f94b85fdeba6bcf441a6023a435d8a0c46c73",
+    "pinned_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "pinned_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a"
+  },
+  "independent_rust": {
+    "original": "1 passed, 0 failed; log SHA256 66dd42c69fedcceb6f2e9de9bff8791e33f0c2733aee563b71e99d617a0b98cb",
+    "typed_late_once": "1 passed, 0 failed; log SHA256 e64833b779504995e9d357d20733a251b9a5854c88b13e22b336f81288c99f4b",
+    "late_oneway_queuefull_already_sent": "1 passed, 0 failed; log SHA256 1b145c4fc110f0e41282c88d89a1802f95b01643a91606abb1ecac52dd68d340"
+  },
+  "independent_negative": {
+    "change": "In a separate raw export, replace only the late local send_local_request call in Worker::send_requests with Ok(false).",
+    "diff_sha256": "9854ca5cfdc1c5f7402045708fe047d560c2983522a5d81fe8c8d41cfd075375",
+    "result": "Exact new original fails: PendingResponse Timeout at the unchanged 10-second bound; exit 101.",
+    "log_sha256": "3a9b7384b782b10ed4e4f54bf0c36a11b90f936942f4df4354157656f1b9747f"
+  },
+  "strict_staged_gate": {
+    "result": "EXIT0 on the bound tree, including the pinned native original and Rust suite",
+    "log_sha256": "cf8022592a7d17296e288db2009c58c842e4dd123913138a7432f19fb4b66b94",
+    "production_lines": "2533/2594",
+    "production_regions": "3739/3902",
+    "changed_lines": "60/60"
+  },
+  "semantic_findings": [
+    "The Rust original enqueues Int32 data 5 before same-Node service admission, then invokes owned provider and response methods; both assert data 5 and true result, and response completion is observed within the bounded wait.",
+    "The worker retains the same pending UUID and deadline, selects only an active exact typed local service, marks sent only after queue admission, and skips later retries for sent requests.",
+    "A late one-way request completes once; late provider queue-full produces typed QueueFull and increments the existing drop counter."
+  ],
+  "ledger_disposition": "faithful_port for the pinned original's observable request-before-advertise predicates; native C++ callback registration, object-pointer identity, and callback scheduling are outside this Rust API claim",
+  "limits": [
+    "The native original does not assert immediate response-callback visibility after Request; this packet claims bounded eventual response only.",
+    "Remote simultaneous provider selection and process-global callback routing are outside this single-Node case.",
+    "The first source gate was interrupted during a crossed Root job and is excluded; this receipt uses the later exact EXIT0 gate."
+  ]
+}

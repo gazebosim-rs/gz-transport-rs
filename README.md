@@ -40,8 +40,9 @@ explicit absence, incompatibility and ambiguity outcomes. These APIs use each
 Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01-service-types.md).
 `begin_request()` admits a response request and returns a one-shot
 `PendingResponse`; `request()` retains its existing bounded wait through that
-handle. An owned dispatch adaptation covers two native member-service cases
-with [explicit callback timing limits](docs/NET-02-class-member-service.md).
+handle. An owned dispatch adaptation covers three native member-service cases,
+including request before local service registration, with
+[explicit callback timing limits](docs/NET-02-class-member-service.md).
 `Config::add_topic_remap` installs bounded, exact-key substitutions before Node
 creation. Registration, subscriptions and requests apply one substitution;
 service inspection and explicit withdrawal use the advertised name, matching

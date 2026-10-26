@@ -465,3 +465,15 @@ ledger cases remain partial: native member callback registration and
 immediate-after-Request flag visibility are not reproduced by the bounded
 Rust waiter. C++ object-pointer identity and scheduling are unclaimed. The
 historical lost-output status 101 remains unclassified.
+
+The pinned `NodeTest.ClassMemberRequestServiceBeforeAdvertise` original is
+also mandatory. It passes natively 1/0. The owned Rust test submits Int32
+data 5 before service registration, then checks the provider and response
+methods, true result and completion within the original 10-second bound.
+The worker retains the request ID and deadline and retries a later exact typed
+local service once. Independent [source review](reviews/class-member-before-advertise.json)
+passed raw-export native/Rust controls and a retry-removal negative; the
+unchanged parent likewise times out. The staged source gate passed with
+2533/2594 production lines, 3739/3902 regions and 60/60 changed lines.
+The ledger credits this one observable original; C++ callback API identity,
+scheduling and remote provider races remain outside the claim.

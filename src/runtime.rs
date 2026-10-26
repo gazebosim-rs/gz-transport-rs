@@ -1242,6 +1242,42 @@ struct ServiceState {
     tx: SyncSender<Request>,
     active: Arc<AtomicBool>,
 }
+fn send_local_request(
+    services: &[ServiceState],
+    sender: &Sender,
+    owner_dead: &Arc<AtomicBool>,
+    max: usize,
+    id: &str,
+    pending: &Pending,
+) -> Result<bool, Error> {
+    let Some(service) = services.iter().find(|service| {
+        service.active.load(Ordering::Acquire)
+            && service.publisher.topic == pending.topic
+            && matches!(&service.publisher.pub_type, Some(PubType::SrvPub(types))
+                if types.request_type == pending.request_type
+                    && types.response_type == pending.response_type)
+    }) else {
+        return Ok(false);
+    };
+    service
+        .tx
+        .try_send(Request {
+            data: pending.data.clone(),
+            sender: sender.clone(),
+            route: if pending.response_type == EMPTY_TYPE {
+                Vec::new()
+            } else {
+                vec![id.as_bytes().to_vec()]
+            },
+            max,
+            owner_dead: owner_dead.clone(),
+        })
+        .map_err(|_| {
+            sender.counters.queue_drops.fetch_add(1, Ordering::Relaxed);
+            Error::QueueFull
+        })?;
+    Ok(true)
+}
 #[derive(Clone, Hash, PartialEq, Eq)]
 struct PeerKey {
     channel: usize,
@@ -1983,34 +2019,18 @@ impl Worker {
                 if self.pending.len() < self.config.capacity {
                     self.subscribe_message(1, &pending.topic);
                     let id = Uuid::new_v4().to_string();
-                    let local = self.services.iter().find(|s| {
-                        s.active.load(Ordering::Acquire)
-                            && s.publisher.topic == pending.topic
-                            && matches!(&s.publisher.pub_type,Some(PubType::SrvPub(types)) if types.request_type==pending.request_type && types.response_type==pending.response_type)
-                    });
                     let mut pending = pending;
-                    if let Some(service) = local {
-                        pending.sent = true;
-                        if service
-                            .tx
-                            .try_send(Request {
-                                data: pending.data.clone(),
-                                sender: self.sender.clone(),
-                                route: if pending.response_type == EMPTY_TYPE {
-                                    Vec::new()
-                                } else {
-                                    vec![id.as_bytes().to_vec()]
-                                },
-                                max: self.config.max_message_bytes,
-                                owner_dead: self.owner_dead.clone(),
-                            })
-                            .is_err()
-                        {
-                            self.sender
-                                .counters
-                                .queue_drops
-                                .fetch_add(1, Ordering::Relaxed);
-                            let _ = pending.reply.try_send(Err(Error::QueueFull));
+                    match send_local_request(
+                        &self.services,
+                        &self.sender,
+                        &self.owner_dead,
+                        self.config.max_message_bytes,
+                        &id,
+                        &pending,
+                    ) {
+                        Ok(sent) => pending.sent = sent,
+                        Err(error) => {
+                            let _ = pending.reply.try_send(Err(error));
                             return;
                         }
                     }
@@ -2766,9 +2786,30 @@ impl Worker {
         }
     }
     fn send_requests(&mut self) {
+        let services = &self.services;
+        let sender = &self.sender;
+        let owner_dead = &self.owner_dead;
+        let max = self.config.max_message_bytes;
         self.pending.retain(|id, p| {
             if Instant::now() >= p.deadline {
                 let _ = p.reply.try_send(Err(Error::Timeout));
+                return false;
+            }
+            if p.sent {
+                return true;
+            }
+            // A request can precede a local service registration. Keep its
+            // original ID and deadline, and mark it sent only after admission.
+            match send_local_request(services, sender, owner_dead, max, id, p) {
+                Ok(true) => p.sent = true,
+                Ok(false) => {}
+                Err(error) => {
+                    let _ = p.reply.try_send(Err(error));
+                    return false;
+                }
+            }
+            if p.sent && p.response_type == EMPTY_TYPE {
+                let _ = p.reply.try_send(Ok((Vec::new(), true)));
                 return false;
             }
             if p.sent {

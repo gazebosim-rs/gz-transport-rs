@@ -1467,6 +1467,98 @@ fn local_request_overload_and_reply_routes() {
 }
 
 #[test]
+fn unmatched_request_uses_later_typed_local_service_once() {
+    let (mut worker, _) = state(4);
+    let (request, reply) = pending(Instant::now() + Duration::from_secs(1));
+    worker.command(Command::Request(request));
+    assert_eq!(worker.pending.len(), 1);
+
+    let (wrong_tx, wrong_rx) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "wrong".into(),
+        "rep".into(),
+        wrong_tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.send_requests();
+    assert!(matches!(
+        wrong_rx.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    assert_eq!(worker.pending.len(), 1);
+
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "req".into(),
+        "rep".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.send_requests();
+    let incoming = rx.try_recv().unwrap();
+    assert_eq!(incoming.data, [1]);
+    worker.send_requests();
+    assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    worker.command(Command::Respond(incoming.route, vec![5], true));
+    assert_eq!(reply.try_recv().unwrap(), Ok((vec![5], true)));
+    assert!(worker.pending.is_empty());
+}
+
+#[test]
+fn late_local_service_retains_oneway_and_queue_bounds() {
+    let (mut worker, _) = state(2);
+    let (mut request, reply) = pending(Instant::now() + Duration::from_secs(1));
+    request.response_type = EMPTY_TYPE.into();
+    worker.command(Command::Request(request));
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "req".into(),
+        EMPTY_TYPE.into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.send_requests();
+    assert!(!rx.try_recv().unwrap().expects_response());
+    assert_eq!(reply.try_recv().unwrap(), Ok((Vec::new(), true)));
+    assert!(worker.pending.is_empty());
+
+    let (mut worker, _) = state(2);
+    let (request, reply) = pending(Instant::now() + Duration::from_secs(1));
+    worker.command(Command::Request(request));
+    let (tx, _rx) = mpsc::sync_channel(0);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "req".into(),
+        "rep".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.send_requests();
+    assert_eq!(reply.try_recv().unwrap(), Err(Error::QueueFull));
+    assert!(worker.pending.is_empty());
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+
+    let (mut worker, _) = state(2);
+    let (request, _reply) = pending(Instant::now() + Duration::from_secs(1));
+    worker.command(Command::Request(request));
+    worker.pending.values_mut().next().unwrap().sent = true;
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::Serve(
+        "/service".into(),
+        "req".into(),
+        "rep".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+    ));
+    worker.send_requests();
+    assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    assert_eq!(worker.pending.len(), 1);
+}
+
+#[test]
 fn service_frames_validate_type_node_topic_and_request_correlation() {
     let (mut worker, _) = state(10);
     let active = Arc::new(AtomicBool::new(true));

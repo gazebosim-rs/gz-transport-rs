@@ -4243,10 +4243,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberRequestServiceBeforeAdvertise",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ClassMemberRequestServiceBeforeAdvertise",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_class_member_request_service_before_advertise"
+      ],
+      "review": "Independent /root/msgs_review_fallback source/API/assertion APPROVED receipt SHA256 0ec05b1c1cde94a0bb3c74f563c0d089cb0f1e2a69ece543ef434ed475626ea1; private raw native1/0, Rust original1/0, typed late-local/one-way/queue controls and retry-removal Timeout mutant; exact staged source gate 60/60 changed lines.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4255,8 +4257,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Owned Client submits Int32 data5 request on /foo before advertising the same-Node Int32 service. Exact typed late local admission retains pending UUID/deadline and queues once; owned service and response methods assert request/reply data5 and true result, and the response flag is observed within the original 10-second bound. Native C++ callback API identity/scheduling and remote provider races remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned Rust request/dispatch adaptation; other backends pending.",
+      "evidence": "docs/NET-02-class-member-service.md; docs/reviews/class-member-before-advertise.json; mandatory pinned native NodeTest.ClassMemberRequestServiceBeforeAdvertise original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TypeMismatch",

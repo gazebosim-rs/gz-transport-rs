@@ -38,3 +38,29 @@ establish native immediate callback visibility, callback registration API,
 object-pointer identity or scheduling. Other NET-02 behavior and the earlier
 lost-output status 101 remain separate; that historical failure is
 unclassified.
+
+## Request before local advertisement
+
+`NodeTest.ClassMemberRequestServiceBeforeAdvertise` submits Int32 data 5 on
+`/foo` before its owning Node advertises the matching Int32 service. The
+worker keeps the admitted request's ID and deadline while no provider matches.
+After local registration, it queues the request once to the exact typed
+service. An owned provider method checks data 5 and returns it; a separate
+owned waiter invokes the response method with data 5 and a true result. The
+test observes that method's flag within the original 10-second bound, then
+joins both dispatch threads before owner destruction. The native original
+passes 1/0 and runs in every strict gate.
+
+The [independent review](reviews/class-member-before-advertise.json) replayed
+the pinned native original and Rust mapping from a raw parent export. The
+unchanged parent and a separate late-local-retry removal both time out at the
+original bound. Worker controls require typed matching, one admission,
+one-way completion, bounded provider queue failure and no second delivery
+after a request was already sent. The exact staged source gate passed with
+60/60 changed executable lines covered.
+
+This third ledger row is a faithful port of the original's observable
+request-before-advertise predicates. The native C++ callback registration API,
+object-pointer identity and scheduling are outside this Rust API claim. Remote
+provider races and broader NET-02 service behavior remain open. The earlier
+lost-output status 101 remains unclassified.

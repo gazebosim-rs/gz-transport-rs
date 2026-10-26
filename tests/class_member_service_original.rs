@@ -246,6 +246,37 @@ fn original_class_member_callback_service_without_input() {
 }
 
 #[test]
+fn original_class_member_request_service_before_advertise() {
+    let client = Client::new();
+    client.reset();
+    let timeout = Duration::from_secs(10);
+    let pending = client
+        .node
+        .begin_request(TOPIC, INT32, INT32, request_data(true), timeout)
+        .unwrap();
+    let stop = AtomicBool::new(false);
+    thread::scope(|scope| {
+        let _stop_on_panic = StopOnDrop(&stop);
+        let (response_done_tx, response_done_rx) = std::sync::mpsc::sync_channel(1);
+        let response_client = &client;
+        let response_dispatch = scope.spawn(move || {
+            let (response, result) = pending.wait(timeout).unwrap();
+            response_client.echo_response(&Int32::decode(response.as_slice()).unwrap(), result);
+            response_done_tx.send(()).unwrap();
+        });
+
+        let service = client.node.serve(TOPIC, INT32, INT32).unwrap();
+        let provider = scope.spawn(|| client.dispatch(service, &stop, Kind::Echo));
+        response_done_rx.recv_timeout(timeout).unwrap();
+        assert!(client.response_executed.load(Ordering::Acquire));
+        assert!(client.callback_srv_executed.load(Ordering::Acquire));
+        response_dispatch.join().unwrap();
+        stop.store(true, Ordering::Release);
+        provider.join().unwrap();
+    });
+}
+
+#[test]
 fn dropped_pending_response_cannot_take_a_later_request_reply() {
     let client = Client::new();
     let service = client.node.serve(TOPIC, INT32, INT32).unwrap();
