@@ -24,4 +24,6 @@ and failed the supplemental post-join false-flag assertion. The fixed original
 observable predicates are a `faithful_port`; C++ callback registration and exact
 thread scheduling remain outside the API mapping. Broader wrong-type cases and
 the historical lost-output status 101 remain open and unclassified respectively.
-Normal final protected hook and exact hosted qualification remain separate.
+The normal protected hook passed exact reviewer-bound tree `7776318b`. Public
+`a0e48c985958580e243f894592896eed028ee7a3` passed exact hosted run
+`40284202185`; this remains a fixed original observable port.

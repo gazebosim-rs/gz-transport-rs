@@ -1,0 +1,57 @@
+{
+  "reviewer": "/root/msgs_review_fallback",
+  "verdict": "approved_for_fixed_original_observable_assertions",
+  "disposition": "faithful_port of NodeTest.PubSubWrongTypesTwoSubscribers observable predicates; C++ callback registration and exact scheduling remain outside the claim",
+  "parent": "a0e48c985958580e243f894592896eed028ee7a3",
+  "source_manifest_sha256": "99527c223b3cd4f52b7b36ae5f885c32dcd53071f020098e589e114fdcd82080",
+  "source_tree": "dc5763ba8f7240a5ca0b17099a92634b9797cd6e",
+  "source_diff_sha256": "d99e5f7daafe729afa61bb4a22f5b9a1d65413f4b03a3fcf4401066c44d38dd5",
+  "files_sha256": {
+    "scripts/verify.py": "a4635c2d5370389265c95d3a84921001746a7d5abba09411ff292c3a65f8cff1",
+    "tests/pubsub_wrong_two_subscribers_original.rs": "0fadcefdad1297564ebbbfcba17f771a8280aa9c51b4497794b24d13f9dd6952"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/pubsub_wrong_two_subscribers_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "native_original": {
+    "source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "case": "NodeTest.PubSubWrongTypesTwoSubscribers",
+    "independent_result": "1 passed, 0 failed",
+    "independent_log_sha256": "bafcb34131831f65953c8d5f12cb76311f1e6849ae9acb8f3481ac8697f59472"
+  },
+  "private_raw_export": {
+    "description": "Exact staged source tree exported without producer Git metadata into a separate reviewer-owned directory and exclusive CARGO_TARGET_DIR; both source hashes matched and original test source was restored after mutation.",
+    "rust_selected_result": "1 passed, 0 failed, 0 ignored",
+    "rust_log_sha256": "19d7c02e99e45c4fb6e577204f344d8a2f7db6c390b44936a1652358a1915a47",
+    "cargo_jobs": 2,
+    "negative_control": "Changing only Node2 subscriber descriptor from gz.msgs.Vector3d to gz.msgs.Int32 delivered the Int32 publication and failed the exact bad=false assertion.",
+    "negative_log_sha256": "0f0867ebe7d14fd61a0e335a59a6d180d282cf059c7b5b035d9ea8f12337ec61"
+  },
+  "strict_staged_gate": {
+    "result": "EXIT0",
+    "log_sha256": "ab0633606eeaae048be6b9e793c46723053099e21ab65bbcd1cbf4a3d75e8b20",
+    "evidence_sha256": "4d93b6b36b78e32f8a2d60931e46e7717cc747b90965ba061a0d895eaa284249",
+    "rust": "213 passed, 0 failed, 0 ignored",
+    "native": "Node_TEST51/0, including pinned original",
+    "coverage_lines": "2645/2714",
+    "coverage_regions": "3893/4071",
+    "changed_production": "0/0"
+  },
+  "assertion_mapping": [
+    "Two Node instances share a unique partition; Node1 advertises Int32 on /foo and registers a matching Int32 subscriber, Node2 registers a mismatching Vector3d subscriber.",
+    "The Int32(5) value and publisher success are exact.",
+    "Connection readiness has its own native 10-second bound; the good receiver begins its fresh 10-second wait only afterward.",
+    "Good callback-equivalent receipt decodes Int32 data5, then good=true and bad=false are checked.",
+    "Bad subscriber remains live through the good observation and a supplemental 300 ms quiet interval; only exact Timeout is treated as no delivery."
+  ],
+  "superseded_source": "Earlier tree f4df8c642ccdfd59bf2c317ae5826f9a6788ba3f passed a gate but is unapproved: its good 10-second wait began before readiness, and its bad subscriber could drop before good observation. Corrected source dc5763ba fixes both without relaxing the original predicates.",
+  "limits": [
+    "No production runtime/API change.",
+    "Owned Rust receive threads map observable callbacks; C++ callback registration and precise thread scheduling are not claimed.",
+    "Other wrong-type tests and the historical lost-output101 remain separate.",
+    "Private replay is correctness evidence only; no timing or throughput conclusion."
+  ]
+}

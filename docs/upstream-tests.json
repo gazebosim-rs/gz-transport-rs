@@ -4722,10 +4722,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesTwoSubscribers",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubWrongTypesTwoSubscribers",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_wrong_types_two_subscribers"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact corrected source/API/assertion approval in docs/reviews/pubsub-wrong-two-subscribers.json. Private pinned native1/0, raw-export Rust1/0, matching-bad-subscriber mutant fails bad=false. Superseded first source unapproved for deadline/subscription lifetime gaps; corrected source retains separate callback bound and bad subscription through good observation. C++ callback API/scheduling unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4734,8 +4736,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Two Nodes share /foo; Node1 advertises Int32 and registers matching callback, Node2 registers mismatching Vector3d. Matching connection wait precedes successful Int32(5) publication. Good callback data5/flag completes within separate ten-second receive bound, while bad callback flag remains false. Supplemental exact-Timeout poller retains bad subscription through good observation and300ms quiet before joining; broader matrix and exact C++ callback scheduling remain separate.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned typed publisher/two-subscription adaptation; other backends pending.",
+      "evidence": "docs/NET-01-wrong-two-subscribers.md; docs/reviews/pubsub-wrong-two-subscribers.json; mandatory pinned native NodeTest.PubSubWrongTypesTwoSubscribers original; corrected exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SubThrottled",

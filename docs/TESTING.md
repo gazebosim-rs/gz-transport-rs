@@ -560,4 +560,27 @@ production lines and 3893/4071 regions; no production source changed. Independen
 [review](reviews/pubsub-wrong-subscription.json) replayed native and raw-export
 Rust originals 1/0 each. Changing the subscriber type to Vector3d failed the
 post-join false-flag control. See [the scoped contract](NET-01-wrong-type-subscription.md).
-The final protected hook and hosted qualification remain separate.
+The final protected hook and exact hosted run `40284202185` passed on public
+`a0e48c985958580e243f894592896eed028ee7a3` (reviewer-bound tree `7776318b`).
+
+
+## Two subscribers with different message types
+
+The pinned `NodeTest.PubSubWrongTypesTwoSubscribers` original runs in every
+native gate. The test-only Rust port retains two Nodes, Int32(5), matching Int32
+and mismatching Vector3d subscriptions, a matching connection wait, successful
+publication, good callback data/flag and bad callback false. The connection and
+matching receive waits have separate ten-second bounds. The bad receiver stays
+live through the good callback and a supplemental 300 ms quiet interval; exact
+Timeout is its only accepted no-delivery result.
+
+Independent static review rejected a superseded source whose good deadline
+began before connection readiness and whose bad subscription could drop before
+good delivery. The corrected source passed its own exact staged gate: 213 Rust
+tests, pinned native originals including Node51/0, production 2645/2714 lines and
+3893/4071 regions, no production source edit. Independent [source review](reviews/pubsub-wrong-two-subscribers.json)
+replayed native and raw-export Rust originals 1/0 each; changing only the bad
+subscriber type to Int32 failed the bad=false predicate. The fixed observable
+original is a faithful port; C++ callback registration and exact scheduling
+remain unclaimed. The final normal protected hook and exact hosted qualification
+remain separate. See [the bounded contract](NET-01-wrong-two-subscribers.md).
