@@ -62,7 +62,9 @@ delivery, and ignored registrations remain discoverable; see the
 partition, topic, descriptor and delivery-path metadata; raw receive remains
 available. Matching same-process Nodes now receive direct copies with native
 intra-process origin; wire peers remain remote. See [direct delivery](docs/NET-02-process-local-direct.md)
-and [received metadata](docs/NET-01-message-info.md). The publisher's bounded
+and [received metadata](docs/NET-01-message-info.md). Two native owned
+member-callback originals map to a [joined Rust dispatch adaptation](docs/NET-02-class-member-callback.md)
+without a public callback registration API. The publisher's bounded
 echo history and process-local fanout have a reviewed [cost update](docs/NET-02-publication-cost.md).
 Local counters expose drops, wire errors and direct-routing errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,

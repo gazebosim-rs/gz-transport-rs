@@ -424,4 +424,22 @@ per step; paired geometric overhead was 3.598%, bootstrap 95% interval
 interval does not establish a 5% upper bound. The [semantic review](reviews/publication-cost-source.json)
 and [performance review](reviews/publication-cost-performance.json) are
 separate. The normal protected hook, hosted qualification and simulator
-adoption remain separate gates.
+adoption were checked independently; public `c21ffcc7` passed hosted run
+`40248292544`. This does not strengthen the stated performance interval.
+
+## Owned member callback observations
+
+The pinned `NodeTest.ClassMemberCallbackMessage` and
+`NodeTest.ClassMemberCallbackMessageInfo` originals now run in every strict
+gate. The owned Rust client tests preserve invalid and valid registration,
+publisher construction and connection predicates, the original 100 ms
+settle, Int32 data 5, callback completion, and the Info case's exact topic,
+partition, descriptor and intra-process values. The original-path Publisher
+drops at its method return before callback completion. A separate test checks
+joined owner retirement with a surviving Publisher. The first candidate
+lacked the required SPDX line; the second retained the Publisher too long.
+Both were superseded before [independent approval](reviews/class-member-callback.json).
+The final test and mandatory-native verifier change no production Rust;
+the exact staged source gate passed 195 Rust tests and both native originals
+with 2486/2543 production lines and 3690/3846 regions. Native callback
+registration and scheduling remain outside this test-only adaptation.

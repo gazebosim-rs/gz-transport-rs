@@ -4155,10 +4155,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackMessage",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ClassMemberCallbackMessage",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_class_member_callback_message"
+      ],
+      "review": "Independent /root/msgs_review_fallback approved the V3 observable assertion mapping after private raw Rust3/0, native originals2/0, exact staged gate and Info-dispatch mutant. Receipt docs/reviews/class-member-callback.json. V1/V2 are superseded; prior lost-output status101 remains unclassified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4167,17 +4169,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Owned MemberClient::cb receives exact Int32 data5 after invalid/valid Subscribe and Advertise admissions, valid Publisher construction, HasConnections, one Publish and the original 100 ms settle. The local Publisher drops at SendSomeData return before callback completion. Callback execution and data are observed from its method argument. Separate exact-once and joined-owner retirement checks are supplemental; native callback-registration API, C++ object-pointer identity and scheduling are unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned Rust receive/dispatch adaptation; other backends pending.",
+      "evidence": "docs/NET-02-class-member-callback.md; docs/reviews/class-member-callback.json; mandatory pinned native NodeTest.ClassMemberCallbackMessage original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ClassMemberCallbackMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_class_member_callback_message_info"
+      ],
+      "review": "Independent /root/msgs_review_fallback approved the V3 observable assertion mapping after private raw Rust3/0, native originals2/0, exact staged gate and Info-dispatch mutant. Receipt docs/reviews/class-member-callback.json. V1/V2 are superseded; prior lost-output status101 remains unclassified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4186,8 +4191,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Owned MemberClient::cb_info checks Int32 data5 and the same received sample's exact /foo topic, leading-slash partition, gz.msgs.Int32 type and intra_process=true after invalid/valid admissions, HasConnections, one Publish and the original 100 ms settle. The local Publisher drops before callback completion. Native callback-registration API, C++ object-pointer identity and scheduling are unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned Rust receive/dispatch adaptation; other backends pending.",
+      "evidence": "docs/NET-02-class-member-callback.md; docs/reviews/class-member-callback.json; mandatory pinned native NodeTest.ClassMemberCallbackMessageInfo original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackService",

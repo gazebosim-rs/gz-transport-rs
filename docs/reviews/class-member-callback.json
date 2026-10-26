@@ -1,0 +1,30 @@
+{
+  "decision": "approved",
+  "reviewer": "/root/msgs_review_fallback",
+  "author": "/root/transport_fallback",
+  "disposition": "faithful_port for the observable assertions of NodeTest.ClassMemberCallbackMessage and NodeTest.ClassMemberCallbackMessageInfo; the native callback registration API, object pointer identity and scheduling are not claimed",
+  "base": "c21ffcc7ebdc108aefa1ab137f5468887a4bce96",
+  "proposal": "artifacts/class-member-callback/proposal-v3.json",
+  "proposal_sha256": "a3497f73c3252701ba493070b92e4d87c5f793bf4dc3fafbd641e595f795e438",
+  "staged_tree": "a45faf6fdcff21535cfb90ad3ec576d7e2b2af31",
+  "staged_diff_sha256": "8034884f844cbbbfd7e96c95135b77a3f9f3826cabb787bade2ae31eb849b343",
+  "files_sha256": {
+    "scripts/verify.py": "36fe3885e6d589acd1730d2cc641ddd016455328d0149db9ced63504d85b60aa",
+    "tests/class_member_callback_original.rs": "548ae543bbfb6b30549f42b190bec0c5b97303ab3f336cf4cb3af7b0f70def0c"
+  },
+  "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+  "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+  "exact_staged_gate_sha256": "6c15c836964ec19b70a19aef636b6c2a1c9016915804579422dab5a6a17d8276",
+  "independent": {
+    "raw_export": "Exact index tree exported to reviewer-owned private source and exclusive Cargo target; both source hashes reproduced.",
+    "native_originals": "Both pinned NodeTest originals passed 2/0 with exact source and binary hashes.",
+    "native_log_sha256": "d391c20a7ca4d6a014a4ca2e86896af829346dcdab549fec95f6f3fa1a4dc67d",
+    "rust": "All three private Rust tests passed 3/0 after local socket access; first sandbox run failed EPERM at setup and is excluded.",
+    "rust_log_sha256": "79f5691ece7155050ee4b395abe2e142778852bcf94b8b459a478e1184f56a3d",
+    "mutant": "Changing only the Info dispatcher call from cb_info to cb makes the exact original Info test fail its complete topic/partition/type/intra_process observation; no production source changed.",
+    "mutant_diff_sha256": "f83c3e21bcd8cb6e3532859194c42aa335ebe11fd5645b21cf78487f398c9c78",
+    "mutant_log_sha256": "f34082602a7263872da3225e76dea71116d7c9a648a5ba90e8243f187b60f40c"
+  },
+  "assertion_mapping": "Invalid Subscribe and two invalid Advertise attempts map to InvalidName; successful subscription and Publisher construction map native true/Valid; has_connections maps native HasConnections. The owned asynchronous MemberClient method receives Int32 data 5; Info case checks exact /foo, canonical partition, gz.msgs.Int32 and intra_process true. The original 100 ms settle remains. The original-path Publisher is destroyed at SendSomeData return before the callback wait, matching native; exact-once and checked owner retirement are additional controls.",
+  "limits": "This is a test-only adaptation with no public callback registration API or production changes. It does not establish native callback scheduling or C++ object-pointer semantics, broader NET-02 closure, or latency. V1 lacked SPDX and V2 retained the Publisher through callback; both are superseded. Their positive gates are excluded from this decision. Final metadata, normal hook, public commit and hosted qualification remain pending."
+}
