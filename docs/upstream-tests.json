@@ -4678,10 +4678,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesOnPublish",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubWrongTypesOnPublish",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_wrong_types_on_publish"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact source/API/assertion approval in docs/reviews/pubsub-wrong-type-publish.json. Private native original1/0, raw-export Rust original1/0, and type-guard-removal mutant fails the wrong-type Err assertion. C++ callback registration and thread identity remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4690,8 +4692,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 advertisement and subscription succeed and connect; Vector3d(1,2,3) publication is rejected with callback flag immediately false; Int32(5) publication succeeds and owned receive dispatch checks callback data and flag within the original ten-second bound. Native false/true publication results map to typed InvalidFrame/Ok. C++ callback registration/scheduling identity and other wrong-subscription cases remain separate.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned typed publication/subscription adaptation; other backends pending.",
+      "evidence": "docs/NET-01-wrong-type-publish.md; docs/reviews/pubsub-wrong-type-publish.json; mandatory pinned native NodeTest.PubSubWrongTypesOnPublish original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesOnSubscription",

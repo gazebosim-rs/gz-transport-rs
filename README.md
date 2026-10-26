@@ -98,6 +98,9 @@ publisher.publish_typed(&StringMsg { data: "ok".into(), ..Default::default() })?
 Typed publication rejects a different canonical descriptor before encoding.
 Use `publish(bytes)` for opaque forwarding; typed reencoding does not retain
 unknown fields. See [typed publication](docs/NET-01-typed-publication.md).
+The [wrong-type publication contract](docs/NET-01-wrong-type-publish.md)
+checks that a mismatched value is rejected before a local subscriber callback,
+then that a correctly typed Int32 value reaches it.
 
 Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies

@@ -521,3 +521,26 @@ fails the original at the post-request `executed` assertion. The reviewer
 approved the fixed same-Node observable original as `faithful_port`. C++
 callback API identity, process-global other-Node inline behavior, exact
 thread scheduling and native no-timeout API identity remain unclaimed.
+
+## Wrong-type publication with local delivery
+
+The pinned `NodeTest.PubSubWrongTypesOnPublish` original passes 1/0. The
+test-only Rust port preserves its Int32 data 5, Vector3d components 1/2/3,
+valid typed advertisement and local subscription, connection settling,
+rejected wrong publication with an immediate false callback flag, then
+successful right publication and callback data/flag within ten seconds.
+`InvalidFrame` maps the native false return before queue admission.
+
+The exact staged source gate includes this original among 49 native Node
+tests and passes the Rust suite with 2645/2714 production lines and
+3893/4071 regions. No production line changed. An initial selected Rust
+compilation failed because the test imported `prost` directly; it was fixed
+to use `gz_msgs::prost::Message`, and the corrected selected test and exact
+staged gate pass. C++ callback registration and thread identity remain
+outside this fixed observable port.
+
+Independent [source review](reviews/pubsub-wrong-type-publish.json) replayed
+the pinned native original and selected Rust original 1/0 each from exact
+source. Removing the typed publication guard makes the wrong-type
+`InvalidFrame` assertion fail with `Ok(())`; the reviewer approved the fixed
+observable original as `faithful_port` with the API limits above.

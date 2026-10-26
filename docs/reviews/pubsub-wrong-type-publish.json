@@ -1,0 +1,29 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "source_manifest": "artifacts/pubsub-wrong-type-worktree/artifacts/pubsub-wrong-type/source-freeze.json",
+  "source_manifest_sha256": "94a8a4e4a2f5340d5270ea78753b01574dda5dc8ada9f929e8fa54b6c0c799ec",
+  "parent": "d53e42261bb0cf555611780316bb35d2b087e8d3",
+  "source_tree": "2486c54a19983329c9e678a2d818745407803ec6",
+  "source_diff_sha256": "9d9c916e7c2547cb089a3df53a9529b06546ef382f9b9451c4803a3223ffcc63",
+  "files_sha256": {
+    "scripts/verify.py": "c3b5001395fb073a59afe05fd9da1d7b2e2f11fc024794e3e8c4be38a0b974ac",
+    "tests/pubsub_wrong_type_original.rs": "c122c4162552597ec3fbcc87f898567705c48f1cf328a8825208a5928be95026"
+  },
+  "no_source_or_index_edit_by_reviewer": true,
+  "independent": {
+    "raw_export": "Exact staged Git tree exported without Git metadata; both source hashes, file modes, tree and diff match the frozen proposal. Cargo used a reviewer-owned exclusive two-job target.",
+    "native_original": "Pinned NodeTest.PubSubWrongTypesOnPublish passed 1/0 with local socket permission; Node_TEST.cc and binary hashes match the proposal.",
+    "native_log_sha256": "aa697425ae7552215b99504eb3e5b2708aceea5c59c471fd530b3c4afc09d683",
+    "rust_selected": "Private raw-export original_pub_sub_wrong_types_on_publish passed 1/0.",
+    "rust_log_sha256": "ec0ab970d84dba5b488cac25812df0cb1e6a5bebd405c56fb697f9665253348f",
+    "mutant": "A private one-line removal of Publisher::publish_typed type-name rejection made the exact wrong-type Err(InvalidFrame) assertion fail with Ok(()); the subscriber also rejected the resulting wrong wire type.",
+    "mutant_log_sha256": "f559f7dff0fce29328043f50d3a5742ef77b841549c06974703857c924d164f7",
+    "sandbox_setup_failure": "Initial native attempt failed at socket creation before assertions; retained and excluded.",
+    "sandbox_log_sha256": "6055b721aec9164119973b1bae907e15682b02772df1d0ca16505ab7ea2f3f21"
+  },
+  "assertion_review": "Native Int32 advertise and Subscribe success, Vector3d(1,2,3) wrong typed Publish false with immediate callback flag false, then Int32(5) Publish true and callback/data/flag within default 10-second wait map to Rust Result/Subscription observations. The Rust connection and receipt waits retain the 10-second bound; the callback-equivalent owned thread checks data5. The verifier adds the exact pinned original without removing existing filters.",
+  "disposition": "faithful_port of the observable NodeTest.PubSubWrongTypesOnPublish assertions",
+  "limits": "C++ callback registration and thread scheduling identities, other wrong-subscription originals and broader publication semantics are not claimed. The source slice adds tests/verifier only, with no production API or behavior change. Prior lost-output101 remains unclassified."
+}
