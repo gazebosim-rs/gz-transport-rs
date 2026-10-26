@@ -1,0 +1,83 @@
+{
+  "decision": "approved_for_fixed_original_mixed_wrong_good_response_predicates",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T10:43:08.413331+00:00",
+  "source_manifest_sha256": "ae6d6234cb522d003c7aaae1c09b22d40b6eff8e4b69565713c0225566ea74d7",
+  "parent": "cda96dc9d150dd1613b6b2d53f9e26568423b0a7",
+  "source_tree": "db694f30da68fbc19b216bdfe00123c1153e7125",
+  "source_diff_sha256": "5246b15aace3865e8aea2973f68b5c162239b5943130b7fa6e53b43110e02481",
+  "files_sha256": {
+    "scripts/verify.py": "2377fb6b40a9806c47149ce376ea6a1e717a4e63b523aa261164598c736db09e",
+    "tests/service_mixed_response_original.rs": "8d1e2461ccf522a52c2f0bb3ff720a1ca81330f149babf88ff4f5505da2fb7d3"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/service_mixed_response_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Compared NodeTest.SrvTwoRequestsOneWrong and SrvWithoutInputTwoRequestsOneWrong, their provider/response callbacks and native waitUntil default10000ms. Same-Node Int32(5) or Empty input preserves wrong synchronous1000ms failure mapped to exact Timeout, followed by admitted wrong async and false callback after300ms. Good synchronous1000ms succeeds; good asynchronous admission is followed by actual data5/resulttrue callback predicates and true flag within a fresh10s observation. Supplemental good-sync payload/result assertions strengthen the native success check. Provider and wrong observer remain live through both later good observations; cancellation starts only afterward, followed by joins and supplemental wrong-false flag. Both owned async lifetimes are30s, explicitly distinct from native unbounded lifetime and its10s callback observation. Native callback scheduling/API identity is not claimed. Existing tests untouched; native filters add exactly two originals. No production/pin/threshold/exclusion change; original2014 and2026OSRF/Apache2 notices preserved.",
+  "independent_replay": {
+    "raw_export": "All163 raw staged Git blobs independently exported without Git metadata and verified before/after replay. Fresh exclusive reviewer-owned Cargo2 target; no producer target reused.",
+    "rust": "2 passed,0 failed,0 ignored",
+    "native": "2 passed,0 failed",
+    "restored_rust": "2 passed,0 failed,0 ignored",
+    "restored_binary_sha256": "57bf7119c4181e0928bb11b1bf0bfcfa8df21ec6a24955014374f1e0819acdf2",
+    "logs_sha256": {
+      "native.log": "36c8adeb7b84395ce2030affdeceddc3b23909776f7619d62c2fbe1d15c69148",
+      "exact-rust.log": "23c90bdac352d96af79d0fc88f3c79b77b6a7fbf8f7c66e825493c6bdf0b1d39",
+      "valid-wrong-control.log": "7562904d3efe2d962c00e4623ef4cdd82563b51eaca1153a8d8142c3a2ad82c7",
+      "invalid-good-control.log": "feb2657a91f94c6a592f18fbd248ecd8a9c8378fdcbdd8444732900420412719",
+      "restored-rust.log": "978acb4f573ad45a3e7e772ea757ef55e69525d735b3870efe57bd479419882c",
+      "valid-wrong-control.rs": "65bee902e0e870149144a5b071f4f169b266dec2ed2e3327ecfb6509c6132310",
+      "invalid-good-control.rs": "84c9d152373f71e39440000a143bfc15ad5cb0df225daa512b3884ffd342e5a7"
+    },
+    "valid_wrong_control": "Changed only wrong asynchronous expected response descriptor to Int32 plus private response checks/traces. Both wrong observers actually received Int32 data5/resulttrue, then failed the retained300ms false predicate. Two intended failures, exit101.",
+    "invalid_good_control": "Changed only good asynchronous expected response descriptor to Vector3d plus a trace. Both required good completions failed at their unchanged10s wait with Timeout. During unwinding the unchanged wrong observers then reached their30s bounds and also panicked. Those secondary failures are disclosed and are not substituted for the two required-good failures. Exit101; neither setup nor compilation failed.",
+    "restoration": "All163 original source hashes restored and reverified; fresh exact Rust2/0 replay afterward.",
+    "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "native_wait_helpers_sha256": "5b021b7c26b9ac2cfc5c05b6bbc1042e0dde2ed66f5b5567119f5446b09861bd",
+    "native_environment": "Validated original prefix with matching Zenoh dependency and permitted local sockets.",
+    "overlap": "Ordinary correctness Cargo2/native replay after Transport tight source gate cleared; no performance or scheduler inference."
+  },
+  "producer_full_source_gate": {
+    "result": "EXIT0 on unchanged exact frozen two-file source tree",
+    "log_sha256": "64ebb7ba3159bf4dca18654b1327bff520677eb9f0287d751c324e0e71f7dcfc",
+    "evidence_sha256": "d150b3170c90b4847d86681188c2da5c7ebb1401fd0551aea81cc7c25d64302b",
+    "raw_rust_sha256": "bcd28298e5cc132cdba9b5132c989663749513c8374056de0f5465a23fa8652b",
+    "rust": "218 passed,0 failed,0 ignored",
+    "tooling": "24 passed",
+    "native": "Node56/0 including pinned mixed wrong/good response originals; mandatory unchanged native suite passed",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "source_retained": "Complete artifacts/staged copied into task source-retained before metadata/normal hook",
+    "source_retained_file_count": 207,
+    "source_retained_hash_manifest_sha256": "ca5e8600551596a2dc60da21d66404561b284cf4f93c2ac41fa76e45707acaec",
+    "environment": "Explicit pinned original reference source/prefix and permitted local sockets; coordinated quiet window after Root/Msgs/SDF clear."
+  },
+  "retained_source_binding": "All207 task-specific retained report hashes verified against their hash manifest; evidence input hashes independently match raw reviewed source. This task-specific copy remains authoritative after normal hook reuses artifacts/staged.",
+  "parent_hosted": {
+    "headSha": "cda96dc9d150dd1613b6b2d53f9e26568423b0a7",
+    "run": 40306497060,
+    "status": "completed",
+    "conclusion": "success",
+    "independently_verified": true
+  },
+  "limitations": [
+    "Only fixed original observable predicates are qualified. Native unbounded pending lifetime, exact callback API and thread scheduling remain outside this mapping.",
+    "Reviewer replayed native2, Rust2 and both two-case controls; producer218-test strict coverage gate is separately bound, not independently rerun.",
+    "Final metadata binding, mandatory normal protected hook, public push and exact new hosted success remain required. Broader NET01/NET02 and performance remain open."
+  ]
+}

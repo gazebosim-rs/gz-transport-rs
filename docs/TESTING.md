@@ -648,3 +648,26 @@ were restored and Rust3/0 passed again. Native unbounded asynchronous lifetime,
 C++ callback API and scheduling remain unqualified. See the
 [bounded contract](NET-02-service-wrong-response.md); final normal protected hook
 and exact hosted qualification remain separate.
+
+
+## Mixed wrong and good service response types
+
+The mandatory native suite includes `NodeTest.SrvTwoRequestsOneWrong` and
+`NodeTest.SrvWithoutInputTwoRequestsOneWrong`. The ports preserve wrong
+synchronous Timeout with 1000 ms, admitted wrong asynchronous request and false
+callback after 300 ms, successful good synchronous request with 1000 ms, and
+admitted good asynchronous request with data5/true callback flag within a fresh
+ten-second observation. Both asynchronous ownership bounds are thirty seconds;
+the wrong observer remains live through the later good completion. Cancellation
+and joins follow the original checks, then a supplemental false flag detects
+late wrong replies. Native unbounded lifetime and C++ API/scheduling stay open.
+
+The exact source gate passed 218 Rust tests and Node56/0, with strict unchanged
+2645/2714 production lines and 3893/4071 regions. Independent
+[review](reviews/service-mixed-response.json) replayed native2/0 and raw Rust2/0.
+A valid wrong-async response control exercised data5/true and failed both 300 ms
+false flags; wrong good-async response controls failed both ten-second required
+completions. Secondary thirty-second wrong-observer errors during failed-control
+unwinding are disclosed separately. Exact source restored and Rust2/0 passed.
+See the [bounded contract](NET-02-service-mixed-response.md); final normal hook
+and exact hosted qualification remain required.

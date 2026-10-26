@@ -45,6 +45,8 @@ asynchronous admission without a response and synchronous Timeout for a
 Vector3d request sent to a local Int32 service. The
 [wrong-response originals](docs/NET-02-service-wrong-response.md) retain the
 same observations for Int32 and inputless requests expecting Vector3d replies.
+The [mixed-response originals](docs/NET-02-service-mixed-response.md) then require
+successful Int32 responses while the wrong-response observer remains active.
 An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration, with
 [explicit callback timing limits](docs/NET-02-class-member-service.md).

@@ -32,5 +32,6 @@ the asynchronous expected response descriptor to Int32 and added control traces:
 provider and observer received Int32 data 5 with a true result, then the original
 300 ms false-flag assertion failed. All raw source hashes were restored, and
 Rust 3/0 passed again. The fixed observable originals are faithful ports with
-the lifetime and API limits above. Final normal protected hook and exact hosted
-qualification remain separate.
+the lifetime and API limits above. The final normal protected hook and exact
+hosted run `40306497060` passed on public
+`cda96dc9d150dd1613b6b2d53f9e26568423b0a7`, reviewer-bound tree `b70cc691`.

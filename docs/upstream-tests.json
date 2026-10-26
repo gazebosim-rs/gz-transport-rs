@@ -4870,10 +4870,12 @@
       "id": "UNIT_Node_TEST:NodeTest.SrvTwoRequestsOneWrong",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SrvTwoRequestsOneWrong",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_two_requests_one_wrong_response"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/service-mixed-response.json. Native2/0, raw-source Rust2/0, valid wrong-async controls execute data5/true then fail300ms false; wrong good-async controls fail required10s completion. Secondary unchanged bad-observer30s errors during unwind disclosed separately. All163 source hashes restored and Rust2/0 replayed; native unbounded lifetime/C++callback API/scheduling unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4882,17 +4884,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 response service with Int32 data 5. Wrong synchronous Vector3d-response request fails with1000ms Timeout, wrong asynchronous admission succeeds and any-response flag stays false after300ms. Good synchronous Int32-response request succeeds with1000ms bound; good asynchronous admission succeeds and actual response callback checks data5/resulttrue/flag within fresh10s observation. Wrong observer remains live through good completion; both owned async deadlines30s, explicit tail cancellation/joins/supplemental wrongfalse. Native unbounded lifetime and C++callback API/scheduling unqualified; synchronous reply data/result checks supplemental.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals and owned same-Node service/request adaptation; other backends pending.",
+      "evidence": "docs/NET-02-service-mixed-response.md; docs/reviews/service-mixed-response.json; mandatory pinned mixed-response originals; exact staged source gate218Rust/Node56/0; complete task-specific source-retained reports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SrvWithoutInputTwoRequestsOneWrong",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SrvWithoutInputTwoRequestsOneWrong",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_without_input_two_requests_one_wrong_response"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/service-mixed-response.json. Native2/0, raw-source Rust2/0, valid wrong-async controls execute data5/true then fail300ms false; wrong good-async controls fail required10s completion. Secondary unchanged bad-observer30s errors during unwind disclosed separately. All163 source hashes restored and Rust2/0 replayed; native unbounded lifetime/C++callback API/scheduling unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4901,8 +4906,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 response service with Empty input. Wrong synchronous Vector3d-response request fails with1000ms Timeout, wrong asynchronous admission succeeds and any-response flag stays false after300ms. Good synchronous Int32-response request succeeds with1000ms bound; good asynchronous admission succeeds and actual response callback checks data5/resulttrue/flag within fresh10s observation. Wrong observer remains live through good completion; both owned async deadlines30s, explicit tail cancellation/joins/supplemental wrongfalse. Native unbounded lifetime and C++callback API/scheduling unqualified; synchronous reply data/result checks supplemental.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals and owned same-Node service/request adaptation; other backends pending.",
+      "evidence": "docs/NET-02-service-mixed-response.md; docs/reviews/service-mixed-response.json; mandatory pinned mixed-response originals; exact staged source gate218Rust/Node56/0; complete task-specific source-retained reports"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicList",
