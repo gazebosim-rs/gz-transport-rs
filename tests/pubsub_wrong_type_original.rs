@@ -48,18 +48,19 @@ fn original_pub_sub_wrong_types_on_publish() {
     let callback_executed = AtomicBool::new(false);
 
     thread::scope(|scope| {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !publisher.has_connections().unwrap() {
+            assert!(Instant::now() < deadline, "subscriber did not connect");
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        // Keep the original callback wait separate from connection readiness.
         let executed = &callback_executed;
         let callback = scope.spawn(move || {
             let message = subscription.recv_timeout(Duration::from_secs(10)).unwrap();
             assert_eq!(Int32::decode(message.data.as_slice()).unwrap().data, 5);
             executed.store(true, Ordering::Release);
         });
-
-        let deadline = Instant::now() + Duration::from_secs(10);
-        while !publisher.has_connections().unwrap() {
-            assert!(Instant::now() < deadline, "subscriber did not connect");
-            thread::sleep(Duration::from_millis(10));
-        }
 
         assert_eq!(publisher.publish_typed(&wrong), Err(Error::InvalidFrame));
         assert!(!callback_executed.load(Ordering::Acquire));

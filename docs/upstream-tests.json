@@ -4683,7 +4683,7 @@
       "replacement": [
         "original_pub_sub_wrong_types_on_publish"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact source/API/assertion approval in docs/reviews/pubsub-wrong-type-publish.json. Private native original1/0, raw-export Rust original1/0, and type-guard-removal mutant fails the wrong-type Err assertion. C++ callback registration and thread identity remain unclaimed.",
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact source/API/assertion approval in docs/reviews/pubsub-wrong-type-publish.json. Private native original1/0, raw-export Rust original1/0, and type-guard-removal mutant fails the wrong-type Err assertion. C++ callback registration and thread identity remain unclaimed. Scoped receive-order follow-up independently approved by /root/msgs_owner_astra; docs/reviews/pubsub-wrong-type-publish-deadline.json retains exact source/native1/0 and scaled ordering-control limitations.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4692,9 +4692,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Same-Node Int32 advertisement and subscription succeed and connect; Vector3d(1,2,3) publication is rejected with callback flag immediately false; Int32(5) publication succeeds and owned receive dispatch checks callback data and flag within the original ten-second bound. Native false/true publication results map to typed InvalidFrame/Ok. C++ callback registration/scheduling identity and other wrong-subscription cases remain separate.",
+      "contract": "Same-Node Int32 advertisement and subscription succeed and connect; Vector3d(1,2,3) publication is rejected with callback flag immediately false; Int32(5) publication succeeds and owned receive dispatch checks callback data and flag within the original ten-second bound. Native false/true publication results map to typed InvalidFrame/Ok. C++ callback registration/scheduling identity and other wrong-subscription cases remain separate. Connection readiness precedes spawning the good receive thread, so readiness does not consume its separate ten-second receive budget; exact scheduler/full-window equivalence remains unclaimed.",
       "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned typed publication/subscription adaptation; other backends pending.",
-      "evidence": "docs/NET-01-wrong-type-publish.md; docs/reviews/pubsub-wrong-type-publish.json; mandatory pinned native NodeTest.PubSubWrongTypesOnPublish original; exact staged source gate"
+      "evidence": "docs/NET-01-wrong-type-publish.md; docs/reviews/pubsub-wrong-type-publish.json; mandatory pinned native NodeTest.PubSubWrongTypesOnPublish original; exact staged source gate; docs/reviews/pubsub-wrong-type-publish-deadline.json; exact one-file ordering-correction source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesOnSubscription",

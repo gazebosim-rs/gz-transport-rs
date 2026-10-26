@@ -26,8 +26,9 @@ Independent [review](reviews/pubsub-wrong-two-subscribers.json) replayed the
 pinned native original and selected raw-export Rust original 1/0 each. Changing
 only the second subscriber descriptor to Int32 delivered the message and failed
 the bad callback flag assertion. The fixed original observable predicates are a
-`faithful_port`; final normal protected hook and exact hosted qualification remain
-separate.
+`faithful_port`. The normal protected hook passed exact reviewer-bound tree
+`faeae393`; public `02cbb6836b74d4c5ffd9d212952bdf8b5ef65cd8` passed exact
+hosted run `40287897483`.
 
 C++ callback registration and exact thread scheduling remain outside the owned
 receive API mapping. Broader wrong-type cases and the historical lost-output

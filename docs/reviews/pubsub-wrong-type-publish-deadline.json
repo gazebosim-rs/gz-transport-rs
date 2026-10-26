@@ -1,0 +1,67 @@
+{
+  "decision": "approved_for_test_only_connection_readiness_order",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T08:18:43.146919+00:00",
+  "source_manifest_sha256": "df035ad5b99bbb73f84c2eb1e577b99f5a486384928a8934d651a221b38f70e1",
+  "parent": "02cbb6836b74d4c5ffd9d212952bdf8b5ef65cd8",
+  "source_tree": "e2d658a8bd5097aab7e9022289a8abf945ac1a29",
+  "source_diff_sha256": "0a6bc3e9d26e5ec64966aff97985e64f0f037731292a853ed7523491c3bd0896",
+  "files_sha256": {
+    "tests/pubsub_wrong_type_original.rs": "58ded7a5b3e90bc6c24fd5b7ee0b10eb84cf2aa2a649afbdc61d90a6e19e84e0"
+  },
+  "modes": {
+    "tests/pubsub_wrong_type_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "exact_export": "All156 tracked staged files independently compared byte-for-byte with raw export;155 files unchanged from parent. Reviewer-exclusive target cleaned for gz-transport before new exact-source rebuild; producer target never reused.",
+  "semantic_review": "Only connection readiness polling moves before spawning the receive thread. The retained10-second connection bound and10-second receive bound, Int32 data5, Vector3d1/2/3, wrong-publish InvalidFrame assertion, callback non-execution, successful right publish, decoded data assertion and callback execution all remain. Original C++ waits for connectivity before wrong/right publishes and callback wait. No production/API/wire change or coverage exclusion. Original2014 notice and2026 Apache2/OSRF notice retained.",
+  "independent_replay": {
+    "rust": "Exact frozen source freshly rebuilt after package clean in exclusive reviewer target:1 passed,0 failed,0 ignored.",
+    "rust_log_sha256": "f9bfe52f7e4dd2e4b73bced0434561bf33c8662845e264a67005e6cb7086cce6",
+    "native": "Pinned original NodeTest.PubSubWrongTypesOnPublish:1 passed,0 failed,0 skipped; original source and binary hashes verified.",
+    "native_log_sha256": "194e84f6ad5b536cb90f83533f0e18a46f255e228bb213323f598ae083ddee4a",
+    "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "review_binary_sha256": "6be2307bb06f45da74e30e8c2a60db6ca142e21d1274ed645352dac5afd0eac3",
+    "ordering_control": "Recovered private controls use the same100ms receive budget and150ms pre-readiness delay: old ordering fails with receive Timeout and subsequent disconnected readiness timeout; fixed ordering passes1/0. Controls demonstrate relative wait placement only; they do not qualify scheduler timing or full timeout-window equivalence. Exact source restored and all156 bytes reverified before fresh replay.",
+    "old_control_log_sha256": "589ee30ce64a8c341f2abc2a96ec2942c254c502d7d25fdee4cb4262871b559d",
+    "fixed_control_log_sha256": "98f6ba97edda520faebb041e1710b96e00dfb11734e48ac9659470bbe4ae5488",
+    "old_control_source_sha256": "532f4844074e4e6728292e35d7fb051d87c4b2bc12b573c0d90f7ce09824a7e5",
+    "fixed_control_source_sha256": "d7b674ea4c659b4955f4a50d5787a4b4240bc98a20497f1d1ec4ce53764a4af7",
+    "excluded_setup_failures": "Earlier local-socket EPERM and native missing-library/wrong-prefix loader failures are excluded. Validated original native prefix with matching Zenoh dependency yielded the accepted replay.",
+    "overlap": "Ordinary Cargo2 correctness work overlaps other correctness checks; no performance inference."
+  },
+  "producer_gate_review": {
+    "result": "EXIT0 on exact frozen one-file source tree",
+    "log_sha256": "6ce70ef8ac0fc4845985bdf2420bb9a83117319615c6f1a284644b0679c0e317",
+    "evidence_sha256": "663f90f977756e287c1b1a7a1622c2e52b17e560d9e3e31763559c1e35c85ab6",
+    "rust": "213 passed,0 failed,0 ignored",
+    "native": "Pinned Node51/0 and unchanged mandatory native suite passed",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "environment": "Explicit validated reference source/prefix with local sockets; quiet window after Root/Msgs/SDF clear."
+  },
+  "parent_hosted": {
+    "headSha": "02cbb6836b74d4c5ffd9d212952bdf8b5ef65cd8",
+    "status": "completed",
+    "conclusion": "success",
+    "run": "40287897483"
+  },
+  "limitations": [
+    "Independent review did not repeat full strict coverage gate; exact author gate213Rust,Node51/0,2645/2714lines,3893/4071regions reviewed. Changed production denominator0 because test-only; not a production coverage claim.",
+    "Final metadata binding, normal protected hook, publication and exact hosted candidate qualification remain required.",
+    "No broader NET01/NET02 acceptance or performance claim."
+  ]
+}

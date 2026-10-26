@@ -13,7 +13,7 @@ while `publish_typed(&Int32)` succeeds. A user-owned receive thread decodes
 the actual Int32 bytes and sets the flag. The test checks that the wrong
 publication leaves the flag false and that the right publication completes
 the callback within ten seconds. The publisher connection predicate is
-observed before either publish.
+observed before the receive thread starts and before either publish.
 
 This port covers the fixed same-Node data, admission and callback assertions.
 C++ callback registration and exact thread scheduling are outside its API
@@ -25,3 +25,20 @@ pinned native original 1/0 and exact raw-export Rust original 1/0. Removing
 the typed publication guard made the wrong-type `InvalidFrame` assertion fail
 with `Ok(())`. The reviewer approved `faithful_port` for the fixed observable
 original; the API and scheduling limits above remain explicit.
+
+
+A later [ordering review](reviews/pubsub-wrong-type-publish-deadline.json)
+found that the first port started its receive timeout before connection
+readiness. The scoped correction moves only that readiness wait ahead of the
+existing receive thread. Both ten-second bounds, payloads, publication outcomes,
+callback data/flags and license notices are retained; connection readiness no
+longer consumes the receive budget. It changes no production API or wire code.
+
+The exact one-file source gate passed 213 Rust tests, the mandatory native suite
+including 51 Node originals, and strict 2645/2714 production lines and 3893/4071
+regions. Independent exact raw-source Rust and pinned native replays passed 1/0
+each. A private scaled ordering control failed for the old ordering and passed
+for the fixed order; it demonstrates wait placement, not scheduler timing or
+full timeout-window equivalence. The earlier fixed-original passing history is
+retained. Final normal protected hook and exact hosted qualification remain
+separate for this correction.

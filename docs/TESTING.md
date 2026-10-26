@@ -582,5 +582,25 @@ tests, pinned native originals including Node51/0, production 2645/2714 lines an
 replayed native and raw-export Rust originals 1/0 each; changing only the bad
 subscriber type to Int32 failed the bad=false predicate. The fixed observable
 original is a faithful port; C++ callback registration and exact scheduling
-remain unclaimed. The final normal protected hook and exact hosted qualification
-remain separate. See [the bounded contract](NET-01-wrong-two-subscribers.md).
+remain unclaimed. The final normal protected hook and exact hosted run
+`40287897483` passed on public `02cbb6836b74d4c5ffd9d212952bdf8b5ef65cd8`,
+reviewer-bound tree `faeae393`. See [the bounded contract](NET-01-wrong-two-subscribers.md).
+
+
+## Wrong-type publication receive ordering
+
+The existing wrong-type publication port now waits for connection readiness
+before starting its ten-second good-message receive. All payload values,
+wrong/right publication results, immediate wrong callback flag and decoded good
+callback data/flag assertions remain unchanged. Independent source review found
+the previous early receive wait could expire while connection readiness was
+still being awaited. The correction preserves the two separate bounded waits.
+
+The exact one-file source gate passed 213 Rust tests, mandatory pinned native
+originals including Node51/0, strict 2645/2714 production lines and 3893/4071
+regions; no production line changed. Independent [review](reviews/pubsub-wrong-type-publish-deadline.json)
+replayed the exact raw-source Rust original and pinned native original 1/0 each.
+A private scaled old-order control failed with Timeout while the same fixed-order
+control passed; these controls establish relative ordering only, without a
+scheduler or full timeout-window claim. Final normal protected hook and exact
+hosted qualification remain separate.
