@@ -72,6 +72,10 @@ disconnect and does not acknowledge delivery; see [publisher inspection](docs/NE
 `Publisher::connection_snapshot()` reads the same bounded interest boundary from
 an atomic cache without waiting for the worker; see the [nonblocking snapshot
 contract](docs/NET-01-publisher-interest-snapshot.md).
+`AdvertiseOptions` selects Process, Host or the existing All default through
+`advertise_with_options` and `advertise_typed_with_options`. Matching local Nodes
+retain direct delivery and bounded readiness. Native discovery admission and
+Process heartbeat metadata follow the [publication scope contract](docs/NET-01-publisher-scope.md).
 Graceful Node shutdown withdraws its subscription topics before process BYE.
 `advertised_topics()` and `subscribed_topics()` inspect this Node's live lease
 ownership without network waits; see [local topic inventory](docs/NET-01-local-topics.md).

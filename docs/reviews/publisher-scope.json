@@ -1,0 +1,176 @@
+{
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T18:49:42.115253+00:00",
+  "verdict": "APPROVED exact source semantics, assertions and full retained strict source evidence. Final metadata binding, mandatory normal hook and exact new hosted success remain required.",
+  "source_tree": "12b1fbbe0914496ba9b9ff80951b53ea8b34d02b",
+  "source_manifest_sha256": "55c08a3b5a712c936667f6ede29552369b35a18119ceb5720e899db24eaa447d",
+  "source_diff_sha256": "b8885a1734024568b7b891bdcbb5edaf52467632a1b021529a9b2c51428e7e3a",
+  "files_sha256": {
+    "scripts/verify.py": "ea16bdc93830a2e51fb089a773d3d05ea8487d2556ba000259692bd8855b3636",
+    "src/lib.rs": "b63e946ee0ba8c325a45a0f3ba116d8ddc0d3a4fbfc647177c137d1a03e57c0e",
+    "src/runtime.rs": "0235f4c414ba317fd95a2b66554e2bfd53629123b527dc754dc2d04c26cd5745",
+    "tests/cpp_peer.cc": "6473fa3821c67e94734213a95c4e2f27ff95b9c97af24f32e657ad7fe25badbc",
+    "tests/interop.rs": "9b02bbe75684f187d98bd6883badf01ddee7a3042997a9bcd285925498fd02bd",
+    "tests/support/runtime.rs": "ad676b830a4c3c69798bb88a5ab1785744abe816d3950224fd70a4cc9fc59cf0"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "src/lib.rs": "100644",
+    "src/runtime.rs": "100644",
+    "tests/cpp_peer.cc": "100644",
+    "tests/interop.rs": "100644",
+    "tests/support/runtime.rs": "100644"
+  },
+  "parent": "f963c83a736701b64e2a529cddf068099c73e416",
+  "parent_hosted": {
+    "attempt": 1,
+    "conclusion": "success",
+    "databaseId": 40370522967,
+    "headSha": "f963c83a736701b64e2a529cddf068099c73e416",
+    "status": "completed",
+    "url": "https://github.com/gazebosim-rs/gz-transport-rs/actions/runs/40370522967"
+  },
+  "raw_source_binding": {
+    "candidate_paths": 174,
+    "parent_paths": 174,
+    "other_parent_blobs_preserved": 168,
+    "all_raw_sources_reverified_after_controls": true,
+    "native_source_binary_inputs_reverified": {
+      "src/Node_TEST.cc": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+      "src/Node.cc": "a5e2981e3c9e5f60e574b09a70e12115417371bff38e6d0d49e7a88c88bbdd1d",
+      "src/Discovery.hh": "89dfffcc9a726fb724880840038b53b0e36ab044211f7c060a6f39813e5d28b9",
+      "include/gz/transport/WaitHelpers.hh": "5b021b7c26b9ac2cfc5c05b6bbc1042e0dde2ed66f5b5567119f5446b09861bd",
+      "include/gz/transport/AdvertiseOptions.hh": "82c5507eac89c05631a383d6e8762918fb7b0caab004abe2fed21e23e4a32224",
+      "build/bin/UNIT_Node_TEST": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a"
+    }
+  },
+  "assertion_map_sha256": "295aaf2e1ddedc792a9a5b1ed0c6a3243339390004f546e3c6958e913cd7b242",
+  "semantic_review": [
+    "AdvertiseOptions reuses the canonical generated Scope enum; All remains default and existing untyped/typed entry points retain their previous path. Four new Process/Host and remap originals preserve admission, separate subscriber thread, actual readiness, original 10s/10ms bounds, Int32 data 5, publish success, joined subscriber and executed flag. The old All/remap and old threaded originals remain tested.",
+    "Initial and query-response Process suppression, Host foreign-source query suppression and Process withdrawal suppression match pinned native Discovery source. The existing unconditional heartbeat continues advertising Process metadata; foreign native receivers discard it. No blanket no-wire or security claim.",
+    "Cross-Node Process readiness reads existing live process-local registrations, matching domain/topic/type or wildcard and excluding own-node records handled by existing local interest. Atomic readiness bits preserve independent local/remote flags; retirement and poison clear Process bits. Fresh exact readiness regression covers mismatches, wildcard, typed, own-node, subscription drop and owner cancellation.",
+    "Source edits do not change service scope, schema/dependency pins, coverage policy, thresholds or original assertions. CPP observer extends the existing peer without modifying earlier modes. Native filters add exactly four fixed original cases."
+  ],
+  "independent_replay": {
+    "fresh_exclusive_target": true,
+    "cargo_jobs": 2,
+    "incremental_override": "absent",
+    "native_originals": {
+      "passed": 6,
+      "failed": 0,
+      "scope": "four new Process/Host originals and two old All controls"
+    },
+    "rust_selected": {
+      "unit": 85,
+      "scope_originals": 6,
+      "old_threaded_originals": 2,
+      "native_scope_interop": 1,
+      "readiness_domain_type_topic_lifetime": 1,
+      "total": 95,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fresh_cpp_peer_sha256": "6bac99f02ce8278b014960e3d4480d4ee3ef19515d6586317f8602aeb2e895f6",
+    "restored_selected_total": 95,
+    "restored_failed": 0,
+    "producer_target_reused": false,
+    "review_progress_sha256": "b6c483a56555cdfd2cde389a2cc6381674aa1c1b483858ec4d3eaed30c2ac796",
+    "step_logs_sha256": {
+      "native-originals": "4cc5ddc9f1c5b08c2ed9e2d8a83e70d9fa202de128749166eabb055b32568d56",
+      "fresh-cpp-peer": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exact-unit": "ca7539f4b34b7442461c41e3df84c6e83d8f4bbf32c5c0dab29f2a1b90203caf",
+      "exact-original-scopes": "4a8254d518ad7d1dc4794729ebdfccff4ff37365fcbb442aa2d4255952ac4de2",
+      "exact-old-threaded": "42f9aefd792fc30f6bbe94d4918fac17dd87d9d4ba00a23764d603783455cd53",
+      "exact-native-interop": "37ca5979873d75f4ee224fb999bdee3bfd1dd12e1a0d26972b8c55adc9c84c7d",
+      "exact-readiness-domain": "32748467e9782e737eb8caacb7851d93129de258e623ca47a50bcbd1e15359c8",
+      "control-process-wire-unit": "20855d40b557520322ff1896f54009ab27892705369cdfdc440d836366c5ef93",
+      "control-process-wire-native": "b7691507fec2f809136f67b64e53064a3efcd85aa3621bff9bf424c164f08159",
+      "control-process-wire-old-all": "3ba3c3a6e473f4fa28e02a171cf31c5e64e0aa371b5aee81fff6125f57c58998",
+      "control-process-readiness": "32c674d956c645753bc41305880a1bde2664a30bed939a7488c1786d99c8721c",
+      "control-host-foreign-query": "ce48b21e7e1acabb34e9fdc257473632e718a658a351077cd8a5d3befd93af46",
+      "restored-unit": "c1a0817536c1c371c7a1025183e90254186dd44dd7f248ca66c786590e566942",
+      "restored-original-scopes": "5c4c5a8a5ade51cae0cfcd2b763594c45c85bcacd3f83b02d2a39c170bdd4507",
+      "restored-old-threaded": "42f9aefd792fc30f6bbe94d4918fac17dd87d9d4ba00a23764d603783455cd53",
+      "restored-native-interop": "37ca5979873d75f4ee224fb999bdee3bfd1dd12e1a0d26972b8c55adc9c84c7d",
+      "restored-readiness-domain": "cdce63ea552ff1b2533e2290ecbeb8bf38c5bc18f2620e8882cb39e34b08776c"
+    }
+  },
+  "negative_controls": [
+    {
+      "mutation": "Private Process publisher wire metadata forced to All while original Process API option retained.",
+      "observed": "Unit assertion saw scope 2 instead of 0; actual native observer reported STATE 0 1 1 2 and failed original Process publishers==0. Old All controls 2/0.",
+      "primary_sites": [
+        "tests/support/runtime.rs:344",
+        "tests/interop.rs:2068"
+      ]
+    },
+    {
+      "mutation": "Private Process interest refresh clears the bit instead of setting it.",
+      "observed": "Both Process originals fail unchanged 10s subscriber-registration readiness; All/Host originals 4/0. Separate subscriber threads also hit their unchanged 10s receive Timeout; retained secondary failures are not cleanup errors.",
+      "primary_site": "tests/interop.rs:1969",
+      "secondary_site": "tests/interop.rs:1958"
+    },
+    {
+      "mutation": "Private Host query filter accepts foreign subscribe sources.",
+      "observed": "Original unit expected no response but received Advertise [1]; all 84 other unit cases pass. Existing deliberate poison-test panic messages remain expected passing tests.",
+      "primary_site": "tests/support/runtime.rs:372"
+    }
+  ],
+  "failures_preserved": {
+    "author": {
+      "probe_compile": {
+        "result": "First prototype failed compile before originals/native execution: nonexistent Node.Unadvertise. Corrected actual Publisher lease reset passed78813; oldsource/log/driver retained.",
+        "receipt_sha256": "58b8b4f869f934c702f72cc3396b6442b605c44797a8e0b3a72cd1642b7a9bdf"
+      },
+      "selected_v1": {
+        "result": "77790EXIT1:85unit andAll/Host4originals passed,Process2 original10s readiness/recv assertionsfailed. Existing cross-Node readiness had relied on discovery. Corrected production registry readiness; all original assertions/bounds retained.",
+        "receipt_sha256": "e5e0b59f14c54e6d6e9eed691b9965cae497465aef79b4076e4a3130464a45e7",
+        "source_and_logs_retained": 12
+      }
+    },
+    "reviewer": "First driver stopped after the correctly failing Process-wire unit because --nocapture inserts panic text between the test name and FAILED. V1 driver/progress/log/controlsource retained; all source restored. Resume verified actual scope 2 / expected 0 and0 passed / 1 failed, then continued remaining controls without repeating completed positives. No candidate failure or control result was erased.",
+    "review_driver_note_sha256": "6973043bdc300d6372a50c1b106fdb2a607619baf3ad3ede60c4e85416a8f74e",
+    "review_v1_progress_sha256": "d434e01a3ec1a94e840c49d122d0373016258dec38ec063cb5ef2b1055a70136",
+    "full_binding_assembly": "Reviewer assumed the old staged-gate.log filename. Missing-file error occurred before coverage recomputation or receipt write; corrected to actual source-protected-gate.log and verified its frozen SHA. V1 driver/note retained, no runtime rerun or source/coverage change.",
+    "full_binding_assembly_note_sha256": "0c442e2e2e4a4c3e9be463a8824f9449295fa9cdbeb1bdbd81f0719905382afe"
+  },
+  "limits": [
+    "Final metadata binding, mandatory normal hook, publication and exact new hosted success remain required. The source full gate is now bound; no broader feature or release completion claim.",
+    "Native callback/storage/API and scheduler behavior are adapted to bounded owned Rust receivers/workers; no immediate callback equivalence.",
+    "Host foreign-source behavior is exercised by native-source audit and exact UDP admission simulation, not a physical multi-host topology. Process heartbeat metadata emission is preserved and explicitly not hidden.",
+    "Scope option family beyond message discovery scope, service scope, authentication, throttling and broader NET acceptance remain open.",
+    "Ordinary coordinated correctness runs only; no timing or performance claim."
+  ],
+  "pre_gate_source_review_sha256": "0e5c3b81367dc42e9e479ff578ac2d1277e7888eb93856386851aa79055cb15b",
+  "full_source_evidence": {
+    "audit_sha256": "67f164f12f1407d6d97939c13ffd8dc55f79bf4acd02929940fba7094abb71b4",
+    "author_gate_session": 90029,
+    "exit": 0,
+    "rust": [
+      234,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "native": "Node60,pubsub11,ordinaryservice6,inputless5,outputless2 and all other unchanged required groups passed.",
+    "totals": {
+      "lines": {
+        "covered": 2702,
+        "count": 2778
+      },
+      "regions": {
+        "covered": 3971,
+        "count": 4157
+      }
+    },
+    "changed_lines": {
+      "covered": 73,
+      "count": 73
+    },
+    "retained_files": 209,
+    "retained_hash_manifest_sha256": "0f4332eb29a28fadf2b2f546807d5b6073d33abba194d077e0d94bfe524fae2a",
+    "evidence_sha256": "aeefc87df58404a47a65ae64a96581dab224c87da15989728ad8d2b53994f652",
+    "raw_rust_sha256": "66d1d8513dfe75ee2bb4afdeacffc8490adf042f8449adc1303447644646538d",
+    "method": "Unchanged reviewed coverage.check, verify.changed_lines and coverage.changed_check run on full retained JSON/LCOV; only exact staged source root rebound to verified fresh private source. No filtering, exclusion, threshold change or duplicate runtime replay."
+  }
+}

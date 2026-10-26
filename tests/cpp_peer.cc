@@ -162,6 +162,27 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "scope-observer") {
+    struct State { std::atomic<unsigned> received{0}; std::atomic<bool> valid{true}; };
+    auto state=std::make_shared<State>();
+    std::function<void(const gz::msgs::StringMsg&)> callback=[state,value](const auto &message) {
+      if (message.data()!=value) state->valid.store(false);
+      state->received.fetch_add(1);
+    };
+    if (!node.Subscribe(topic,callback)) return 114;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    while (std::getline(std::cin,command)) {
+      if (command=="QUIT") return 0;
+      if (command!="STATE") return 115;
+      std::vector<gz::transport::MessagePublisher> publishers,subscribers;
+      if (!node.TopicInfo(topic,publishers,subscribers)) return 116;
+      const int scope=publishers.empty()?-1:static_cast<int>(publishers.front().Options().Scope());
+      std::cout << "STATE " << state->received.load() << ' ' << state->valid.load() << ' '
+                << publishers.size() << ' ' << scope << std::endl;
+    }
+    return 117;
+  }
   if (mode == "message-info-two-nodes" || mode == "message-info-subscribe") {
     auto state=std::make_shared<MetadataState>();
     std::string qualified;

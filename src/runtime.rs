@@ -225,6 +225,7 @@ fn release(active: &AtomicBool, slots: &AtomicUsize) {
 }
 const LOCAL_INTEREST: u8 = 1;
 const REMOTE_INTEREST: u8 = 2;
+const PROCESS_INTEREST: u8 = 4;
 
 struct LocalPublisherInterest {
     topic: String,
@@ -330,6 +331,24 @@ pub struct Subscription {
     _lease: Lease,
     owner_dead: Arc<AtomicBool>,
     local_interest: Arc<Mutex<LocalInterestCache>>,
+}
+/// Discovery scope for a message publisher. All peers are eligible by default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AdvertiseOptions {
+    scope: Scope,
+}
+impl Default for AdvertiseOptions {
+    fn default() -> Self {
+        Self { scope: Scope::All }
+    }
+}
+impl AdvertiseOptions {
+    pub fn scope(&self) -> Scope {
+        self.scope
+    }
+    pub fn set_scope(&mut self, scope: Scope) {
+        self.scope = scope;
+    }
 }
 /// Per-subscription local-delivery policy. The default receives publications
 /// from the owning Node as well as matching wire publishers.
@@ -697,6 +716,23 @@ impl Node {
         self.advertise(topic, M::PROTOBUF_NAME)
     }
     pub fn advertise(&self, topic: &str, type_name: &str) -> Result<Publisher, Error> {
+        self.advertise_with_options(topic, type_name, AdvertiseOptions::default())
+    }
+    /// Advertise a canonical message with an explicit discovery scope.
+    pub fn advertise_typed_with_options<M: gz_msgs::CanonicalMessage>(
+        &self,
+        topic: &str,
+        options: AdvertiseOptions,
+    ) -> Result<Publisher, Error> {
+        self.advertise_with_options(topic, M::PROTOBUF_NAME, options)
+    }
+    /// Advertise message bytes with an explicit discovery scope.
+    pub fn advertise_with_options(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: AdvertiseOptions,
+    ) -> Result<Publisher, Error> {
         let topic = self.remapped_topic(topic)?;
         let mut topics = self
             .topics
@@ -711,6 +747,7 @@ impl Node {
         self.sender.send(Command::Advertise(
             topic.clone(),
             type_name.into(),
+            options.scope,
             lease.active.clone(),
             interest.clone(),
         ))?;
@@ -1341,7 +1378,7 @@ impl Drop for Node {
 }
 
 enum Command {
-    Advertise(String, String, Arc<AtomicBool>, Arc<AtomicU8>),
+    Advertise(String, String, Scope, Arc<AtomicBool>, Arc<AtomicU8>),
     KnownPublisherTopics(SyncSender<TopicNameRecords>),
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
@@ -2003,23 +2040,31 @@ impl Worker {
                 && s.topic == topic
                 && (s.type_name.is_empty() || s.type_name == type_name)
         }) || self.has_remote_subscribers(topic, type_name)
+            || self.advertisements.iter().any(|(p, _, bits)| {
+                p.topic == topic
+                    && matches!(&p.pub_type, Some(PubType::MsgPub(info)) if info.msg_type == type_name)
+                    && bits.load(Ordering::Acquire) & PROCESS_INTEREST != 0
+            })
     }
     fn command(&mut self, command: Command) {
         match command {
-            Command::Advertise(topic, type_name, active, interest) => {
+            Command::Advertise(topic, type_name, scope, active, interest) => {
                 // A queued replacement must never be followed by the old withdrawal.
                 self.cleanup();
                 if !active.load(Ordering::Acquire) {
                     return;
                 }
-                let p = self.wire_publisher(
+                let mut p = self.wire_publisher(
                     topic,
                     PubType::MsgPub(MessagePublisher {
                         msg_type: type_name,
                         ..Default::default()
                     }),
                 );
-                self.announce(0, protocol::advertisement(&self.process, p.clone()));
+                p.scope = scope.into();
+                if scope != Scope::Process {
+                    self.announce(0, protocol::advertisement(&self.process, p.clone()));
+                }
                 self.advertisements.push((p, active, interest));
                 self.refresh_remote_interest();
             }
@@ -2565,7 +2610,11 @@ impl Worker {
                 let publishers: Vec<_> = if channel == 0 {
                     self.advertisements
                         .iter()
-                        .filter(|(_, a, _)| a.load(Ordering::Acquire))
+                        .filter(|(p, a, _)| {
+                            a.load(Ordering::Acquire)
+                                && p.scope != i32::from(Scope::Process)
+                                && (p.scope != i32::from(Scope::Host) || local)
+                        })
                         .map(|(p, _, _)| p.clone())
                         .collect()
                 } else {
@@ -2667,6 +2716,8 @@ impl Worker {
                     );
                 }
                 for (p, active, _) in &self.advertisements {
+                    // Native heartbeats re-advertise even Process publishers;
+                    // receiving peers enforce the scope carried in metadata.
                     if active.load(Ordering::Acquire) {
                         self.announce(0, protocol::advertisement(&self.process, p.clone()));
                     }
@@ -2796,10 +2847,16 @@ impl Worker {
             keep
         });
         for (channel, p) in removed {
-            self.announce(
-                channel,
-                protocol::discovery(&self.process, Type::Unadvertise, Some(DiscContents::Pub(p))),
-            );
+            if p.scope != i32::from(Scope::Process) {
+                self.announce(
+                    channel,
+                    protocol::discovery(
+                        &self.process,
+                        Type::Unadvertise,
+                        Some(DiscContents::Pub(p)),
+                    ),
+                );
+            }
         }
         let mut topics = HashSet::new();
         self.subscriptions.retain(|s| {
@@ -2819,8 +2876,34 @@ impl Worker {
                         interest.tx = None;
                     }
                 }
+                // Process publishers never learn other local Nodes through
+                // discovery. Refresh their cached readiness from the same
+                // live registrations used by process-local delivery.
+                for (publisher, _, bits) in &self.advertisements {
+                    if publisher.scope != i32::from(Scope::Process) {
+                        continue;
+                    }
+                    let domain = MessageDomain::from_config(&self.config);
+                    let matching = interests.iter().any(|interest| {
+                        interest.live()
+                            && interest.domain == domain
+                            && interest.key.node != self.node
+                            && interest.key.topic == publisher.topic
+                            && matches!(&publisher.pub_type, Some(PubType::MsgPub(info))
+                                if interest.key.type_name == "google.protobuf.Message"
+                                    || interest.key.type_name == info.msg_type)
+                    });
+                    if matching {
+                        bits.fetch_or(PROCESS_INTEREST, Ordering::AcqRel);
+                    } else {
+                        bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
+                    }
+                }
             }
             Err(_) => {
+                for (_, _, bits) in &self.advertisements {
+                    bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
+                }
                 self.sender
                     .counters
                     .routing_errors

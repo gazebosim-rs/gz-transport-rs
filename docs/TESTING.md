@@ -787,4 +787,33 @@ descriptor controls fail the original flag predicates; a production topic-view
 control fails the original metadata predicate, with expected join propagation
 retained. Old tests pass throughout; restored source passes 4/0. Full source
 evidence and unchanged coverage policy were independently rechecked. Final
-metadata binding, normal hook and exact new hosted qualification remain required.
+metadata binding and the normal protected hook passed on public
+`f963c83a736701b64e2a529cddf068099c73e416`; exact hosted run `40370522967`
+attempt 1 succeeded.
+
+## Message publication scopes
+
+The [scope contract](NET-01-publisher-scope.md) adds explicit canonical
+Process/Host/All message options while retaining All defaults. Four pinned native
+Process/Host and remap originals passed before implementation; their Rust ports
+retain publisher/subscriber admission, separate joined thread, original
+10-second/10-millisecond readiness, Int32 data 5 and actual execution flag.
+Existing All/default threaded assertions remain required. Supplements check
+native discovery metadata and payloads, Host query admission, Process initial and
+withdrawal suppression, and live process-local readiness and retirement.
+Native Process heartbeat advertisements remain present.
+
+The exact source gate passed 234 Rust and 24 tooling tests, native Node 60/0,
+pub/sub 11/0, ordinary services 6/0, inputless 5/0 and all other required groups.
+Strict owned coverage is 2702/2778 lines and 3971/4157 regions across all five
+production files; automatic changed coverage is 73/73 executable lines. All 209
+source reports are retained. Independent [review](reviews/publisher-scope.json)
+replayed native 6/0 and fresh Rust 95/0, verified three production controls and
+restored 95/0, then recomputed unchanged full JSON/LCOV and added-line policies.
+Expected primary and secondary control failures, author compile/readiness
+failures and reviewer assembly errors remain retained.
+
+Final metadata binding, the normal protected hook and new exact hosted success
+remain required. Native callback/storage/scheduler facades, immediate global
+visibility, physical multi-host qualification, service scope and performance
+remain open.

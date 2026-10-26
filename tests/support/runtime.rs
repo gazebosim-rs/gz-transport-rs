@@ -221,6 +221,7 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "old".into(),
+        Scope::All,
         old.clone(),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -229,12 +230,14 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "never-advertised".into(),
+        Scope::All,
         retired,
         Arc::new(AtomicU8::new(0)),
     ));
     worker.command(Command::Advertise(
         "/topic".into(),
         "new".into(),
+        Scope::All,
         Arc::new(AtomicBool::new(true)),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -310,6 +313,83 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
     drop((replacement, second));
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert!(node.topics.lock().unwrap().len() <= node.config.capacity);
+}
+
+#[test]
+fn publication_scope_initial_response_and_withdrawal_follow_native() {
+    for scope in [Scope::Process, Scope::Host, Scope::All] {
+        let (mut worker, _) = state(8);
+        let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        receiver
+            .set_read_timeout(Some(Duration::from_millis(30)))
+            .unwrap();
+        worker.config.multicast = Ipv4Addr::LOCALHOST;
+        worker.config.message_port = receiver.local_addr().unwrap().port();
+        let active = Arc::new(AtomicBool::new(true));
+        worker.command(Command::Advertise(
+            "/scope".into(),
+            "type".into(),
+            scope,
+            active.clone(),
+            Arc::new(AtomicU8::new(0)),
+        ));
+        let read = || {
+            let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+            let mut packets = Vec::new();
+            while let Ok(len) = receiver.recv(&mut buffer) {
+                let message = protocol::decode(&buffer[..len]).unwrap();
+                let Some(DiscContents::Pub(publisher)) = &message.disc_contents else {
+                    panic!("missing scoped publisher")
+                };
+                assert_eq!(publisher.scope, i32::from(scope));
+                packets.push(message.r#type);
+            }
+            packets
+        };
+        assert_eq!(
+            read(),
+            if scope == Scope::Process {
+                vec![]
+            } else {
+                vec![Type::Advertise as i32]
+            }
+        );
+        for (source, local) in [
+            (Ipv4Addr::new(192, 0, 2, 1), false),
+            (Ipv4Addr::LOCALHOST, true),
+        ] {
+            worker.discovery(
+                0,
+                protocol::discovery(
+                    "remote",
+                    Type::Subscribe,
+                    Some(DiscContents::Sub(Subscriber {
+                        topic: "/scope".into(),
+                    })),
+                ),
+                IpAddr::V4(source),
+            );
+            assert_eq!(
+                read(),
+                if scope == Scope::All || scope == Scope::Host && local {
+                    vec![Type::Advertise as i32]
+                } else {
+                    vec![]
+                }
+            );
+        }
+        active.store(false, Ordering::Release);
+        worker.cleanup();
+        assert!(worker.advertisements.is_empty());
+        assert_eq!(
+            read(),
+            if scope == Scope::Process {
+                vec![]
+            } else {
+                vec![Type::Unadvertise as i32]
+            }
+        );
+    }
 }
 
 #[test]
@@ -1261,6 +1341,7 @@ fn discovery_lifecycle_and_capacity() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "type".into(),
+        Scope::All,
         active.clone(),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -3326,6 +3407,7 @@ fn final_publisher_retirement_sends_unadvertise_before_bye() {
     worker.command(Command::Advertise(
         "/survivor".into(),
         "gz.msgs.Int32".into(),
+        Scope::All,
         active.clone(),
         Arc::new(AtomicU8::new(0)),
     ));

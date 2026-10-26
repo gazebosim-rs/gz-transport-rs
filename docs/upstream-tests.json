@@ -4020,10 +4020,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ScopeProcess",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeProcess",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_process"
+      ],
+      "review": "/root/msgs_owner_astra; fresh raw 174 / native 6 / Rust 95 plus three production controls and restored 95/0. Exact source and unfiltered full coverage evidence approved in docs/reviews/publisher-scope.json. Native callback/storage/scheduler and physical multi-host qualification remain bounded as documented.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4032,17 +4034,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb observations retained: chosen Process/Host scope, valid Int32 publisher and admitted subscriber on a separate joined thread, actual HasConnections readiness with native 10 s / 10 ms defaults, successful single Int32 data 5 publication, exact received data 5 and actual execution flag. Remapped originals preserve /foo -> /bar for both Nodes. Owned bounded worker/readiness/receiver adaptation; no immediate native callback/global-storage/scheduler claim.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ original and owned Rust scoped message publisher. Host foreign-source admission simulated by exact UDP input; physical multi-host and other backends remain pending.",
+      "evidence": "docs/NET-01-publisher-scope.md; docs/reviews/publisher-scope.json; four native originals before edits; exact source gate 234 Rust / 24 tooling / Node 60 and73/73 added lines. Normal/new hosted remain required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeHost",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeHost",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_host"
+      ],
+      "review": "/root/msgs_owner_astra; fresh raw 174 / native 6 / Rust 95 plus three production controls and restored 95/0. Exact source and unfiltered full coverage evidence approved in docs/reviews/publisher-scope.json. Native callback/storage/scheduler and physical multi-host qualification remain bounded as documented.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4051,8 +4056,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb observations retained: chosen Process/Host scope, valid Int32 publisher and admitted subscriber on a separate joined thread, actual HasConnections readiness with native 10 s / 10 ms defaults, successful single Int32 data 5 publication, exact received data 5 and actual execution flag. Remapped originals preserve /foo -> /bar for both Nodes. Owned bounded worker/readiness/receiver adaptation; no immediate native callback/global-storage/scheduler claim.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ original and owned Rust scoped message publisher. Host foreign-source admission simulated by exact UDP input; physical multi-host and other backends remain pending.",
+      "evidence": "docs/NET-01-publisher-scope.md; docs/reviews/publisher-scope.json; four native originals before edits; exact source gate 234 Rust / 24 tooling / Node 60 and73/73 added lines. Normal/new hosted remain required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeAll",
@@ -4102,10 +4108,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ScopeProcessRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeProcessRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_process_remap"
+      ],
+      "review": "/root/msgs_owner_astra; fresh raw 174 / native 6 / Rust 95 plus three production controls and restored 95/0. Exact source and unfiltered full coverage evidence approved in docs/reviews/publisher-scope.json. Native callback/storage/scheduler and physical multi-host qualification remain bounded as documented.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4114,17 +4122,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb observations retained: chosen Process/Host scope, valid Int32 publisher and admitted subscriber on a separate joined thread, actual HasConnections readiness with native 10 s / 10 ms defaults, successful single Int32 data 5 publication, exact received data 5 and actual execution flag. Remapped originals preserve /foo -> /bar for both Nodes. Owned bounded worker/readiness/receiver adaptation; no immediate native callback/global-storage/scheduler claim.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ original and owned Rust scoped message publisher. Host foreign-source admission simulated by exact UDP input; physical multi-host and other backends remain pending.",
+      "evidence": "docs/NET-01-publisher-scope.md; docs/reviews/publisher-scope.json; four native originals before edits; exact source gate 234 Rust / 24 tooling / Node 60 and73/73 added lines. Normal/new hosted remain required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeHostRemap",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ScopeHostRemap",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_scope_host_remap"
+      ],
+      "review": "/root/msgs_owner_astra; fresh raw 174 / native 6 / Rust 95 plus three production controls and restored 95/0. Exact source and unfiltered full coverage evidence approved in docs/reviews/publisher-scope.json. Native callback/storage/scheduler and physical multi-host qualification remain bounded as documented.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4133,8 +4144,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original CreatePubSubTwoThreads/CreateSubscriber/cb observations retained: chosen Process/Host scope, valid Int32 publisher and admitted subscriber on a separate joined thread, actual HasConnections readiness with native 10 s / 10 ms defaults, successful single Int32 data 5 publication, exact received data 5 and actual execution flag. Remapped originals preserve /foo -> /bar for both Nodes. Owned bounded worker/readiness/receiver adaptation; no immediate native callback/global-storage/scheduler claim.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ original and owned Rust scoped message publisher. Host foreign-source admission simulated by exact UDP input; physical multi-host and other backends remain pending.",
+      "evidence": "docs/NET-01-publisher-scope.md; docs/reviews/publisher-scope.json; four native originals before edits; exact source gate 234 Rust / 24 tooling / Node 60 and73/73 added lines. Normal/new hosted remain required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ScopeAllRemap",

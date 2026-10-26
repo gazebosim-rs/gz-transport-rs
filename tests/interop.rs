@@ -18,7 +18,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Subscriber-only assertion ports: Copyright (C) 2014 Open Source Robotics Foundation.
 use gz_msgs::{prost::Message, stringmsg::StringMsg, vector3d::Vector3d};
-use gz_transport::{Config, Error, Node, SubscribeOptions};
+use gz_transport::{AdvertiseOptions, Config, Error, Node, Scope, SubscribeOptions};
 use std::{
     io::{BufRead, BufReader, Write},
     process::{Child, ChildStdout, Command, Stdio},
@@ -1931,12 +1931,24 @@ fn publisher_snapshot_tracks_duplicate_local_leases_and_registered_remap() {
 // Node_TEST.cc CreatePubSubTwoThreads/CreateSubscriber/cb assertions:
 // Copyright (C) 2014 Open Source Robotics Foundation.
 fn original_threaded_publication(remapping: bool) {
+    scoped_threaded_publication(remapping, None);
+}
+fn scoped_threaded_publication(remapping: bool, scope_option: Option<Scope>) {
     let mut config = config();
     if remapping {
         config.add_topic_remap("/foo", "/bar").unwrap();
     }
     let node = Node::new(config.clone()).unwrap();
-    let publication = node.advertise("/foo", "gz.msgs.Int32").unwrap();
+    let publication = if let Some(scope_option) = scope_option {
+        let mut options = AdvertiseOptions::default();
+        assert_eq!(options.scope(), Scope::All);
+        options.set_scope(scope_option);
+        assert_eq!(options.scope(), scope_option);
+        node.advertise_with_options("/foo", "gz.msgs.Int32", options)
+    } else {
+        node.advertise("/foo", "gz.msgs.Int32")
+    }
+    .unwrap();
     let executed = std::sync::atomic::AtomicBool::new(false);
     thread::scope(|scope| {
         let executed = &executed;
@@ -1988,6 +2000,148 @@ fn original_scope_all() {
 #[test]
 fn original_scope_all_remap() {
     original_threaded_publication(true);
+}
+
+#[test]
+fn original_scope_process() {
+    scoped_threaded_publication(false, Some(Scope::Process));
+}
+#[test]
+fn original_scope_process_remap() {
+    scoped_threaded_publication(true, Some(Scope::Process));
+}
+#[test]
+fn original_scope_host() {
+    scoped_threaded_publication(false, Some(Scope::Host));
+}
+#[test]
+fn original_scope_host_remap() {
+    scoped_threaded_publication(true, Some(Scope::Host));
+}
+
+#[test]
+fn publication_scope_native_discovery_and_delivery() {
+    for scope in [Scope::Process, Scope::Host, Scope::All] {
+        let config = config();
+        let node = Node::new(config.clone()).unwrap();
+        let local_node = Node::new(config.clone()).unwrap();
+        let local = local_node.subscribe("/scope", TYPE).unwrap();
+        let mut options = AdvertiseOptions::default();
+        options.set_scope(scope);
+        let publisher = node
+            .advertise_typed_with_options::<StringMsg>("/scope", options)
+            .unwrap();
+        let mut peer = Peer::start(&config, "scope-observer", "/scope", "scope");
+        // Cover multiple native heartbeat cycles before checking Process absence.
+        thread::sleep(Duration::from_millis(2200));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            publisher
+                .publish_typed(&StringMsg {
+                    data: "scope".into(),
+                    ..Default::default()
+                })
+                .unwrap();
+            assert_eq!(
+                StringMsg::decode(
+                    local
+                        .recv_timeout(Duration::from_secs(1))
+                        .unwrap()
+                        .data
+                        .as_slice()
+                )
+                .unwrap()
+                .data,
+                "scope"
+            );
+            writeln!(peer.0.stdin.as_mut().unwrap(), "STATE").unwrap();
+            let mut line = String::new();
+            peer.1.read_line(&mut line).unwrap();
+            let fields: Vec<_> = line.split_whitespace().collect();
+            assert_eq!(fields.len(), 5, "{line}");
+            assert_eq!(fields[0], "STATE");
+            assert_eq!(fields[2], "1", "native payload mismatch: {line}");
+            let received: usize = fields[1].parse().unwrap();
+            let publishers: usize = fields[3].parse().unwrap();
+            if scope == Scope::Process {
+                assert_eq!(received, 0, "{line}");
+                assert_eq!(publishers, 0, "{line}");
+                break;
+            }
+            if received > 0 && publishers > 0 {
+                assert_eq!(fields[4].parse::<i32>().unwrap(), i32::from(scope));
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "native peer did not discover/receive scoped publication"
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+        writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+        peer.success();
+        if scope == Scope::Process {
+            assert!(publisher.connection_snapshot().unwrap());
+            drop(local);
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while publisher.connection_snapshot().unwrap() {
+                assert!(
+                    Instant::now() < deadline,
+                    "Process readiness was not retired"
+                );
+                thread::sleep(Duration::from_millis(10));
+            }
+            assert!(!publisher.has_connections().unwrap());
+        }
+    }
+}
+
+#[test]
+fn process_scope_readiness_matches_live_domain_topic_and_type() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut options = AdvertiseOptions::default();
+    options.set_scope(Scope::Process);
+    let publisher = node
+        .advertise_with_options("/scope", TYPE, options)
+        .unwrap();
+    let wait = |expected| {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if publisher.has_connections().unwrap() == expected
+                && publisher.connection_snapshot().unwrap() == expected
+            {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "Process interest did not become {expected}"
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+    };
+    wait(false);
+    let mut foreign_config = config.clone();
+    foreign_config.partition.push_str("-foreign");
+    let foreign_node = Node::new(foreign_config).unwrap();
+    let _foreign = foreign_node.subscribe("/scope", TYPE).unwrap();
+    let other = Node::new(config.clone()).unwrap();
+    let _wrong_type = other.subscribe("/scope", "gz.msgs.Vector3d").unwrap();
+    let _wrong_topic = other.subscribe("/different", TYPE).unwrap();
+    wait(false);
+    let wildcard = other.subscribe("/scope", "").unwrap();
+    wait(true);
+    drop(wildcard);
+    wait(false);
+    let matching_node = Node::new(config).unwrap();
+    let _matching = matching_node.subscribe("/scope", TYPE).unwrap();
+    wait(true);
+    matching_node.cancel();
+    wait(false);
+    let own = node.subscribe("/scope", TYPE).unwrap();
+    wait(true);
+    drop(own);
+    wait(false);
 }
 
 #[test]
