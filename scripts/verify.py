@@ -296,6 +296,8 @@ def verify(profile):
         cases = 'twoProcSrvCall' + suffix + '.ServiceInfo:twoProcSrvCall' + suffix + '.ServiceList'
         if not suffix:
             cases += ':twoProcSrvCall.SrvTwoProcs:twoProcSrvCall.SrvRequestWrongReq:twoProcSrvCall.SrvRequestWrongRep'
+        elif suffix == 'WithoutInput':
+            cases += ':twoProcSrvCallWithoutInput.SrvTwoProcs:twoProcSrvCallWithoutInput.SrvRequestWrongRep'
         run([str(reference / ('build/bin/INTEGRATION_twoProcsSrvCall' + suffix)),
              '--gtest_filter=' + cases], env=env)
     artifacts = ROOT / 'artifacts'

@@ -49,6 +49,8 @@ The [mixed-response originals](docs/NET-02-service-mixed-response.md) then requi
 successful Int32 responses while the wrong-response observer remains active.
 The [cross-process wrong-type originals](docs/NET-02-remote-service-wrong-types.md)
 retain mismatched request/response observations against a live native echo peer.
+The same contract covers an inputless request expecting a mismatched response
+from a live native fixed Int32 provider.
 An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration, with
 [explicit callback timing limits](docs/NET-02-class-member-service.md).

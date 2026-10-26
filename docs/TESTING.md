@@ -694,3 +694,28 @@ six-second provider lifetime, native unbounded pending and C++callback/schedulin
 limits are explicit. Native positive counter/storage predicates receive no Rust
 port credit. See the [bounded contract](NET-02-remote-service-wrong-types.md).
 Final normal protected hook and exact hosted qualification remain required.
+
+
+## Inputless wrong-response service across processes
+
+The existing inputless ServiceInfo/ServiceList native filters now also require
+`twoProcSrvCallWithoutInput.SrvRequestWrongRep` and a native-only `SrvTwoProcs`
+positive. The shared Rust harness adds the fixed Empty/empty-bytes request with
+Vector3d expected reply, preserving original asynchronous admission, 300 ms false
+callback and exact 1000 ms synchronous Timeout. The real native inputless
+provider returns Int32 data 5/true; actual empty-filter discovery and liveness
+are supplemental. Existing ordinary assertions and filters remain unchanged.
+
+The exact source gate passed 221 Rust / 24 tooling tests, Node 56/0, ordinary
+service 5/0 and inputless service 4/0, with unchanged strict 2645/2714 lines and
+3893/4071 regions. No production lines changed. Independent
+[review](reviews/remote-service-inputless-wrong-response.json) verified all 208
+retained reports and replayed native 1+positive 1 and raw Rust 3/0 with a fresh
+C++ peer. Its async-only valid expected-reply control received actual data 5/true
+then failed the original false checkpoint; source restored and Rust 3/0 passed.
+Setup-only reviewer filename/proof failures are disclosed separately. Native
+positive callback/counter assertions receive no Rust port credit. Owned/native
+lifetime and C++ API/scheduling limits remain explicit in the
+[contract](NET-02-remote-service-wrong-types.md#inputless-wrong-response-original).
+Final binding, normal protected hook and exact new hosted qualification remain
+required.

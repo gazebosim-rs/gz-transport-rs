@@ -1,0 +1,95 @@
+{
+  "decision": "approved_for_fixed_original_inputless_remote_wrong_response_predicates",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T13:36:41.598344+00:00",
+  "source_manifest_sha256": "28323b019790b6aef6eb5c39a0170883996feba971b7301f7855ca07d492019c",
+  "parent": "747460f8516346746ad935a850c22b4adfb7f76f",
+  "source_tree": "8933bc9d0fec3f07d209ac57eddbf1443d836990",
+  "source_diff_sha256": "a725b255f584c59c754445ddbaec747a4e57cf46dadea85cb3a9589346a75219",
+  "files_sha256": {
+    "scripts/verify.py": "0387a466d7ef48cd5436580e6d24925549a5ab1c9190c8ff30fcd1a8dbb0f394",
+    "tests/remote_service_wrong_types_originals.rs": "1de9a977dc307fbb37c35066b3b412b7b77d78be4daa8999d2eff0720eccb81c"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/remote_service_wrong_types_originals.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Compared twoProcSrvCallWithoutInput.SrvRequestWrongRep, wrongResponse and the inputless native Int32(5)/true replier. Empty descriptor and empty bytes preserve native no-input request; expected Vector3d admits actual async request, keeps callback false after300ms and yields exact synchronous Timeout with1000ms. Any reply sets the flag, matching native callback ignoring both reply/result. Existing ordinary wrong-request/response branches and assertions remain unchanged. Shared actual native provider READY handshake, empty-filter discovery requiring Empty/Int32, liveness through both observations, joined observer, tail-only cancellation/late-false assertion and bounded QUIT cleanup remain supplemental. Owned10s pending and controlled provider lifetime do not claim native unbounded pending or six-second replier lifetime/API/scheduling equivalence. The separate native-only SrvTwoProcs positive checks two data5/true callbacks and counters1, receives no Rust mapping or credit. No production/CPPpeer/pin/threshold/exclusion changes; original2014/2016 plus rewrite2026OSRF/Apache2 notices preserved.",
+  "independent_replay": {
+    "raw_export": "All168 candidate and168 parent raw blobs independently compared;166 unchanged parent paths. Fresh Git-blob export without Git metadata, exclusive reviewer-owned Cargo2 target and freshly rebuilt C++ peer; no producer target reuse.",
+    "native_negative": "1 passed,0 failed",
+    "native_positive": "1 passed,0 failed; supplemental native-only, no Rust port credit",
+    "rust": "3 passed,0 failed,0 ignored against freshly built real C++ peer",
+    "restored_rust": "3 passed,0 failed,0 ignored",
+    "restored_binary_sha256": "16f092c757025d5c03a92b75f45e8fc3b876d96c48c99155210c23d3bb8351e9",
+    "cpp_peer_sha256": "e4199b7bc8d79642215d4cff8013d4abc4078df28fc870a92223abc3069b169e",
+    "logs_sha256": {
+      "native-negative.log": "afc1c02f927e23e5348eb07a0dbee94432a7ea356aece8fb05befd17f9554ef7",
+      "native-positive.log": "c2e99b2f775de17bff2fd38871c58883e714cab1cbc9837988de999a1199770b",
+      "cpp-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cpp-linkage.log": "b1725e6e4550a0e6ceb3acf0cc7a418920abd03a0631bd7c2c47c5a815c46f1b",
+      "exact-rust.log": "1a4ad783271fa8c35cb7f685a4376c22cc1e05a5790b2190b6b860ba60b743fd",
+      "valid-async-control.log": "07734c41514344d55d50d8ddf06f6949b42b9c031466b9662e875bb3846cb20b",
+      "valid-async-control.rs": "73421802ef4e7560e542f89c1a07706911f64923f4a230bf9ade91aad96e166f",
+      "restored-rust.log": "0d7a935db6e67c7a914b5546af0d858ebd915f7852c6df635d0ee7f670770e25"
+    },
+    "valid_async_control": "Changed only the new inputless async expected response descriptor to Int32, with private actual data5/resulttrue checks and trace. Empty request descriptor/bytes and all synchronous wrong-type calls remain unchanged. Inputless observer actually received Int32(5),resulttrue then failed its retained300ms false checkpoint; both prior ordinary cases passed. Exit101:2passed/1intendedfailure. Exact168 source hashes restored and all3 originals passed afterward.",
+    "restoration": "All168 reviewed source hashes and native source/binary pins reverified after restored3/0 replay.",
+    "native_sources_sha256": {
+      "test/integration/twoProcsSrvCallWithoutInput.cc": "1349148fb5a374b8da0d9f5b7df49113ca27b72708ff531312333b8bbaf0e29f",
+      "test/integration/test_executables/twoProcsSrvCallWithoutInputReplier_aux.cc": "2680f3026fa58892a6965f63bf6a7ad3a920db144f4fa4e9ac93f610cc531f7d",
+      "test/test_utils.hh": "d63cc95df93ff755a733704154276212d8624cf0121d27004b056aa6a82a90ba"
+    },
+    "native_binaries_sha256": {
+      "build/bin/INTEGRATION_twoProcsSrvCallWithoutInput": "b712b8c18775798bcfbfca84cd3fa3827b2786f8c72b971962b554bb63a3618f",
+      "build/bin/twoProcsSrvCallWithoutInputReplier_aux": "55da64598ddd85ac50c783843b93fc68fa3e3b808888c502cbd053032eddb1f6"
+    },
+    "native_environment": "Validated original prefix with matching Zenoh dependency and permitted local sockets; fresh peer linkage checked.",
+    "excluded_setup_failure": "Initial preparation assumed the previous packet log filename and stopped before raw export/build/native. A follow-on driver stopped on the absent private proof. Both are retained/excluded, never counted as passing tests; actual staged-gate.log hash was then verified before fresh export/replay. No producer source mutation.",
+    "excluded_setup_record_sha256": "e566cffb004044c1caa925e3a914fe23adcf0995001ed4ba26dfec20cca8f123",
+    "excluded_setup_driver_log_sha256": "3f71e68d53edbaa15c63d540ab731b8e99c2e3c316673023da17ba6cbdfae18f",
+    "overlap": "Ordinary correctness Cargo2 after Transport tight source gate cleared; Root permitted ordinary Release-build overlap. No performance or scheduler inference."
+  },
+  "producer_full_source_gate": {
+    "result": "EXIT0 unchanged exact two-file source tree",
+    "log_sha256": "d2c2d1c175bc87affa23e5aa1f82b0884b2aa9f416bd8f10a809806b93d5e41d",
+    "evidence_sha256": "005f867394195c06f806ab0f4648cc3b7c86ce9bb7594183d7bc990304527996",
+    "raw_rust_sha256": "5059fb3446c3d82fa14b6a142369df8a196bb4dbfa031954ba75554808baee4c",
+    "rust": "221 passed,0failed,0ignored",
+    "tooling": "24 passed",
+    "native": "Node56/0,ordinary service5/0,inputless service4/0,all other unchanged mandatory groups passed. Inputless nativepositive baseline only;no Rust portcredit.",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "source_retained": "Entire source artifacts/staged copied before metadata or normal hook",
+    "source_retained_file_count": 208,
+    "source_retained_hash_manifest_sha256": "272788e344c55f3181acf8ca32b5520a4ef8d4ba23f7a9e6cee41ed4c2fd7dce",
+    "environment": "Explicit pinned original source and prefix, permitted local sockets; coordinated quiet window after Root/Msgs/SDF direct CLEAR.",
+    "remaining": "Independent source/API/assertion review and final metadata binding,normal protected hook,public push and exact new hosted remain required."
+  },
+  "retained_source_binding": "All208 task-specific report hashes and all evidence input hashes match reviewed raw source. Retained Rust output independently sums221passed,0failed,0ignored. Full producer strict coverage/timing gate is bound, not independently rerun.",
+  "parent_hosted": {
+    "headSha": "747460f8516346746ad935a850c22b4adfb7f76f",
+    "run": 40327340902,
+    "status": "completed",
+    "conclusion": "success",
+    "independently_verified": true
+  },
+  "limitations": [
+    "Only fixed original inputless negative observable predicates qualify; separate native-only positive SrvTwoProcs receives no Rust credit.",
+    "Native unbounded pending lifetime, six-second provider source lifetime, exact callback API and scheduling remain unqualified.",
+    "Final metadata binding,normal protected hook,publication and exactnewhosted are required before acceptance; broader NET01/NET02 and performance stay open."
+  ]
+}

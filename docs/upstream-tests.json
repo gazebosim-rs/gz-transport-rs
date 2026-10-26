@@ -1256,7 +1256,7 @@
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.SrvTwoProcs",
       "target": "INTEGRATION_twoProcsSrvCallWithoutInput",
       "case": "twoProcSrvCallWithoutInput.SrvTwoProcs",
-      "baseline": "not_run",
+      "baseline": "passed",
       "disposition": "pending",
       "replacement": [],
       "review": "pending",
@@ -1269,16 +1269,19 @@
       ],
       "reference_features": [],
       "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "Separate fresh native-only positive1/0 verifies two actual data5/true callbacks and counter1 after each. Mandatory native baseline retained; no Rust replacement or port credit from the inputless wrong-response slice. Disposition/review remain pending. See docs/NET-02-remote-service-wrong-types.md#inputless-wrong-response-original."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.SrvRequestWrongRep",
       "target": "INTEGRATION_twoProcsSrvCallWithoutInput",
       "case": "twoProcSrvCallWithoutInput.SrvRequestWrongRep",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_two_process_inputless_service_wrong_response_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/remote-service-inputless-wrong-response.json. Fresh native negative1/0 plus separate native-only positive1/0, raw Rust3/0 with fresh C++ peer. Only new async expected Int32 control actually receives data5/true then fails retained300ms false checkpoint; old2 pass. All168 source hashes restored and Rust3/0 replayed. Setup-only old filename/missing-proof failures retained separately. Native positive receives no Rust credit; lifetime/API/scheduling limits explicit.",
       "source": [
         {
           "path": "test/integration/twoProcsSrvCallWithoutInput.cc",
@@ -1287,8 +1290,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Separate native inputless Int32 data5/true provider. Empty request descriptor and empty bytes with Vector3d expected response; any reply sets flag because native wrongResponse ignores both arguments. Async admission true and callback false after300ms; synchronous exact Timeout with original1000ms. READY,actual empty-filter Empty/Int32 discovery,liveness,joined observer,tail-only cancellation/late-false and boundedQUIT supplemental. Owned10s pending and controlled provider lifetime do not qualify native unbounded pending,six-second fixture lifetime,C++callback or scheduling identity.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ cross-process C++ provider/Rust requester;other backends pending.",
+      "evidence": "docs/NET-02-remote-service-wrong-types.md#inputless-wrong-response-original; docs/reviews/remote-service-inputless-wrong-response.json; exact source gate221Rust/24tools/Node56/ordinary5/inputless4,strict2645/2714lines3893/4071regions,0productionchanges; complete208-file source-retained proof."
     },
     {
       "id": "INTEGRATION_twoProcsSrvCallWithoutInput:twoProcSrvCallWithoutInput.SrvTwoRequestsOneWrong",

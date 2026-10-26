@@ -42,5 +42,44 @@ failed the retained 300 ms false predicate. All 166 source hashes were restored
 and Rust2/0 passed again. The valid-control build's unused-variable warning is
 recorded separately; no failed setup or unrun work is passing evidence. The
 fixed original predicates are faithful ports within the limits above. Final
-metadata binding, normal protected hook and exact hosted qualification remain
-separate requirements.
+metadata binding, the mandatory normal protected hook and public
+`747460f8516346746ad935a850c22b4adfb7f76f` passed exact hosted run
+`40327340902` SUCCESS for those two ordinary cases.
+
+
+## Inputless wrong-response original
+
+The pinned 2016 `twoProcSrvCallWithoutInput.SrvRequestWrongRep` original uses
+an Empty request and expects Vector3d from a separate inputless Int32 service.
+Its retained assertions are asynchronous admission, a false callback flag after
+300 ms and synchronous failure with the original 1000 ms timeout. The Rust case
+uses Empty descriptor/empty bytes, requires exact Error::Timeout, and sets the
+wrong-response flag on any reply because the native callback ignores both
+arguments. The existing ordinary cases retain every observation.
+
+The existing real C++ `service-info-reference inputless` provider returns Int32
+data 5 and true result, matching the pinned native replier. READY, actual
+empty-filter discovery of Empty/Int32, provider liveness, joined observer,
+tail-only cancellation, late-false supplement and bounded QUIT cleanup retain
+the same owned adaptation. Its ten-second observer and controlled provider
+lifetime do not qualify native unbounded pending lifetime, the original
+six-second provider lifetime, C++ callback APIs or precise scheduling.
+
+The exact two-file source gate passed 221 Rust tests, 24 tooling tests and the
+mandatory native suite, including Node 56/0, ordinary service 5/0 and inputless
+service 4/0. Strict coverage stays 2645/2714 production lines and 3893/4071
+regions; no production or C++ peer source changed. Complete 208-file source
+reports were copied before metadata or normal-hook work. Independent
+[review](reviews/remote-service-inputless-wrong-response.json) replayed fresh
+native negative 1/0, a separate native positive 1/0, and raw-source Rust 3/0
+against a freshly rebuilt C++ peer. Changing only the new asynchronous expected
+reply to Int32 received actual data 5/true and failed the retained 300 ms false
+checkpoint; the two old cases passed. All 168 source hashes were restored and
+Rust 3/0 passed again. Initial reviewer log-filename and dependent missing-proof
+setup failures stopped before export/build/native and are retained separately.
+
+The separate native positive checks two data 5/true callbacks and counters 1;
+it receives no Rust replacement or port credit. Only the fixed inputless
+negative predicates are mapped. Final metadata binding, the mandatory normal
+protected hook, publication and exact hosted candidate qualification remain
+required; broader NET-01/NET-02 and performance remain open.

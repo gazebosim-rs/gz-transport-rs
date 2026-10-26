@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014 Open Source Robotics Foundation
+ * Copyright (C) 2016 Open Source Robotics Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 // Observable assertions from twoProcSrvCall.SrvRequestWrongReq/WrongRep.
+// Also twoProcSrvCallWithoutInput.SrvRequestWrongRep (2016).
 use gz_msgs::{int32::Int32, prost::Message, vector3d::Vector3d};
 use gz_transport::{Config, Error, Node, ServiceTypeResolution, ServiceTypes};
 use std::{
@@ -37,11 +39,15 @@ struct NativePeer {
     _stdout: Option<BufReader<ChildStdout>>,
 }
 impl NativePeer {
-    fn start(config: &Config) -> Self {
+    fn start(config: &Config, inputless: bool) -> Self {
         let path = std::env::var("GZ_CPP_PEER")
             .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
         let mut child = Command::new(path)
-            .args(["service-info-reference", "/foo", "ordinary"])
+            .args([
+                "service-info-reference",
+                "/foo",
+                if inputless { "inputless" } else { "ordinary" },
+            ])
             .env("GZ_PARTITION", &config.partition)
             .env("GZ_IP", config.interface.to_string())
             .env("GZ_DISCOVERY_MULTICAST_IP", config.multicast.to_string())
@@ -118,6 +124,7 @@ impl Drop for NativePeer {
 enum WrongType {
     Request,
     Response,
+    InputlessResponse,
 }
 #[test]
 fn original_two_process_service_wrong_request_type() {
@@ -126,6 +133,10 @@ fn original_two_process_service_wrong_request_type() {
 #[test]
 fn original_two_process_service_wrong_response_type() {
     observe_wrong_type(WrongType::Response);
+}
+#[test]
+fn original_two_process_inputless_service_wrong_response_type() {
+    observe_wrong_type(WrongType::InputlessResponse);
 }
 fn observe_wrong_type(case: WrongType) {
     let (request_type, response_type, payload) = match case {
@@ -149,18 +160,25 @@ fn observe_wrong_type(case: WrongType) {
             }
             .encode_to_vec(),
         ),
+        WrongType::InputlessResponse => ("gz.msgs.Empty", "gz.msgs.Vector3d", Vec::new()),
     };
     let config = Config {
         partition: format!("remote-wrong-types-{}", uuid::Uuid::new_v4()),
         ..Default::default()
     };
-    let mut peer = NativePeer::start(&config);
+    let inputless = matches!(case, WrongType::InputlessResponse);
+    let mut peer = NativePeer::start(&config, inputless);
     let node = Node::new(config).unwrap();
     // Supplemental discovery readiness proves an actual remote typed provider.
     assert_eq!(
         node.resolve_service_types("/foo", "", "", Duration::from_secs(10)),
         Ok(ServiceTypeResolution::Resolved(ServiceTypes {
-            request_type: "gz.msgs.Int32".into(),
+            request_type: if inputless {
+                "gz.msgs.Empty"
+            } else {
+                "gz.msgs.Int32"
+            }
+            .into(),
             response_type: "gz.msgs.Int32".into(),
         }))
     );
