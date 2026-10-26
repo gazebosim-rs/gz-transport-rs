@@ -602,5 +602,27 @@ regions; no production line changed. Independent [review](reviews/pubsub-wrong-t
 replayed the exact raw-source Rust original and pinned native original 1/0 each.
 A private scaled old-order control failed with Timeout while the same fixed-order
 control passed; these controls establish relative ordering only, without a
-scheduler or full timeout-window claim. Final normal protected hook and exact
-hosted qualification remain separate.
+scheduler or full timeout-window claim. The final normal protected hook and exact
+hosted run `40292391143` passed on public `315cf3b2d9411acd94cc68c019198b972dcc82ec`,
+reviewer-bound tree `16e80704`.
+
+
+## Wrong request type for a local service
+
+The pinned `NodeTest.SrvRequestWrongReq` original runs in every native gate.
+The test-only port retains a same-Node Int32 echo service, Vector3d components
+1/2/3, actual asynchronous request admission, the original 300 ms false callback
+flag and exact Timeout for the synchronous 1000 ms request. Active provider and
+response observers remain alive through both checkpoints; shutdown begins only
+afterward, and unexpected errors fail. Both joins plus a supplemental final false
+flag prevent late queued replies from being silently hidden.
+
+The exact frozen source passed 214 Rust tests and pinned native originals
+including Node52/0, with strict 2645/2714 production lines and 3893/4071 regions;
+no production line changed. Independent [review](reviews/service-wrong-request.json)
+replayed native and exact raw-source Rust originals 1/0 each. A valid asynchronous
+Int32(5) control exercised provider request data and observer response data/true
+result, then failed the retained 300 ms false-flag assertion. Native unbounded
+asynchronous lifetime, C++ callback registration and precise scheduling remain
+unclaimed. See [the bounded contract](NET-02-service-wrong-request.md). Final
+normal protected hook and exact hosted qualification remain separate.

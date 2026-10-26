@@ -40,7 +40,9 @@ explicit absence, incompatibility and ambiguity outcomes. These APIs use each
 Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01-service-types.md).
 `begin_request()` admits a response request and returns a one-shot
 `PendingResponse`; `request()` retains its existing bounded wait through that
-handle. An owned dispatch adaptation covers three native member-service cases,
+handle. The [wrong-request contract](docs/NET-02-service-wrong-request.md) checks
+asynchronous admission without a response and synchronous Timeout for a
+Vector3d request sent to a local Int32 service. An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration, with
 [explicit callback timing limits](docs/NET-02-class-member-service.md).
 Two local service lambda originals retain their fixed provider and response

@@ -4804,10 +4804,12 @@
       "id": "UNIT_Node_TEST:NodeTest.SrvRequestWrongReq",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SrvRequestWrongReq",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_request_wrong_request_type"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent fixed-original source/API/assertion approval in docs/reviews/service-wrong-request.json. Exact native1/0, private raw-source Rust1/0, valid async Int32(5) request control exercised provider/callback data and failed retained300ms false flag; exact source restored/replayed. Native unbounded pending lifetime and C++ callback API/scheduling remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4816,8 +4818,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Int32 echo advertisement succeeds. Vector3d(1,2,3) asynchronous request admission succeeds and response callback flag stays false after300ms; synchronous wrong-type request returns Timeout with1000ms bound, mapping native false. Provider and observer stay live through both checkpoints and retain req/replydata5/resulttrue predicates if invoked; terminal cancellation only afterward, then joins and supplemental false flag. Rust async lifetime bounded10seconds; native unbounded lifetime and exact C++ callback registration/scheduling unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned same-Node request/service adaptation; other backends pending.",
+      "evidence": "docs/NET-02-service-wrong-request.md; docs/reviews/service-wrong-request.json; mandatory pinned NodeTest.SrvRequestWrongReq; exact staged source gate214Rust/Node52/0"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SrvRequestWrongRep",

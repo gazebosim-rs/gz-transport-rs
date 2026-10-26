@@ -40,5 +40,6 @@ regions. Independent exact raw-source Rust and pinned native replays passed 1/0
 each. A private scaled ordering control failed for the old ordering and passed
 for the fixed order; it demonstrates wait placement, not scheduler timing or
 full timeout-window equivalence. The earlier fixed-original passing history is
-retained. Final normal protected hook and exact hosted qualification remain
-separate for this correction.
+retained. The final normal protected hook and exact hosted run `40292391143`
+passed on public `315cf3b2d9411acd94cc68c019198b972dcc82ec`, reviewer-bound
+tree `16e80704`.

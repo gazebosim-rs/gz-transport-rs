@@ -1,0 +1,67 @@
+{
+  "decision": "approved_for_fixed_original_wrong_request_predicates",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T09:15:11.225829+00:00",
+  "source_manifest_sha256": "10dab6bbebff4bb9789d102accab084f173e41ac481eb763211dfd487889097d",
+  "parent": "315cf3b2d9411acd94cc68c019198b972dcc82ec",
+  "source_tree": "0971286bcb579fa65cda1042af967f32c37dc9b0",
+  "source_diff_sha256": "af5c8f21d9e52caeed2ad882c8ce64ee13df8b34934c1f145184f27af59595ab",
+  "files_sha256": {
+    "scripts/verify.py": "2f217cc28bb7b4194b43619ebccd6f07f98ded14b26c59ec620130b10e3ca4b8",
+    "tests/service_wrong_request_original.rs": "4386b009401757c91c4002fccdaa75c640ddc5817d40231665938a643d03ad82"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/service_wrong_request_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Compared native NodeTest.SrvRequestWrongReq with the owned adaptation. Same-Node Int32 echo service, Vector3d1/2/3 wrong request, successful asynchronous admission,300ms false callback predicate and synchronous1000ms Timeout preserve the fixed original observations. Provider/observer readiness is acknowledged before observation; unexpected errors or early observer timeout cannot become false-callback success. Terminal stopping/cancel begins only after original checks; joins and final false check catch late admitted responses. Provider verifies requestdata5 and callback verifies replydata5/result when exercised. Existing mandatory native list is retained with one additional original. No production/API/wire/threshold/exclusion change; original2014 and2026OSRF/Apache2 notices retained.",
+  "independent_replay": {
+    "raw_export": "All158 staged raw files independently exported without Git metadata, exact two hashes/tree/diff/modes/no-unstaged checked. Separate reviewer-owned fresh Cargo2 target; no producer target reuse.",
+    "rust": "Exact frozen test1 passed,0 failed,0 ignored; restored exact bytes after control and rebuilt/replayed1/0 again.",
+    "initial_rust_log_sha256": "44b07cb1aa78696e07c499993b847b75409c362ae3bdcc0fb804ffde2488d879",
+    "restored_rust_log_sha256": "ba63132d16bec026bf0265596373bd52cff2668d18996b380f5a66f7f030e64c",
+    "restored_binary_sha256": "8313dae3257a1789dd1b74ea7a8a451123f88edfcda7be52c60224a71a0443a0",
+    "native": "Pinned original NodeTest.SrvRequestWrongReq1 passed,0 failed,no skips using validated original prefix and matching Zenoh dependency.",
+    "native_log_sha256": "1ea6f0fad984a430c44c251f1875d3fa3c84fe19c1adbebf28e43b4a3d2f69df",
+    "native_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "native_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "sensitivity_control": "Private mutation changes only asynchronous request descriptor and payload to valid Int32(5), plus nonsemantic trace messages. Provider observed requestdata5; observer checked replydata5/resulttrue; then the retained300ms false-callback assertion failed. Native-wrong synchronous request remains unchanged. Control exit101 at intended assertion, not setup; exact158 source files restored and reverified afterward.",
+    "control_source_sha256": "06baa8affef0ab279d3f766107593e080fc406634b536a085028da597c79949a",
+    "control_log_sha256": "4a7210824511642238e3bff515618a98af1d63b71a7b40aa8c9eb29f3e079d63",
+    "overlap": "Ordinary correctness-only Cargo2/native review after tight source gate cleared; no scheduler/performance inference."
+  },
+  "producer_full_source_gate": {
+    "result": "EXIT0 on unchanged exact frozen two-file source tree",
+    "log_sha256": "17099fdd052bce8aff8569e7533c2c5a2ad702156007bd73e059b63d99a4f8bd",
+    "evidence_sha256": "388771974213f63efcf0ec4424643dc3670c6a731fa3263cd0f851b5db7781e7",
+    "rust": "214 passed,0 failed,0 ignored",
+    "native": "Node_TEST52/0 including pinned NodeTest.SrvRequestWrongReq; unchanged mandatory native suite passed",
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed": {
+      "covered": 0,
+      "count": 0
+    },
+    "environment": "Explicit validated original source/prefix and local sockets; coordinated quiet window after Root/Msgs/SDF clear."
+  },
+  "parent_hosted": {
+    "headSha": "315cf3b2d9411acd94cc68c019198b972dcc82ec",
+    "run": 40292391143,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "limitations": [
+    "Owned asynchronous request/observer lifetime is bounded at10seconds; native pending lifetime is unbounded. Only fixed original checkpoints are qualified, not general lifetime/scheduler equivalence or C++ callback registration.",
+    "Independent reviewer replayed selected original and control, not entire214-test/coverage suite; producer exact full source gate is separately bound.",
+    "Final metadata binding, normal protected hook, publication and exact hosted candidate qualification remain required; broader NET01/NET02 and performance remain open."
+  ]
+}
