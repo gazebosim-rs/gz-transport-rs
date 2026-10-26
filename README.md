@@ -119,6 +119,9 @@ checks successful Vector3d publication with an Int32 subscriber and an immediate
 false callback flag.
 The [two-subscriber wrong-type contract](docs/NET-01-wrong-two-subscribers.md)
 checks that only the matching Int32 subscriber receives data 5 across two Nodes.
+Two [remote wrong-subscription originals](docs/NET-01-remote-wrong-subscription.md)
+retain the fixed 1500 ms false callback observations against the unchanged native
+Vector3d publisher.
 
 Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies

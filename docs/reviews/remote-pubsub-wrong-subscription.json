@@ -1,0 +1,93 @@
+{
+  "decision": "approved_bounded_source_and_exact_full_gate",
+  "reviewer": "/root/msgs_owner_astra",
+  "reviewed_at": "2026-10-26T16:01:36.269735+00:00",
+  "pre_gate_manifest_sha256": "2cb6da00904496349eed07d165d1af8dcfc93dc3f0bfbe0705366ad22ed83600",
+  "parent": "72fdf3a13ae2061cc89afb401ee04d9bfe03d4e4",
+  "source_tree": "2b0a9b2893a8ebc254949462078ca32afc64d5b9",
+  "source_diff_sha256": "4f437234d0e9e049b63fd948153dc93159a4d7438e4fefafb5b472126a82a31e",
+  "files_sha256": {
+    "scripts/verify.py": "8467fbe6231e52bf7811048bcc8950cf2edce93746392166acc43e997a085273",
+    "tests/remote_pubsub_wrong_subscription_originals.rs": "4bc6916f79d822a57c7499e37a8f11d06a938365f420a3c71c334ab7f50cdc71"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/remote_pubsub_wrong_subscription_originals.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "semantic_review": "Both pinned typed/raw wrong-subscription originals retain Int32 descriptor admission and false callback flag after original1500ms. Exact native auxiliary publishes Vector3d(1,2,3) after500ms and another1500ms, then sleeps1000ms; large-topic traffic is preserved. Owned body/envelope observers set the flag on any actual received message, preserving the fixed negative observable. Readiness precedes the original wait. Supplemental Vector3d witness proves actual native traffic, without replacing the primary false predicate; the wrong observer stays live through witness and supplemental late-false check. Stop guard acts only at normal tail or failed-assertion unwind, before bounded poll/join cleanup; native provider exit success is checked. Native callback counters/metadata are not asserted by these two originals; C++facades and exact scheduling remain unqualified. No production,CPPpeer,fixture,pin,threshold or exclusion changes; original2014OSRF plus rewrite2026OSRF/Apache2 notices preserved.",
+  "independent_replay": {
+    "raw_export": "Fresh171 candidate raw blobs compared with170 parent blobs;169 unchanged parent paths. Fresh source/new test target with a warm reviewer-exclusive dependency target from completed prior review, never producer target reuse. All171source and5native source/binary hashes verified before and after.",
+    "native": "Both fixed originals each1passed/0failed against pinned native publisher",
+    "rust": "2passed/0failed/0ignored against exact pinned native auxiliary",
+    "valid_type_control": "Only wrong subscription expected type changes Int32 to Vector3d; both actual wrong observers verify Vector3d(1,2,3), then both original primary1500ms false checkpoints fail. Sibling witness is unchanged. No secondary observer errors.",
+    "control_primary_line": 131,
+    "restored_rust": "2passed/0failed/0ignored",
+    "restored_binary_sha256": "0412ccb19a46e9f0fb8c6c3e0315280d802edf86ebaba5128375927ed4a11590",
+    "all_raw_source_and_native_hashes_restored": true,
+    "logs_sha256": {
+      "native-typed.log": "97d3826ef05a289f7e611442df7af456554e057a30f788b778375b0627a26b81",
+      "native-raw.log": "1d59231a8a43a6e2028bafe6ff826af5e50039fbe569a952373924abfaadb7c5",
+      "exact-rust.log": "3cf730a4bce9e03de6ee2356e7861502acd9de03dc0cdf3b7c071f4bead1d606",
+      "valid-type-control.rs": "bd4c465963604ae9eca6f69bc45d8bd97154879c6b683afb13110fb3bca75ee2",
+      "valid-type-control.log": "6f0a59278712f76b315a946704d89b9ed1dbce255ec5fb2ced6a75280ef72d46",
+      "restored-rust.log": "2ca033fd9e7985f8a62d53614069e70984b0f3ae1aa1db4a33174e51516eeeee"
+    },
+    "native_files_sha256": {
+      "test/integration/twoProcsPubSub.cc": "9ca097a1a5231d67ffb9e0885a232204ef287801703d5b4b658dc0a17b882060",
+      "test/integration/test_executables/twoProcsPublisher_aux.cc": "34295cb748b4841dd2518b055d8dd67ffaee6b995eb8c532d777d453f904ebf3",
+      "build/bin/INTEGRATION_twoProcsPubSub": "320bb5ac768a81e4457e563a025d2d12ff3034313aab88ba4e3f1763a7b23319",
+      "build/bin/twoProcsPublisher_aux": "994dcc90f48519b8713b17cfa0cd6461ac5ae563615b4d2d0ebbef029f85ee1a",
+      "test/test_utils.hh": "d63cc95df93ff755a733704154276212d8624cf0121d27004b056aa6a82a90ba"
+    },
+    "native_environment": "Validated original prefix prepended with matching Zenoh dependency and permitted local sockets; exact native auxiliary path/hash supplied.",
+    "overlap": "Root-authorized ordinary Cargo2 alongside separate SDF work; no performance or scheduler inference.",
+    "excluded_setup_failures": "No reviewer native/build/test setup failure. Author initial selected run failed while both native children could not load Zenoh and both traffic witnesses returned Timeout; that exact failed log remains retained/excluded, never counted as a pass. Corrected-environment author2/0 and independent2/0 are separate results.",
+    "author_failed_log_sha256": "2b65d39c9f77b63153673a6e6ae0627addb72fba94c71e93f78d397f7469c1d1"
+  },
+  "producer_full_source_gate": {
+    "state": "Exact unchanged source gate passed; all209retained hashes independently reverified, all171raw source hashes unchanged, all evidence input hashes match fresh reviewer export. No duplicate native/semantic replay required.",
+    "rust": {
+      "passed": 225,
+      "failed": 0,
+      "ignored": 0
+    },
+    "tooling": 24,
+    "coverage": {
+      "lines": {
+        "covered": 2645,
+        "count": 2714
+      },
+      "regions": {
+        "covered": 3893,
+        "count": 4071
+      }
+    },
+    "changed_production": {
+      "covered": 0,
+      "count": 0
+    },
+    "independent_recomputation": "Unchanged exact coverage policy check and changed_check rerun on full retained JSON/LCOV with verified source-root rebinding only; no region/source filtering.",
+    "log_sha256": "2277b33b759d8c99caba88450f618aaa171a294fe5426d0ac81effb788d28146",
+    "retained_manifest_sha256": "2ce790a920e4967607d56d323dee5a262061845e7aa529bb0f74ee4ca2828c02",
+    "evidence_sha256": "896e5d624d18461104f595325d4cb1acd890f754676109f23224b8bf9806874b",
+    "raw_rust_sha256": "a83bc80f2989f211bab300b665955e01579be0e4d6fd68839e63d83a44e06ff4",
+    "private_audit_sha256": "9793db2351a06c6101f15e004324c4def8b94b4186705f6c0b0bace81a1a6c6f",
+    "native": "Node 56/0, pub/sub 9/0 including both required remote wrong-subscription originals, ordinary service 6/0, inputless 5/0, outputless 2/0; all other unchanged required groups passed.",
+    "environment": "Canonical Cargo2, incremental override absent; all-owner execution hold declared for author gate. This review binds evidence, not a new performance measurement."
+  },
+  "parent_hosted": {
+    "headSha": "72fdf3a13ae2061cc89afb401ee04d9bfe03d4e4",
+    "run": 40344472155,
+    "status": "completed",
+    "conclusion": "success",
+    "independently_verified": true
+  },
+  "limitations": [
+    "Only the two fixed original negative subscription observables qualify semantically; callback APIs,typed/raw storage facades,counters and exact scheduling remain unqualified.",
+    "Supplemental witness may observe a later native publication; it does not prove every original publication occurred within the primary1500ms window. The private control separately proves both primary predicates respond to real matching traffic.",
+    "Final metadata binding, mandatory normal hook, public push and exact new hosted success remain required before acceptance; broader NET01/NET02 and performance remain open."
+  ],
+  "source_manifest_sha256": "09b0b18f943b8473a5d5126dda41e83879e50d8abe32c7370e19aa9bdb604eaa",
+  "pre_gate_semantic_receipt_sha256": "5618f244cd591c935fee3c310c589cdef3f936c673bd154cce9f6329341b4197"
+}

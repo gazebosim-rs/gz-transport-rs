@@ -742,5 +742,27 @@ actual data 5/true then failed both false checks; wrong good-async descriptors
 were admitted then failed both required true checks. Both controls kept the
 three earlier cases passing and produced no secondary unwind errors. Source
 restored and Rust 5/0 passed again. The [contract](NET-02-remote-service-wrong-types.md#mixed-wrong-and-good-remote-responses)
-scopes the two fixed originals; final binding, normal hook and exact new hosted
-qualification remain required.
+scopes the two fixed originals. Final binding and the normal protected hook
+passed on public `72fdf3a13ae2061cc89afb401ee04d9bfe03d4e4`; exact hosted run
+`40344472155` succeeded for that mixed-response slice.
+
+
+## Remote wrong-type subscriptions
+
+The mandatory native pub/sub filter includes the typed and raw remote
+wrong-subscription originals. Their Rust ports retain Int32 subscription
+admission, the original 1500 ms wait and the false callback flag, with a live
+joined observer. The exact native publisher fixture and its two publications
+remain unchanged; actual matching Vector3d values 1, 2 and 3 are supplemental.
+The [contract](NET-01-remote-wrong-subscription.md) records callback and scheduling
+limits, tail/unwind cleanup and the separate retained native-loader failure.
+
+The exact source gate passed 225 Rust and 24 tooling tests, native Node 56/0,
+pub/sub 9/0, ordinary service 6/0 and inputless service 5/0, with unchanged strict
+2645/2714 lines and 3893/4071 regions. All 209 source reports were retained.
+Independent [review](reviews/remote-pubsub-wrong-subscription.json) replayed
+native 2/0 and fresh Rust 2/0. Valid-type controls received actual values in both
+wrong observers, then failed both primary 1500 ms false assertions; restored
+source passed 2/0. The reviewer rechecked the full coverage and changed-line
+evidence without filtering any regions. Final binding, normal hook and exact
+new hosted qualification remain required.

@@ -671,10 +671,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubWrongTypesOnSubscription",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubWrongTypesOnSubscription",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_remote_pub_sub_wrong_types_on_subscription"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent source/API/assertion and full evidence approval in docs/reviews/remote-pubsub-wrong-subscription.json. Fresh raw171/native2/Rust2, valid-type controls receive Vector3d(1,2,3) in both wrong observers then fail both original 1500 ms false predicates; restored2/0. All209 source reports and strict coverage rechecked.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -683,17 +685,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Fixed remote wrong-type subscription observations: native typed Int32 or raw explicit Int32 subscription admission, original 1500 ms wait and false callback flag. Exact pinned native publisher retains Vector3d(1,2,3) publications at500/2000ms, unchanged large-topic traffic and3000ms exit. Owned observer readiness precedes the original wait; observer remains live through original checkpoint and supplemental matching native-traffic witness. Tail/unwind stop guard and joined polling retain primary failures. Latefalse, actual payload and child-success predicates supplement originals. C++ callback/raw-storage facade, publisher-relative timing and exact scheduling remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native publisher and Rust subscribers; other backends remain pending.",
+      "evidence": "docs/NET-01-remote-wrong-subscription.md; docs/reviews/remote-pubsub-wrong-subscription.json; exact source225Rust/24tools/Node56/pubsub9/ordinary6/inputless5,strict2645/2714lines3893/4071regions,zero production changes;all209source reports retained. Author loader failure retained separately,source unchanged after environment-only correction."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubRawSubWrongTypesOnSubscription",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubRawSubWrongTypesOnSubscription",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_remote_pub_raw_sub_wrong_types_on_subscription"
+      ],
+      "review": "/root/msgs_owner_astra; 2026-10-26 UTC; independent source/API/assertion and full evidence approval in docs/reviews/remote-pubsub-wrong-subscription.json. Fresh raw171/native2/Rust2, valid-type controls receive Vector3d(1,2,3) in both wrong observers then fail both original 1500 ms false predicates; restored2/0. All209 source reports and strict coverage rechecked.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -702,8 +707,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Fixed remote wrong-type subscription observations: native typed Int32 or raw explicit Int32 subscription admission, original 1500 ms wait and false callback flag. Exact pinned native publisher retains Vector3d(1,2,3) publications at500/2000ms, unchanged large-topic traffic and3000ms exit. Owned observer readiness precedes the original wait; observer remains live through original checkpoint and supplemental matching native-traffic witness. Tail/unwind stop guard and joined polling retain primary failures. Latefalse, actual payload and child-success predicates supplement originals. C++ callback/raw-storage facade, publisher-relative timing and exact scheduling remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native publisher and Rust subscribers; other backends remain pending.",
+      "evidence": "docs/NET-01-remote-wrong-subscription.md; docs/reviews/remote-pubsub-wrong-subscription.json; exact source225Rust/24tools/Node56/pubsub9/ordinary6/inputless5,strict2645/2714lines3893/4071regions,zero production changes;all209source reports retained. Author loader failure retained separately,source unchanged after environment-only correction."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubWrongTypesTwoSubscribers",
