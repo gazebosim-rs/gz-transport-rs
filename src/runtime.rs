@@ -381,6 +381,18 @@ impl Service {
         self.rx.recv_timeout(timeout).map_err(receive_error)
     }
 }
+/// An admitted request whose response can be awaited by its owner.
+/// Dropping the handle abandons the reply; the worker retires its bounded
+/// pending entry on reply or at the original deadline.
+pub struct PendingResponse {
+    rx: Receiver<Result<(Vec<u8>, bool), Error>>,
+}
+impl PendingResponse {
+    /// Wait once for the response, a typed worker error, or this caller's bound.
+    pub fn wait(self, timeout: Duration) -> Result<(Vec<u8>, bool), Error> {
+        self.rx.recv_timeout(timeout).map_err(receive_error)?
+    }
+}
 pub struct Request {
     pub data: Vec<u8>,
     sender: Sender,
@@ -1030,15 +1042,17 @@ impl Node {
         self.request(topic, request_type, EMPTY_TYPE, data, timeout)
             .map(|_| ())
     }
-    /// Request a response. `gz.msgs.Empty` selects Gazebo's one-way semantics.
-    pub fn request(
+    /// Admit a response request without waiting for its result. The same bounded
+    /// worker queue, provider matching, and deadline apply as in `request`.
+    /// An admitted request can still complete with `Timeout` or another error.
+    pub fn begin_request(
         &self,
         topic: &str,
         request_type: &str,
         response_type: &str,
         data: impl Into<Vec<u8>>,
         timeout: Duration,
-    ) -> Result<(Vec<u8>, bool), Error> {
+    ) -> Result<PendingResponse, Error> {
         let data = data.into();
         if data.len() > self.config.max_message_bytes {
             return Err(Error::InvalidFrame);
@@ -1055,7 +1069,19 @@ impl Node {
             reply: tx,
             sent: false,
         }))?;
-        rx.recv_timeout(timeout).map_err(receive_error)?
+        Ok(PendingResponse { rx })
+    }
+    /// Request a response. `gz.msgs.Empty` selects Gazebo's one-way semantics.
+    pub fn request(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        data: impl Into<Vec<u8>>,
+        timeout: Duration,
+    ) -> Result<(Vec<u8>, bool), Error> {
+        self.begin_request(topic, request_type, response_type, data, timeout)?
+            .wait(timeout)
     }
     /// Snapshot sorted, unique signatures known to this Node's worker.
     /// Refreshes discovery without invoking a handler. Newly advertised remote

@@ -443,3 +443,25 @@ The final test and mandatory-native verifier change no production Rust;
 the exact staged source gate passed 195 Rust tests and both native originals
 with 2486/2543 production lines and 3690/3846 regions. Native callback
 registration and scheduling remain outside this test-only adaptation.
+
+## Owned member service observations
+
+The pinned `NodeTest.ClassMemberCallbackService` and
+`NodeTest.ClassMemberCallbackServiceWithoutInput` originals now run in every
+strict gate. The Rust owned Client tests cover invalid and valid service
+admission, synchronous and raw Int32 data 5/result, admitted asynchronous
+requests dispatched to an owned response method, wrong synchronous type
+Timeout, and wrong asynchronous type admission followed by the original
+300 ms service-method quiet interval. The service and response dispatch
+threads join before owner destruction; a supplemental dropped pending handle
+cannot take a later request's reply. `Node::request()` retains its existing
+completion and error path through `begin_request().wait()`.
+
+The [independent review](reviews/class-member-service.json) approved the
+source and assertions after native 2/0, private Rust 3/0, library 82/0 and a
+response-type-guard mutant that fails the wrong-type assertion. The exact
+staged source gate passed with 17/17 changed production lines covered. Both
+ledger cases remain partial: native member callback registration and
+immediate-after-Request flag visibility are not reproduced by the bounded
+Rust waiter. C++ object-pointer identity and scheduling are unclaimed. The
+historical lost-output status 101 remains unclassified.

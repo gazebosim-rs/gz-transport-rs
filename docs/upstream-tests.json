@@ -4199,10 +4199,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackService",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ClassMemberCallbackService",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_class_member_callback_service"
+      ],
+      "review": "Independent /root/msgs_review_fallback approved V3 source/API/assertions after private raw Rust3/0, native originals2/0, library82/0, exact staged gate and response-type-guard mutant. Receipt docs/reviews/class-member-service.json. Native immediate-after-Request callback visibility remains unported; lost-output101 remains unclassified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4211,17 +4213,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Owned Client rejects Bad Srv, serves /foo Int32 to Int32, checks synchronous and raw serialized request data5/result and service-method flag, and admits an asynchronous request whose separate scoped waiter invokes the owned response method with data5/result. Wrong synchronous request and response descriptor pairs Timeout; wrong asynchronous pairs admit and leave the service method uninvoked through the original 300 ms quiet interval. Native immediate response flag after asynchronous Request returns and C++ callback registration/object identity/scheduling remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned Rust request/dispatch adaptation; other backends pending.",
+      "evidence": "docs/NET-02-class-member-service.md; docs/reviews/class-member-service.json; mandatory pinned native NodeTest.ClassMemberCallbackService original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberCallbackServiceWithoutInput",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ClassMemberCallbackServiceWithoutInput",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "partial",
+      "replacement": [
+        "original_class_member_callback_service_without_input"
+      ],
+      "review": "Independent /root/msgs_review_fallback approved V3 source/API/assertions after private raw Rust3/0, native originals2/0, library82/0, exact staged gate and response-type-guard mutant. Receipt docs/reviews/class-member-service.json. Native immediate-after-Request callback visibility remains unported; lost-output101 remains unclassified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4230,8 +4235,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Owned Client rejects Bad Srv, serves /foo Empty to Int32, checks synchronous data5/result and service-method flag, and admits an asynchronous request whose separate scoped waiter invokes the owned response method with data5/result. A wrong synchronous response descriptor returns Timeout; a wrong asynchronous response descriptor admits and leaves the service method uninvoked through the original 300 ms quiet interval. Native immediate response flag after asynchronous Request returns and C++ callback registration/object identity/scheduling remain unqualified.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned Rust request/dispatch adaptation; other backends pending.",
+      "evidence": "docs/NET-02-class-member-service.md; docs/reviews/class-member-service.json; mandatory pinned native NodeTest.ClassMemberCallbackServiceWithoutInput original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ClassMemberRequestServiceBeforeAdvertise",

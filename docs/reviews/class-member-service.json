@@ -1,0 +1,36 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "parent_commit": "fc44ad1e0931c222047b8962d24716b870e495ac",
+  "staged_tree": "b4c4946b3a0138d3d25e0fb595aabd6001f7bcfe",
+  "staged_diff_sha256": "5d8c5f719307457c7e1435a7ecdaa0ee21ab2d77d75d987d999b7cd02a77953b",
+  "files_sha256": {
+    "scripts/verify.py": "05cab4b9ca3966ed19f12b080902fa22dd80f5f4c16a01b32c856838881f3a24",
+    "src/lib.rs": "0fa0a50a55856f439f54c75389834fd63a0037ca4ca740c9d91c43ff5f7a4b4c",
+    "src/runtime.rs": "a56017579dc0905a732c3e8233c83be2b4dafecd2230edafd84653a0716d395a",
+    "tests/class_member_service_original.rs": "3e494215cb35188fa161eaff826eda12e52107254d15015b08ebd8d7f14112ad"
+  },
+  "source_freeze_sha256": "6fb71022154b7a6ba57fdeba3e16e87f1ee3f6db8d89499e37fb688343fe65eb",
+  "prior_semantic_receipt_sha256": "5c207604df00975ea68013e7efa0af7142eee54817dc456c1f4222a6f4fab41f",
+  "scope": "Same bounded two original member-service observable mappings as V2, both PARTIAL for native immediate-after-Request callback visibility and unavailable C++ callback registration/scheduling identity. New one-shot PendingResponse API bounded; broader NET-02 open.",
+  "v2_to_v3_change": "Only src/runtime.rs PendingResponse documentation now states the abandoned reply is retired on reply or at the original deadline. Exact V2 and V3 tree comparison has one comment insertion/deletion; production logic, public signatures, verifier and tests are unchanged.",
+  "independent_evidence_reused_from_v2": {
+    "native_originals": "2/0 pinned C++",
+    "private_selected_rust": "3/0",
+    "private_serial_lib": "82/0 after required peer setup",
+    "private_wrong_response_type_mutant": "fails exact original wrong-sync Timeout assertion",
+    "prior_receipt_sha256": "5c207604df00975ea68013e7efa0af7142eee54817dc456c1f4222a6f4fab41f"
+  },
+  "v3_gate": {
+    "status": "exit0",
+    "log_sha256": "0af83d5e8348cbe28695530ea24995f5f2f9e0fbe8b8a307a7a7a3e9a96d608e",
+    "changed_production_lines": "17/17"
+  },
+  "limitations": [
+    "No exact native immediate callback visibility after Request return; Rust waiter permits 500 ms.",
+    "No C++ member-callback registration or pointer/scheduler API equivalence.",
+    "No publication or hosted success inferred from source approval."
+  ],
+  "created_at": "2026-10-26T01:58:10Z"
+}
