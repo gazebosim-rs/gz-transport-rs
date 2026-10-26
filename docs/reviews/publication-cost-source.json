@@ -1,0 +1,25 @@
+{
+  "decision": "approved",
+  "author": "/root/transport_fallback",
+  "reviewer": "/root/msgs_review_fallback",
+  "scope": "Frozen production final-recipient Message move after same-Node delivery, composed with previously reviewed per-Publisher history, prefix expiry, generation cache and borrowed delivery; public API, wire and original assertions unchanged.",
+  "base": "b8b31a29294a10cfa4ce7572dfed3a61c88a442e",
+  "staged_tree": "f5eff7373562fb58b4e3d51301586e4cb257f2cd",
+  "staged_diff_sha256": "2f0ce93548ca11d3a6cc03a0236ae5942a05f016995f072a39f09d9d4b4ef4e8",
+  "files_sha256": {
+    "src/runtime.rs": "ee43216829bbe9b517a4c69cbab40f6a1cc71d85a7877c78d84550b78b447bd4",
+    "tests/interop.rs": "e1dd9020b13ae8b69359c549bade81d98ec8cccd0edba80489cb171d0bde5b99",
+    "tests/support/runtime.rs": "04a8209a7097754b2228cd7234a3040958f26406c6a8e6e1cc18f42a9905d0bd"
+  },
+  "source_freeze_sha256": "f4b68a1df63b6061c4249220dbfcaa3743d6f8ac1f238c147a420dcdb6357f79",
+  "staged_gate_log_sha256": "373d63ed6853448e4b6f905c64863dae38c7d7ef5b413e9d28e30b71c2062503",
+  "independent": {
+    "raw_export": "Exact staged Git tree exported into a reviewer-owned private source with an exclusive Cargo target; tracked producer source and index untouched.",
+    "positive_log_sha256": "6c6df1f102402687887d0f9dd2fac5507bbfaa756e1f0266c9d5ed8568b6a4ea",
+    "positive_result": "8 process_local_ integration controls passed, including final-target fanout, first new Node subscription and connected-wire one-copy",
+    "mutant": "Reviewer-only private source skips final target after matching snapshot; exclusive mutant target; new test fails queue-drop equality 1 versus 2.",
+    "mutant_log_sha256": "2d19ba1ef747cfb2989d182fae80d9e94ed3fca937c48bbc4a5e6418d2075e00"
+  },
+  "fixture_disposition": "First capacity-two setup query returned QueueFull before publication assertions. The revised barrier retries only Publisher::has_connections query for at most five seconds. Publication occurs once per assertion step; payloads, queue-drop counts, receiver deadlines and 500ms negative quiet period remain unchanged.",
+  "limits": "Semantic approval only. Exact matched Release performance and proposed 5% nonregression budget are pending; no publication, broad timing, or native equivalence claim. Original C++ controls and full strict gate are author evidence, not privately rerun here."
+}

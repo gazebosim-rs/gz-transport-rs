@@ -62,7 +62,8 @@ delivery, and ignored registrations remain discoverable; see the
 partition, topic, descriptor and delivery-path metadata; raw receive remains
 available. Matching same-process Nodes now receive direct copies with native
 intra-process origin; wire peers remain remote. See [direct delivery](docs/NET-02-process-local-direct.md)
-and [received metadata](docs/NET-01-message-info.md).
+and [received metadata](docs/NET-01-message-info.md). The publisher's bounded
+echo history and process-local fanout have a reviewed [cost update](docs/NET-02-publication-cost.md).
 Local counters expose drops, wire errors and direct-routing errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
 relay/all-interface discovery, the full CLI and other retained behaviors remain

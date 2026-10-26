@@ -642,7 +642,7 @@ fn state(capacity: usize) -> (Worker, Receiver<Command>) {
 #[test]
 fn service_response_admission_is_bounded_and_independent_of_publication_queue() {
     let (worker, ordinary_rx) = state(1);
-    let publication = || Command::Publish("topic".into(), "gz.msgs.Int32".into(), vec![5]);
+    let publication = || Command::Publish("topic".into(), "gz.msgs.Int32".into(), vec![5], None);
     assert_eq!(worker.sender.send(publication()), Ok(()));
     assert_eq!(worker.sender.send(publication()), Err(Error::QueueFull));
 
@@ -681,10 +681,12 @@ fn local_echo_suppression_requires_recent_payload_and_expires_on_address_reuse()
             address: worker.address.clone(),
         },
         type_name: "gz.msgs.Int32".into(),
-        active: Arc::downgrade(&active),
+        publication: PublicationHandle {
+            active: Arc::downgrade(&active),
+            recent_frames: Arc::new(Mutex::new(VecDeque::new())),
+        },
         stopped: Arc::downgrade(&worker.sender.stop),
         retired_at: None,
-        recent_frames: VecDeque::new(),
     };
     {
         let mut local = local_publications().lock().unwrap();
@@ -708,6 +710,129 @@ fn local_echo_suppression_requires_recent_payload_and_expires_on_address_reuse()
         .unwrap()
         .retired_at = Some(Instant::now() - Duration::from_secs(4));
     assert!(!worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[5]));
+}
+
+#[test]
+fn local_publication_expiry_removes_only_the_old_prefix() {
+    let (worker, _) = state(4);
+    let topic = qualified_name(&worker.config.partition, "", "/ordered").unwrap();
+    let active = Arc::new(AtomicBool::new(true));
+    let now = Instant::now();
+    let mut publication = LocalPublication {
+        domain: MessageDomain::from_config(&worker.config),
+        topic: "/ordered".into(),
+        key: PeerKey {
+            channel: 0,
+            process: worker.process.clone(),
+            node: worker.node.clone(),
+            topic,
+            address: worker.address.clone(),
+        },
+        type_name: "gz.msgs.Int32".into(),
+        publication: PublicationHandle {
+            active: Arc::downgrade(&active),
+            recent_frames: Arc::new(Mutex::new(VecDeque::from([
+                (frame_fingerprint(&[1]), 1, now - Duration::from_secs(4)),
+                (frame_fingerprint(&[2]), 1, now - Duration::from_secs(2)),
+                (frame_fingerprint(&[3]), 1, now),
+            ]))),
+        },
+        stopped: Arc::downgrade(&worker.sender.stop),
+        retired_at: None,
+    };
+    assert!(publication.retain_for_peer_expiry());
+    let recent = publication.publication.recent_frames.lock().unwrap();
+    assert_eq!(recent.len(), 2);
+    assert_eq!(recent[0].0, frame_fingerprint(&[2]));
+    assert_eq!(recent[1].0, frame_fingerprint(&[3]));
+}
+
+#[test]
+fn publication_handle_records_before_wire_and_cannot_write_after_lease_retirement() {
+    let (mut worker, _) = state(4);
+    let old_active = Arc::new(AtomicBool::new(true));
+    let old = PublicationHandle {
+        active: Arc::downgrade(&old_active),
+        recent_frames: Arc::new(Mutex::new(VecDeque::new())),
+    };
+    let topic = qualified_name(&worker.config.partition, "", "/handle").unwrap();
+    worker.command(Command::Publish(
+        topic.clone(),
+        "gz.msgs.Int32".into(),
+        vec![5],
+        Some(old.clone()),
+    ));
+    assert_eq!(old.recent_frames.lock().unwrap().len(), 1);
+    assert_eq!(
+        old.recent_frames.lock().unwrap()[0].0,
+        frame_fingerprint(&[5])
+    );
+
+    old_active.store(false, Ordering::Release);
+    let replacement_active = Arc::new(AtomicBool::new(true));
+    let replacement = PublicationHandle {
+        active: Arc::downgrade(&replacement_active),
+        recent_frames: Arc::new(Mutex::new(VecDeque::new())),
+    };
+    worker.command(Command::Publish(
+        topic,
+        "gz.msgs.Int32".into(),
+        vec![6],
+        Some(old.clone()),
+    ));
+    assert_eq!(old.recent_frames.lock().unwrap().len(), 1);
+    assert!(replacement.recent_frames.lock().unwrap().is_empty());
+}
+
+#[test]
+fn poisoned_publisher_history_counts_routing_error_and_suppresses_ambiguous_echo() {
+    let (mut worker, _) = state(4);
+    let topic = qualified_name(&worker.config.partition, "", "/history_poison").unwrap();
+    let active = Arc::new(AtomicBool::new(true));
+    let publication = PublicationHandle {
+        active: Arc::downgrade(&active),
+        recent_frames: Arc::new(Mutex::new(VecDeque::new())),
+    };
+    local_publications().lock().unwrap().push(LocalPublication {
+        domain: MessageDomain::from_config(&worker.config),
+        topic: "/history_poison".into(),
+        key: PeerKey {
+            channel: 0,
+            process: worker.process.clone(),
+            node: worker.node.clone(),
+            topic: topic.clone(),
+            address: worker.address.clone(),
+        },
+        type_name: "gz.msgs.Int32".into(),
+        publication: publication.clone(),
+        stopped: Arc::downgrade(&worker.sender.stop),
+        retired_at: None,
+    });
+    let poisoned = publication.recent_frames.clone();
+    assert!(
+        thread::spawn(move || {
+            let _guard = poisoned.lock().unwrap();
+            panic!("isolated history poison");
+        })
+        .join()
+        .is_err()
+    );
+    let before = worker.sender.counters.snapshot();
+    worker.command(Command::Publish(
+        topic.clone(),
+        "gz.msgs.Int32".into(),
+        vec![5],
+        Some(publication),
+    ));
+    assert_eq!(
+        worker.sender.counters.snapshot().routing_errors,
+        before.routing_errors + 1
+    );
+    assert!(worker.local_wire_echo(&topic, &worker.address, "gz.msgs.Int32", &[5]));
+    assert_eq!(
+        worker.sender.counters.snapshot().routing_errors,
+        before.routing_errors + 2
+    );
 }
 
 #[test]
@@ -984,20 +1109,20 @@ fn bounds_and_invalid_configuration() {
     let (worker, rx) = state(1);
     let sender = worker.sender.clone();
     sender
-        .send(Command::Publish("a".into(), "b".into(), vec![]))
+        .send(Command::Publish("a".into(), "b".into(), vec![], None))
         .unwrap();
     assert_eq!(
-        sender.send(Command::Publish("a".into(), "b".into(), vec![])),
+        sender.send(Command::Publish("a".into(), "b".into(), vec![], None)),
         Err(Error::QueueFull)
     );
     drop(rx);
     assert_eq!(
-        sender.send(Command::Publish("a".into(), "b".into(), vec![])),
+        sender.send(Command::Publish("a".into(), "b".into(), vec![], None)),
         Err(Error::Shutdown)
     );
     sender.stop.store(true, Ordering::Release);
     assert_eq!(
-        sender.send(Command::Publish("a".into(), "b".into(), vec![])),
+        sender.send(Command::Publish("a".into(), "b".into(), vec![], None)),
         Err(Error::Shutdown)
     );
     let mut node = Node::new(Config {
@@ -1545,8 +1670,8 @@ fn queue_saturation_is_observable_in_local_counters() {
         type_name: "type".into(),
         data: vec![1],
     };
-    worker.deliver(message.clone(), true);
-    worker.deliver(message.clone(), true);
+    worker.deliver(&message, true);
+    worker.deliver(&message, true);
     assert_eq!(rx.try_recv().unwrap().into_message(), message);
     assert!(rx.try_recv().is_err());
     assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
@@ -1644,7 +1769,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
     worker.cleanup();
     assert_eq!(worker.subscriptions.len(), 1);
     worker.deliver(
-        Message {
+        &Message {
             topic: "topic".into(),
             type_name: "type".into(),
             data: vec![7],
@@ -3487,7 +3612,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
     worker.deliver(
-        Message {
+        &Message {
             topic: topic.clone(),
             type_name: "old".into(),
             data: vec![1],
@@ -3496,7 +3621,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     );
     node.unsubscribe("/topic").unwrap();
     worker.deliver(
-        Message {
+        &Message {
             topic: topic.clone(),
             type_name: "old".into(),
             data: vec![2],
@@ -3535,7 +3660,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(publisher.recv_bytes(0).unwrap(), control(true));
     worker.deliver(
-        Message {
+        &Message {
             topic: topic.clone(),
             type_name: "new".into(),
             data: vec![3],
@@ -3642,7 +3767,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
     assert_eq!(publisher.publish_typed(&right), Err(Error::QueueFull));
     worker.command(commands.recv().unwrap());
     publisher.publish_typed(&right).unwrap();
-    let Command::Publish(_, name, bytes) = commands.recv().unwrap() else {
+    let Command::Publish(_, name, bytes, _) = commands.recv().unwrap() else {
         panic!("missing typed publication")
     };
     assert_eq!(name, "gz.msgs.Int32");

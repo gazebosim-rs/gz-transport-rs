@@ -275,6 +275,7 @@ pub struct Publisher {
     sender: Sender,
     _lifetime: Arc<WorkerLifetime>,
     interest: Arc<AtomicU8>,
+    publication: PublicationHandle,
     topic: String,
     type_name: String,
     max: usize,
@@ -320,6 +321,7 @@ impl Publisher {
             self.topic.clone(),
             self.type_name.clone(),
             data,
+            Some(self.publication.clone()),
         ))
     }
 }
@@ -447,15 +449,19 @@ impl MessageDomain {
         }
     }
 }
+#[derive(Clone)]
+struct PublicationHandle {
+    active: Weak<AtomicBool>,
+    recent_frames: Arc<Mutex<VecDeque<(u64, usize, Instant)>>>,
+}
 struct LocalPublication {
     domain: MessageDomain,
     topic: String,
     key: PeerKey,
     type_name: String,
-    active: Weak<AtomicBool>,
+    publication: PublicationHandle,
     stopped: Weak<AtomicBool>,
     retired_at: Option<Instant>,
-    recent_frames: VecDeque<(u64, usize, Instant)>,
 }
 fn frame_fingerprint(data: &[u8]) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -464,7 +470,8 @@ fn frame_fingerprint(data: &[u8]) -> u64 {
 }
 impl LocalPublication {
     fn live(&self) -> bool {
-        self.active
+        self.publication
+            .active
             .upgrade()
             .is_some_and(|active| active.load(Ordering::Acquire))
             && self
@@ -475,8 +482,19 @@ impl LocalPublication {
     fn retain_for_peer_expiry(&mut self) -> bool {
         // Keep a retired key through the worker's three-second peer window so
         // an old multicast copy cannot resurrect a dropped local endpoint.
-        self.recent_frames
-            .retain(|(_, _, stamp)| stamp.elapsed() < Duration::from_secs(3));
+        // Frames are appended by this publication's worker in timestamp order.
+        let now = Instant::now();
+        let mut recent = self
+            .publication
+            .recent_frames
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        while recent.front().is_some_and(|(_, _, stamp)| {
+            now.saturating_duration_since(*stamp) >= Duration::from_secs(3)
+        }) {
+            recent.pop_front();
+        }
+        drop(recent);
         if self.live() {
             self.retired_at = None;
             true
@@ -523,6 +541,7 @@ impl LocalInterest {
     }
 }
 static LOCAL_INTERESTS: OnceLock<Mutex<Vec<LocalInterest>>> = OnceLock::new();
+static LOCAL_INTEREST_GENERATION: AtomicU64 = AtomicU64::new(0);
 fn local_interests() -> &'static Mutex<Vec<LocalInterest>> {
     LOCAL_INTERESTS.get_or_init(|| Mutex::new(Vec::new()))
 }
@@ -636,6 +655,10 @@ impl Node {
         drop(topics);
         // Accepted for enqueue, not yet confirmed by the worker or network.
         let (_, path) = decompose_fully_qualified_topic(&topic)?;
+        let publication = PublicationHandle {
+            active: Arc::downgrade(&lease.active),
+            recent_frames: Arc::new(Mutex::new(VecDeque::new())),
+        };
         let mut local = local_publications()
             .lock()
             .map_err(|_| Error::Native("process-local publisher registry poisoned".into()))?;
@@ -652,10 +675,9 @@ impl Node {
                 address: identity.address.clone(),
             },
             type_name: type_name.into(),
-            active: Arc::downgrade(&lease.active),
+            publication: publication.clone(),
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
-            recent_frames: VecDeque::new(),
         });
         let mut interests = self
             .local_interest
@@ -673,6 +695,7 @@ impl Node {
             sender: self.sender.clone(),
             _lifetime: self.lifetime.clone(),
             interest,
+            publication,
             topic,
             type_name: type_name.into(),
             max: self.config.max_message_bytes,
@@ -736,6 +759,11 @@ impl Node {
             tx: Some(tx),
             retired_at: None,
         });
+        let _ = LOCAL_INTEREST_GENERATION.fetch_update(
+            Ordering::Release,
+            Ordering::Relaxed,
+            |generation| generation.checked_add(1),
+        );
         interests.subscribers.push(LocalSubscriberInterest {
             topic,
             type_name: type_name.into(),
@@ -1148,7 +1176,7 @@ enum Command {
     KnownPublisherTopics(SyncSender<TopicNameRecords>),
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
-    Publish(String, String, Vec<u8>),
+    Publish(String, String, Vec<u8>, Option<PublicationHandle>),
     Subscribe(
         String,
         String,
@@ -1244,6 +1272,8 @@ struct Worker {
     sender: Sender,
     response_rx: Receiver<Command>,
     owner_dead: Arc<AtomicBool>,
+    local_interest_generation: u64,
+    has_other_local_interest: bool,
     process: String,
     node: String,
     udp: [UdpSocket; 2],
@@ -1429,6 +1459,8 @@ impl Worker {
             sender,
             response_rx,
             owner_dead,
+            local_interest_generation: u64::MAX,
+            has_other_local_interest: false,
             process,
             node,
             udp,
@@ -1803,8 +1835,23 @@ impl Worker {
                 );
                 let _ = reply.try_send(self.topic_endpoint_records(&topic));
             }
-            Command::Publish(topic, type_name, data) => {
-                self.remember_local_publication(&topic, &type_name, &data);
+            Command::Publish(topic, type_name, data, publication) => {
+                if let Some(publication) = publication {
+                    // An admitted Publisher owns this exact history. A queued
+                    // command after its lease dies cannot record in a later
+                    // advertisement's history at the same address.
+                    if publication
+                        .active
+                        .upgrade()
+                        .is_some_and(|active| active.load(Ordering::Acquire))
+                        && !self.sender.stop.load(Ordering::Acquire)
+                    {
+                        self.record_publication(&publication, &data);
+                    }
+                } else {
+                    // Private worker tests construct raw Publish commands.
+                    self.remember_local_publication(&topic, &type_name, &data);
+                }
                 self.sender.counters.sent(self.publisher.send_multipart(
                     [
                         topic.as_bytes(),
@@ -1814,19 +1861,13 @@ impl Worker {
                     ],
                     zmq::DONTWAIT,
                 ));
-                self.deliver(
-                    Message {
-                        topic: topic.clone(),
-                        type_name: type_name.clone(),
-                        data: data.clone(),
-                    },
-                    true,
-                );
-                self.deliver_process_local(Message {
+                let message = Message {
                     topic,
                     type_name,
                     data,
-                });
+                };
+                self.deliver(&message, true);
+                self.deliver_process_local(message);
             }
             Command::Subscribe(topic, type_name, tx, active, options) => {
                 // Retire old filters/registrations before a replacement. This
@@ -2016,7 +2057,7 @@ impl Worker {
             }
         }
     }
-    fn deliver(&self, message: Message, intra_process: bool) {
+    fn deliver(&self, message: &Message, intra_process: bool) {
         for s in &self.subscriptions {
             if s.active.load(Ordering::Acquire)
                 && s.topic == message.topic
@@ -2030,12 +2071,23 @@ impl Worker {
             }
         }
     }
-    fn deliver_process_local(&self, message: Message) {
+    fn deliver_process_local(&mut self, message: Message) {
         let domain = MessageDomain::from_config(&self.config);
-        let targets = match local_interests().lock() {
+        let generation = LOCAL_INTEREST_GENERATION.load(Ordering::Acquire);
+        if generation != u64::MAX
+            && generation == self.local_interest_generation
+            && !self.has_other_local_interest
+            && !local_interests().is_poisoned()
+        {
+            return;
+        }
+        let (targets, has_other) = match local_interests().lock() {
             Ok(mut interests) => {
                 interests.retain_mut(LocalInterest::retain_for_peer_expiry);
-                interests
+                let has_other = interests.iter().any(|interest| {
+                    interest.live() && interest.domain == domain && interest.key.node != self.node
+                });
+                let targets = interests
                     .iter()
                     .filter(|interest| {
                         interest.live()
@@ -2046,7 +2098,8 @@ impl Worker {
                                 || interest.key.type_name == message.type_name)
                     })
                     .filter_map(|interest| interest.tx.clone())
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<_>>();
+                (targets, has_other)
             }
             Err(_) => {
                 self.sender
@@ -2056,11 +2109,23 @@ impl Worker {
                 return;
             }
         };
-        for target in targets {
+        self.local_interest_generation = generation;
+        self.has_other_local_interest = has_other;
+        let last = targets.len().saturating_sub(1);
+        let mut message = Some(message);
+        for (index, target) in targets.into_iter().enumerate() {
+            // Every receiver still owns an independent Message. Move the
+            // worker's final copy into the last queue after same-Node
+            // delivery, avoiding an extra payload clone for one target.
+            let delivered = if index == last {
+                message.take().unwrap()
+            } else {
+                message.as_ref().unwrap().clone()
+            };
             self.sender
                 .counters
                 .dropped(target.try_send(ReceivedMessage {
-                    message: message.clone(),
+                    message: delivered,
                     intra_process: true,
                 }));
         }
@@ -2069,21 +2134,30 @@ impl Worker {
         match local_publications().lock() {
             Ok(mut publications) => {
                 publications.retain_mut(LocalPublication::retain_for_peer_expiry);
-                if let Some(publication) = publications.iter_mut().find(|publication| {
+                if let Some(publication) = publications.iter().find(|publication| {
                     publication.live()
                         && publication.key.node == self.node
                         && publication.key.topic == topic
                         && publication.type_name == type_name
                         && publication.key.address == self.address
                 }) {
-                    publication.recent_frames.push_back((
-                        frame_fingerprint(data),
-                        data.len(),
-                        Instant::now(),
-                    ));
-                    while publication.recent_frames.len() > self.config.capacity {
-                        publication.recent_frames.pop_front();
-                    }
+                    self.record_publication(&publication.publication, data);
+                }
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+            }
+        }
+    }
+    fn record_publication(&self, publication: &PublicationHandle, data: &[u8]) {
+        match publication.recent_frames.lock() {
+            Ok(mut frames) => {
+                frames.push_back((frame_fingerprint(data), data.len(), Instant::now()));
+                while frames.len() > self.config.capacity {
+                    frames.pop_front();
                 }
             }
             Err(_) => {
@@ -2099,14 +2173,32 @@ impl Worker {
         match local_publications().lock() {
             Ok(mut publications) => {
                 publications.retain_mut(LocalPublication::retain_for_peer_expiry);
+                let mut fingerprint = None;
                 publications.iter().any(|publication| {
-                    publication.domain == domain
+                    if !(publication.domain == domain
                         && publication.key.topic == topic
                         && publication.key.address == address
-                        && publication.type_name == type_name
-                        && publication.recent_frames.iter().any(|(hash, len, _)| {
-                            *len == data.len() && *hash == frame_fingerprint(data)
-                        })
+                        && publication.type_name == type_name)
+                    {
+                        return false;
+                    }
+                    match publication.publication.recent_frames.lock() {
+                        Ok(frames) => frames.iter().any(|(hash, len, _)| {
+                            *len == data.len()
+                                && *hash
+                                    == *fingerprint.get_or_insert_with(|| frame_fingerprint(data))
+                        }),
+                        Err(_) => {
+                            // A poisoned local history is observable. Suppress
+                            // this exact local endpoint's wire copy so it
+                            // cannot become a duplicate with false origin.
+                            self.sender
+                                .counters
+                                .routing_errors
+                                .fetch_add(1, Ordering::Relaxed);
+                            true
+                        }
+                    }
                 })
             }
             Err(_) => {
@@ -2468,14 +2560,12 @@ impl Worker {
                 if self.local_wire_echo(topic, address, type_name, &frames[2]) {
                     continue;
                 }
-                self.deliver(
-                    Message {
-                        topic: topic.into(),
-                        type_name: type_name.into(),
-                        data: frames[2].clone(),
-                    },
-                    false,
-                );
+                let message = Message {
+                    topic: topic.into(),
+                    type_name: type_name.into(),
+                    data: frames[2].clone(),
+                };
+                self.deliver(&message, false);
             } else {
                 self.sender
                     .counters

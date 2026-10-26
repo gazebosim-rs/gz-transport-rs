@@ -1,0 +1,18 @@
+{
+  "decision": "scoped_point_estimate_meets_proposed_five_percent_budget; upper_bound_unproven",
+  "reviewer": "/root/msgs_review_fallback",
+  "candidate_tree": "f5eff7373562fb58b4e3d51301586e4cb257f2cd",
+  "semantic_receipt_sha256": "1ac6f3645936bd353f8208ce50370893fe36ae7ed4fe234353ff5f9727cffc80",
+  "report_sha256": "3061407b8828e03600bd31a8808357389e693d88ccf2a693eb3e7d8f2ad9c434",
+  "provenance_sha256": "45bf9fc503fa4a09b1e1c6eecc064b02e119b090709d15e20c6b9fcfe0d70ca3",
+  "protocol": "Within-Rust Release, same frozen default Server complete clock/pose/IMU 128-step harness, 20ms minimum pacing, shared-host CPU31; 11 alternating pairs including warmup; 22 samples retained.",
+  "independent_audit": "Rehashed and parsed each of 22 raw logs, checked one packet per log and 128 clock/pose observations with identical logical work, recomputed medians/geometric pair ratio and seed42/10000 bootstrap percentile endpoints, verified binary and benchmark-script hashes against provenance.",
+  "parent_median_us": 37.33089453125,
+  "candidate_median_us": 38.57559765625,
+  "paired_ratio": 1.0359797412283704,
+  "bootstrap95": [
+    0.9924289700377621,
+    1.0765820918455025
+  ],
+  "limits": "Point overhead is 3.598%, inside proposed 5% point budget. The 95% interval extends above 5%, so this shared-host run does not establish a <=5% upper bound or general latency nonregression. No C++/dedicated-hardware/whole-engine speed claim. Producer exact final gate, protected hook, hosted qualification and consumer adoption remain separate."
+}

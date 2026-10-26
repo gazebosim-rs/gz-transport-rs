@@ -2212,6 +2212,66 @@ fn process_local_direct_delivery_respects_domain_ignore_and_owner_retirement() {
     assert_eq!(wildcard.recv_timeout(Duration::ZERO), Err(Error::Shutdown));
     assert_eq!(ignored.recv_timeout(Duration::ZERO), Err(Error::Timeout));
 }
+
+#[test]
+fn process_local_final_target_keeps_fanout_matching_and_queue_drop_counts() {
+    let mut domain = config();
+    domain.capacity = 2;
+    let publisher_node = Node::new(domain.clone()).unwrap();
+    let first_node = Node::new(domain.clone()).unwrap();
+    let second_node = Node::new(domain.clone()).unwrap();
+    let mut foreign = domain.clone();
+    foreign.partition.push_str("-foreign");
+    let foreign_node = Node::new(foreign).unwrap();
+    let publication = publisher_node
+        .advertise("/fanout", "gz.msgs.Int32")
+        .unwrap();
+    let mut ignored_options = SubscribeOptions::default();
+    ignored_options.set_ignore_local_messages(true);
+    let ignored = publisher_node
+        .subscribe_with_options("/fanout", "gz.msgs.Int32", ignored_options)
+        .unwrap();
+    let first = first_node.subscribe("/fanout", "gz.msgs.Int32").unwrap();
+    let last = second_node.subscribe("/fanout", "").unwrap();
+    let mismatch = second_node.subscribe("/fanout", TYPE).unwrap();
+    let isolated = foreign_node.subscribe("/fanout", "gz.msgs.Int32").unwrap();
+    let worker_barrier = || {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            match publication.has_connections() {
+                Ok(_) => break,
+                Err(Error::QueueFull) if Instant::now() < deadline => {
+                    thread::sleep(Duration::from_millis(1));
+                }
+                result => panic!("worker barrier failed: {result:?}"),
+            }
+        }
+    };
+
+    for _ in 0..2 {
+        publication.publish(int32_five()).unwrap();
+        worker_barrier();
+    }
+    let drops_before = publisher_node.statistics().queue_drops;
+    publication.publish(int32_five()).unwrap();
+    worker_barrier();
+    assert_eq!(publisher_node.statistics().queue_drops, drops_before + 2);
+    for receiver in [&first, &last] {
+        for _ in 0..2 {
+            let message = receiver
+                .recv_with_info_timeout(Duration::from_secs(10))
+                .unwrap();
+            assert_eq!(message.data, int32_five());
+            assert!(message.info().intra_process);
+        }
+        assert_eq!(receiver.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    }
+    thread::sleep(Duration::from_millis(500));
+    assert_eq!(ignored.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    assert_eq!(mismatch.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+    assert_eq!(isolated.recv_timeout(Duration::ZERO), Err(Error::Timeout));
+}
+
 #[test]
 fn process_local_direct_delivery_suppresses_connected_wire_echo() {
     let config = config();
@@ -2237,6 +2297,37 @@ fn process_local_direct_delivery_suppresses_connected_wire_echo() {
         subscription.recv_timeout(Duration::from_millis(500)),
         Err(Error::Timeout)
     );
+}
+
+#[test]
+fn process_local_new_node_subscription_invalidates_empty_target_cache() {
+    let config = config();
+    let publisher_node = Node::new(config.clone()).unwrap();
+    let publisher = publisher_node
+        .advertise("/new_interest", "gz.msgs.Int32")
+        .unwrap();
+    let same_node = publisher_node
+        .subscribe("/new_interest", "gz.msgs.Int32")
+        .unwrap();
+    publisher.publish(int32_five()).unwrap();
+    assert!(
+        same_node
+            .recv_with_info_timeout(Duration::from_secs(10))
+            .unwrap()
+            .info()
+            .intra_process
+    );
+
+    let second_node = Node::new(config).unwrap();
+    let second = second_node
+        .subscribe("/new_interest", "gz.msgs.Int32")
+        .unwrap();
+    publisher.publish(int32_five()).unwrap();
+    let received = second
+        .recv_with_info_timeout(Duration::from_secs(10))
+        .unwrap();
+    assert_eq!(received.data, int32_five());
+    assert!(received.info().intra_process);
 }
 #[test]
 fn original_pub_sub_same_thread_generic_cb() {

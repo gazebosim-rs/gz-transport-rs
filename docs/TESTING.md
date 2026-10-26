@@ -402,3 +402,26 @@ tests using only a private Transport dependency redirect. Root separately
 replayed all 15 real C++ Sim client scenarios against the frozen source. The
 response-only worker poll and downstream queue limits remain in the contract;
 normal hook, public commit and hosted CI are separate acceptance steps.
+
+## Process-local publication cost
+
+The [publication cost contract](NET-02-publication-cost.md) records the
+lease-owned, unconditional wire-echo history, ordered expiry, cached absence
+generation and owned final-recipient delivery. The frozen three-file source
+passed its exact staged gate with 2486/2543 production lines, 3690/3846
+regions and 104/108 changed executable lines. Independent private controls
+passed eight process-local cases; skipping the final recipient fails the
+capacity-two fanout drop count. The test's bounded five-second setup retry
+applies only to `has_connections()` when its worker queue is initially full;
+publication, payload, queue-drop and receive assertions remain unchanged.
+
+The matched Release characterization used the unchanged 128-step complete
+clock/pose/IMU harness on a shared CPU 31, 20 ms minimum pacing and ten
+alternating measured pairs plus a warmup pair. All 22 sample work checks
+passed. Parent and candidate medians were 37.3309 and 38.5756 microseconds
+per step; paired geometric overhead was 3.598%, bootstrap 95% interval
+[-0.757%, 7.658%]. The point is within the proposed 5% budget, while the
+interval does not establish a 5% upper bound. The [semantic review](reviews/publication-cost-source.json)
+and [performance review](reviews/publication-cost-performance.json) are
+separate. The normal protected hook, hosted qualification and simulator
+adoption remain separate gates.
