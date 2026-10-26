@@ -4700,10 +4700,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesOnSubscription",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubWrongTypesOnSubscription",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_wrong_types_on_subscription"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; exact source/API/assertion approval in docs/reviews/pubsub-wrong-subscription.json. Private native original1/0, raw-export Rust original1/0, and matching-subscriber mutant fails the supplemental post-join false-flag assertion. C++ callback registration and exact scheduling remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4712,8 +4714,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Same-Node Vector3d advertisement and Int32 subscription succeed; retain 100 ms settling, then Vector3d(1,2,3) publication succeeds with callback flag immediately false. Supplemental owned receive window requires exact Timeout and post-join false flag. C++ callback registration/scheduling identities and other wrong-type cases remain separate.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native original and owned typed publication/subscription adaptation; other backends pending.",
+      "evidence": "docs/NET-01-wrong-type-subscription.md; docs/reviews/pubsub-wrong-subscription.json; mandatory pinned native NodeTest.PubSubWrongTypesOnSubscription original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesTwoSubscribers",

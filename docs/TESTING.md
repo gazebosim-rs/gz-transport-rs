@@ -544,3 +544,20 @@ the pinned native original and selected Rust original 1/0 each from exact
 source. Removing the typed publication guard makes the wrong-type
 `InvalidFrame` assertion fail with `Ok(())`; the reviewer approved the fixed
 observable original as `faithful_port` with the API limits above.
+
+
+## Wrong-type subscription on the same Node
+
+The pinned `NodeTest.PubSubWrongTypesOnSubscription` original now runs in every
+native gate. Its test-only Rust port retains successful Vector3d advertisement,
+Int32 subscription, the original 100 ms settle, successful Vector3d(1,2,3)
+publication and immediately false callback flag. A supplemental joined receive
+thread requires exact Timeout and no delivered message. C++ callback registration
+and scheduling identities remain unclaimed.
+
+The exact frozen source passed strict staged verification with 2645/2714
+production lines and 3893/4071 regions; no production source changed. Independent
+[review](reviews/pubsub-wrong-subscription.json) replayed native and raw-export
+Rust originals 1/0 each. Changing the subscriber type to Vector3d failed the
+post-join false-flag control. See [the scoped contract](NET-01-wrong-type-subscription.md).
+The final protected hook and hosted qualification remain separate.

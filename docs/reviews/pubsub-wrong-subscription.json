@@ -1,0 +1,59 @@
+{
+  "reviewer": "/root/msgs_review_fallback",
+  "verdict": "approved_for_observable_fixed_original",
+  "disposition": "faithful_port of NodeTest.PubSubWrongTypesOnSubscription observable assertions; C++ callback registration and scheduling are outside the claim",
+  "producer_parent": "49c8c22fb85ad7bd6b64e0c9e410353fda2fd34b",
+  "source_manifest_sha256": "588e62813adf63737107c9e8f5d874f891001709e2f790466488508f71e575d3",
+  "source_tree": "0cfefc1771acb686d30625d5ddc9b8788eec7d37",
+  "source_diff_sha256": "4331968d86dd11fa5b9e09a0da2386accf3784d4daf5e9ed01a2529b4100803f",
+  "files_sha256": {
+    "scripts/verify.py": "2ee7aee77d5cbd335170bb31aceb4f7f1c4dca30da4a75fc9e030459acfe648e",
+    "tests/pubsub_wrong_subscription_original.rs": "4f8c3cdd1e69b12e8675ae29dfe3827cea13152edb043f0d80e4aa4d95bac0ee"
+  },
+  "modes": {
+    "scripts/verify.py": "100644",
+    "tests/pubsub_wrong_subscription_original.rs": "100644"
+  },
+  "no_unstaged_tracked_diff": true,
+  "upstream": {
+    "source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+    "binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+    "original": "NodeTest.PubSubWrongTypesOnSubscription"
+  },
+  "independent_replay": {
+    "raw_export": "Exact staged tree exported without the producer worktree or index; private exclusive Cargo target.",
+    "native": "1 passed, 0 failed, 101 ms",
+    "native_log_sha256": "cd5ce4bbdab12231e3fa51509cdc25cec5ac0ad54a0cec4c1a72f0a72d2da8b1",
+    "rust": "1 passed, 0 failed, 0 ignored",
+    "rust_log_sha256": "7ebeac1164b37345dbad23f276f6b7c3d1301e93038b2b5e8bd41c8f9493634f",
+    "selected_cargo_jobs": 2,
+    "private_mutant": "Changed only subscriber type from gz.msgs.Int32 to gz.msgs.Vector3d; the supplemental post-join false-flag assertion failed after actual delivery. Original raw-export source restored byte-for-byte.",
+    "mutant_log_sha256": "90d1f6746bc6c989a41eb36970d6624851f511b297c0ce2b9c1d012c721b2281"
+  },
+  "strict_staged_gate": {
+    "result": "EXIT0",
+    "log_sha256": "c3e89a79ca543a330b4d868c3f6da79e8e7814912fcc510dcfc40b076673ba8c",
+    "evidence_sha256": "568af26ca0a44f684f8e56a39100b0af4a4ef2cb7ae7bfc9509376cd1358f2da",
+    "coverage_lines": "2645/2714",
+    "coverage_regions": "3893/4071",
+    "changed_production": "0/0"
+  },
+  "assertion_mapping": [
+    "Vector3d(1,2,3) advertised and published to /foo",
+    "Int32 subscriber registration succeeds",
+    "100 ms settling interval is retained",
+    "publish result is success",
+    "callback-equivalent flag is false immediately after publish",
+    "supplemental 300 ms receive window must end in exact Timeout; Shutdown and other errors fail"
+  ],
+  "excluded_attempts": [
+    "Initial native replay inside restricted socket sandbox failed at socket creation before assertions; local-socket replay passed.",
+    "Superseded first test version treated all recv_timeout errors as quiet; the frozen test requires exact Timeout."
+  ],
+  "limitations": [
+    "No production runtime/API change.",
+    "C++ callback registration and exact callback thread scheduling are not reproduced by the user-owned receive thread.",
+    "Broader wrong-type matrix and historical lost-output101 remain open.",
+    "Private selected Cargo compile overlapped a separate SDF ordinary two-job hook; correctness only, no timing conclusion."
+  ]
+}

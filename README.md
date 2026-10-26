@@ -101,6 +101,9 @@ unknown fields. See [typed publication](docs/NET-01-typed-publication.md).
 The [wrong-type publication contract](docs/NET-01-wrong-type-publish.md)
 checks that a mismatched value is rejected before a local subscriber callback,
 then that a correctly typed Int32 value reaches it.
+The [wrong-type subscription contract](docs/NET-01-wrong-type-subscription.md)
+checks successful Vector3d publication with an Int32 subscriber and an immediate
+false callback flag.
 
 Package `gz-transport` 0.1.0 depends on the immutable reviewed `gz-msgs` commit,
 not simulator/Bevy or developer-only workspace paths. Rust 1.94.1 and dependencies
