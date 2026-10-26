@@ -281,8 +281,63 @@ pub struct Publisher {
     type_name: String,
     max: usize,
     reply_timeout: Duration,
+    throttle: Option<PublicationThrottle>,
+}
+struct PublicationThrottle {
+    period_ns: f64,
+    last: Mutex<Duration>,
+}
+#[cfg(unix)]
+fn publication_clock(clock: nix::time::ClockId) -> Result<Duration, Error> {
+    nix::time::clock_gettime(clock)
+        .map(Duration::from)
+        .map_err(|error| Error::Native(error.to_string()))
+}
+fn publication_time() -> Result<Duration, Error> {
+    #[cfg(unix)]
+    {
+        // The qualified native Linux steady_clock uses CLOCK_MONOTONIC.
+        publication_clock(nix::time::ClockId::CLOCK_MONOTONIC)
+    }
+    #[cfg(not(unix))]
+    Err(Error::Unsupported("publication rate clock"))
+}
+impl PublicationThrottle {
+    fn new(rate: u64) -> Option<Self> {
+        (rate != u64::MAX).then(|| Self {
+            period_ns: 1e9 / rate as f64,
+            // Native initializes its last-publication timestamp at the clock epoch.
+            last: Mutex::new(Duration::ZERO),
+        })
+    }
+    fn ready_at(&self, last: Duration, now: Duration) -> bool {
+        // Native compares integer elapsed nanoseconds against a double period.
+        // Zero rate has an infinite period; positive sub-ns periods stay positive.
+        now.saturating_sub(last).as_nanos() as f64 >= self.period_ns
+    }
+    fn ready(&self) -> Result<bool, Error> {
+        let last = self.last.lock().unwrap_or_else(|error| error.into_inner());
+        Ok(self.ready_at(*last, publication_time()?))
+    }
+    fn admit(&self) -> Result<bool, Error> {
+        let mut last = self.last.lock().unwrap_or_else(|error| error.into_inner());
+        let now = publication_time()?;
+        if !self.ready_at(*last, now) {
+            return Ok(false);
+        }
+        *last = now;
+        Ok(true)
+    }
 }
 impl Publisher {
+    /// Inspect rate eligibility without consuming a publication interval.
+    /// This clock query does not acknowledge queue admission or delivery.
+    /// Clock failures are explicit; eligibility does not observe cancellation.
+    pub fn throttled_update_ready(&self) -> Result<bool, Error> {
+        self.throttle
+            .as_ref()
+            .map_or(Ok(true), PublicationThrottle::ready)
+    }
     /// Read known matching registration interest without worker coordination.
     /// This does not acknowledge authentication or delivery. The remote half
     /// remembers native NEW_CONNECTION records across process-only BYE.
@@ -311,13 +366,33 @@ impl Publisher {
         if self.type_name != M::PROTOBUF_NAME || value.encoded_len() > self.max {
             return Err(Error::InvalidFrame);
         }
-        self.publish(value.encode_to_vec())
+        if !self.admit_publication()? {
+            return Ok(());
+        }
+        self.send_publication(value.encode_to_vec())
     }
     pub fn publish(&self, data: impl Into<Vec<u8>>) -> Result<(), Error> {
         let data = data.into();
         if data.len() > self.max {
             return Err(Error::InvalidFrame);
         }
+        if !self.admit_publication()? {
+            return Ok(());
+        }
+        self.send_publication(data)
+    }
+    fn admit_publication(&self) -> Result<bool, Error> {
+        let Some(throttle) = &self.throttle else {
+            return Ok(true);
+        };
+        // A suppressed publication still observes the existing cancellation
+        // boundary even though it never reaches Sender::send.
+        if self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        throttle.admit()
+    }
+    fn send_publication(&self, data: Vec<u8>) -> Result<(), Error> {
         self.sender.send(Command::Publish(
             self.topic.clone(),
             self.type_name.clone(),
@@ -336,10 +411,14 @@ pub struct Subscription {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AdvertiseOptions {
     scope: Scope,
+    msgs_per_sec: u64,
 }
 impl Default for AdvertiseOptions {
     fn default() -> Self {
-        Self { scope: Scope::All }
+        Self {
+            scope: Scope::All,
+            msgs_per_sec: u64::MAX,
+        }
     }
 }
 impl AdvertiseOptions {
@@ -348,6 +427,15 @@ impl AdvertiseOptions {
     }
     pub fn set_scope(&mut self, scope: Scope) {
         self.scope = scope;
+    }
+    pub fn msgs_per_sec(&self) -> u64 {
+        self.msgs_per_sec
+    }
+    pub fn set_msgs_per_sec(&mut self, rate: u64) {
+        self.msgs_per_sec = rate;
+    }
+    pub fn throttled(&self) -> bool {
+        self.msgs_per_sec != u64::MAX
     }
 }
 /// Per-subscription local-delivery policy. The default receives publications
@@ -747,7 +835,7 @@ impl Node {
         self.sender.send(Command::Advertise(
             topic.clone(),
             type_name.into(),
-            options.scope,
+            options,
             lease.active.clone(),
             interest.clone(),
         ))?;
@@ -800,6 +888,7 @@ impl Node {
             type_name: type_name.into(),
             max: self.config.max_message_bytes,
             reply_timeout: self.config.reply_timeout,
+            throttle: PublicationThrottle::new(options.msgs_per_sec),
         })
     }
     pub fn subscribe(&self, topic: &str, type_name: &str) -> Result<Subscription, Error> {
@@ -1378,7 +1467,13 @@ impl Drop for Node {
 }
 
 enum Command {
-    Advertise(String, String, Scope, Arc<AtomicBool>, Arc<AtomicU8>),
+    Advertise(
+        String,
+        String,
+        AdvertiseOptions,
+        Arc<AtomicBool>,
+        Arc<AtomicU8>,
+    ),
     KnownPublisherTopics(SyncSender<TopicNameRecords>),
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
@@ -2048,7 +2143,7 @@ impl Worker {
     }
     fn command(&mut self, command: Command) {
         match command {
-            Command::Advertise(topic, type_name, scope, active, interest) => {
+            Command::Advertise(topic, type_name, options, active, interest) => {
                 // A queued replacement must never be followed by the old withdrawal.
                 self.cleanup();
                 if !active.load(Ordering::Acquire) {
@@ -2058,11 +2153,13 @@ impl Worker {
                     topic,
                     PubType::MsgPub(MessagePublisher {
                         msg_type: type_name,
+                        throttled: options.throttled(),
+                        msgs_per_sec: options.msgs_per_sec,
                         ..Default::default()
                     }),
                 );
-                p.scope = scope.into();
-                if scope != Scope::Process {
+                p.scope = options.scope.into();
+                if options.scope != Scope::Process {
                     self.announce(0, protocol::advertisement(&self.process, p.clone()));
                 }
                 self.advertisements.push((p, active, interest));

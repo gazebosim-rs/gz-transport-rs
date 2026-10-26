@@ -2145,6 +2145,86 @@ fn process_scope_readiness_matches_live_domain_topic_and_type() {
 }
 
 #[test]
+fn native_peer_receives_throttled_typed_and_raw_and_actual_rate_metadata() {
+    for (raw, rate) in [false, true].into_iter().flat_map(|raw| {
+        [
+            0,
+            1,
+            3,
+            10,
+            1_000_000_000,
+            1_000_000_001,
+            u64::MAX - 1,
+            u64::MAX,
+        ]
+        .into_iter()
+        .map(move |rate| (raw, rate))
+    }) {
+        let config = config();
+        let node = Node::new(config.clone()).unwrap();
+        let mut options = AdvertiseOptions::default();
+        options.set_msgs_per_sec(rate);
+        let publisher = node
+            .advertise_typed_with_options::<StringMsg>("/throttle", options)
+            .unwrap();
+        let mut native = Peer::start(&config, "throttle-observer", "/throttle", "value");
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !publisher.has_connections().unwrap() {
+            assert!(Instant::now() < deadline, "native interest did not arrive");
+            thread::sleep(Duration::from_millis(10));
+        }
+        let state = |native: &mut Peer| {
+            writeln!(native.0.stdin.as_mut().unwrap(), "STATE").unwrap();
+            let mut line = String::new();
+            native.1.read_line(&mut line).unwrap();
+            let fields: Vec<String> = line.split_whitespace().map(str::to_owned).collect();
+            assert_eq!(fields.len(), 7, "{line}");
+            assert_eq!(fields[0], "STATE");
+            assert_eq!(fields[2], "1", "native callback payload: {line}");
+            assert_eq!(fields[3], "1", "native discovered provider: {line}");
+            assert_eq!(fields[4], "2", "native discovered All scope: {line}");
+            assert_eq!(
+                fields[5].parse::<u64>().unwrap(),
+                rate,
+                "native discovered rate: {line}"
+            );
+            assert_eq!(
+                fields[6],
+                if rate == u64::MAX { "0" } else { "1" },
+                "native discovered throttle flag: {line}"
+            );
+            fields[1].parse::<usize>().unwrap()
+        };
+        assert_eq!(state(&mut native), 0);
+        let value = StringMsg {
+            data: "value".into(),
+            ..Default::default()
+        };
+        assert_eq!(publisher.throttled_update_ready().unwrap(), rate != 0);
+        for _ in 0..3 {
+            if raw {
+                publisher.publish(value.encode_to_vec()).unwrap();
+            } else {
+                publisher.publish_typed(&value).unwrap();
+            }
+            if rate <= 3 {
+                assert!(!publisher.throttled_update_ready().unwrap());
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+        let expected = match rate {
+            0 => 0,
+            1 | 3 => 1,
+            _ => 3,
+        };
+        assert_eq!(state(&mut native), expected);
+        eprintln!("rate-native-case raw={raw} rate={rate} count={expected}");
+        writeln!(native.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+        native.success();
+    }
+}
+
+#[test]
 fn graceful_subscriber_shutdown_with_live_lease_withdraws_membership() {
     let config = config();
     let publisher_node = Node::new(config.clone()).unwrap();

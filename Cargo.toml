@@ -13,7 +13,7 @@ uuid = { version = "=1.23.1", features = ["v4"] }
 gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-rs", rev = "2cea810e929adb4f925750b325265a99f9ae78b4" }
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "=0.31.3", default-features = false, features = ["hostname", "user", "net"] }
+nix = { version = "=0.31.3", default-features = false, features = ["hostname", "user", "net", "time"] }
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <ctime>
 
 template<typename Publisher>
 std::size_t Count(const gz::transport::TopicStorage<Publisher> &storage,
@@ -73,6 +74,18 @@ static std::optional<bool> wait_metadata(const std::shared_ptr<MetadataState> &s
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "publication-clock") {
+    timespec before{},after{};
+    if (clock_gettime(CLOCK_MONOTONIC,&before)!=0) return 118;
+    const auto steady=std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (clock_gettime(CLOCK_MONOTONIC,&after)!=0) return 119;
+    const auto first=static_cast<std::int64_t>(before.tv_sec)*1000000000+before.tv_nsec;
+    const auto last=static_cast<std::int64_t>(after.tv_sec)*1000000000+after.tv_nsec;
+    if (first<0 || steady<first || steady>last) return 120;
+    std::cout << first << ' ' << steady << ' ' << last << std::endl;
+    return 0;
+  }
   if (mode == "message-info-decompose") {
     gz::transport::MessageInfo info;
     if (!info.SetTopicAndPartition(topic)) return 107;
@@ -162,7 +175,7 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
-  if (mode == "scope-observer") {
+  if (mode == "scope-observer" || mode == "throttle-observer") {
     struct State { std::atomic<unsigned> received{0}; std::atomic<bool> valid{true}; };
     auto state=std::make_shared<State>();
     std::function<void(const gz::msgs::StringMsg&)> callback=[state,value](const auto &message) {
@@ -179,7 +192,13 @@ int main(int argc, char **argv) {
       if (!node.TopicInfo(topic,publishers,subscribers)) return 116;
       const int scope=publishers.empty()?-1:static_cast<int>(publishers.front().Options().Scope());
       std::cout << "STATE " << state->received.load() << ' ' << state->valid.load() << ' '
-                << publishers.size() << ' ' << scope << std::endl;
+                << publishers.size() << ' ' << scope;
+      if (mode == "throttle-observer") {
+        const auto rate=publishers.empty()?0:publishers.front().Options().MsgsPerSec();
+        const auto throttled=!publishers.empty() && publishers.front().Options().Throttled();
+        std::cout << ' ' << rate << ' ' << throttled;
+      }
+      std::cout << std::endl;
     }
     return 117;
   }

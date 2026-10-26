@@ -1697,10 +1697,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgDefConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgDefConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_default_constructor"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1709,17 +1711,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original message-option predicates retained:defaultAll/unthrottled/MAX;Host+rate10 value-copy equality;Process+rate10 assignment equality;both==/!=before/after matching fields;scope/rate/throttled accessors. Rust owned Copy/value assignment maps native message-option construction;stream formatting remains separate pending scope.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgCopyConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgCopyConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_copy_constructor"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1728,17 +1733,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original message-option predicates retained:defaultAll/unthrottled/MAX;Host+rate10 value-copy equality;Process+rate10 assignment equality;both==/!=before/after matching fields;scope/rate/throttled accessors. Rust owned Copy/value assignment maps native message-option construction;stream formatting remains separate pending scope.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgAssignmentOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgAssignmentOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_assignment"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1747,17 +1755,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original message-option predicates retained:defaultAll/unthrottled/MAX;Host+rate10 value-copy equality;Process+rate10 assignment equality;both==/!=before/after matching fields;scope/rate/throttled accessors. Rust owned Copy/value assignment maps native message-option construction;stream formatting remains separate pending scope.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgEqualityOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgEqualityOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_equality"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1766,8 +1777,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original message-option predicates retained:defaultAll/unthrottled/MAX;Host+rate10 value-copy equality;Process+rate10 assignment equality;both==/!=before/after matching fields;scope/rate/throttled accessors. Rust owned Copy/value assignment maps native message-option construction;stream formatting remains separate pending scope.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgStreamInsertion",
@@ -1792,10 +1804,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgAccessors",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.msgAccessors",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_message_options_accessors"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1804,8 +1818,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Original message-option predicates retained:defaultAll/unthrottled/MAX;Host+rate10 value-copy equality;Process+rate10 assignment equality;both==/!=before/after matching fields;scope/rate/throttled accessors. Rust owned Copy/value assignment maps native message-option construction;stream formatting remains separate pending scope.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvDefConstructor",
@@ -4804,10 +4819,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubThrottled",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubThrottled",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_throttled"
+      ],
+      "review": "/root/msgs_owner_astra; fresh177 raw/native6/Rust98 selected with16 native scenarios;five production mutations/six intended-failure commands and restored passing tests/hashes. Exact unfiltered full evidence approved in docs/reviews/publisher-throttle.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4816,8 +4833,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Valid Int32 publisher rate1 and admitted sameNode subscription;first readiness true;exactly3 successful typed publications each followed by false readiness and100ms sleep;actual live callbackcounter1 at original checkpoint,exact data5 callback;stop/join only afterwards/unwind. Owned observer adaptation,not native synchronous callback/copy API equivalence.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ originals; native monotonic epoch and explicit Rust clock-error adaptation. Other backends, concurrent scheduling and broader rate scope remain pending.",
+      "evidence": "docs/NET-01-publisher-throttle.md; docs/reviews/publisher-throttle.json;native6 before edits;exact247Rust24tools/Node61/options5 source gate,strict2770/2848lines4065/4256regions73/73added;all210reportsretained. Mandatorynormal/newhosted remain required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.IgnoreLocalMessages",

@@ -2,6 +2,133 @@
 // SPDX-License-Identifier: Apache-2.0
 // TopicUtils assertion tables: Copyright (C) 2014 Open Source Robotics Foundation.
 use super::*;
+
+#[test]
+fn publication_rate_boundaries_keep_epoch_fractional_and_sub_nanosecond_periods() {
+    let epoch = Duration::ZERO;
+    assert!(PublicationThrottle::new(u64::MAX).is_none());
+    let zero = PublicationThrottle::new(0).unwrap();
+    assert!(!zero.ready_at(epoch, epoch));
+    assert!(!zero.ready_at(epoch, Duration::from_secs(1_000_000)));
+    let one = PublicationThrottle::new(1).unwrap();
+    assert!(!one.ready_at(epoch, Duration::from_nanos(999_999_999)));
+    assert!(one.ready_at(epoch, Duration::from_secs(1)));
+    let fractional = PublicationThrottle::new(3).unwrap();
+    assert!(!fractional.ready_at(epoch, Duration::from_nanos(333_333_333)));
+    assert!(fractional.ready_at(epoch, Duration::from_nanos(333_333_334)));
+    let last = Duration::from_secs(2);
+    assert!(!fractional.ready_at(last, last));
+    assert!(!fractional.ready_at(last, last + Duration::from_nanos(333_333_333)));
+    assert!(fractional.ready_at(last, last + Duration::from_nanos(333_333_334)));
+    let exact = PublicationThrottle::new(10).unwrap();
+    assert!(!exact.ready_at(last, last + Duration::from_nanos(99_999_999)));
+    assert!(exact.ready_at(last, last + Duration::from_millis(100)));
+    for rate in [1_000_000_000, 1_000_000_001, u64::MAX - 1] {
+        let fast = PublicationThrottle::new(rate).unwrap();
+        assert!(!fast.ready_at(last, last));
+        assert!(fast.ready_at(last, last + Duration::from_nanos(1)));
+    }
+    assert!(!fractional.ready_at(last, Duration::from_secs(1)));
+}
+
+#[test]
+fn publication_rate_queries_do_not_consume_intervals_and_poison_recovers() {
+    let throttle = PublicationThrottle::new(1).unwrap();
+    assert!(throttle.ready().unwrap());
+    assert!(throttle.ready().unwrap());
+    assert!(throttle.admit().unwrap());
+    assert!(!throttle.ready().unwrap());
+    assert!(!throttle.admit().unwrap());
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = throttle.last.lock().unwrap();
+                    panic!("exercise rate-lock recovery");
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(!throttle.ready().unwrap());
+    assert!(!throttle.admit().unwrap());
+    *throttle.last.lock().unwrap_err().into_inner() = Duration::ZERO;
+    assert!(throttle.ready().unwrap());
+    assert!(throttle.admit().unwrap());
+}
+
+#[cfg(unix)]
+#[test]
+fn publication_clock_has_native_epoch_and_explicit_errors() {
+    let first = publication_time().unwrap();
+    let second = publication_clock(nix::time::ClockId::CLOCK_MONOTONIC).unwrap();
+    assert!(second >= first);
+    assert!(matches!(
+        publication_clock(nix::time::ClockId::from_raw(-1)),
+        Err(Error::Native(_))
+    ));
+    let peer = std::env::var_os("GZ_CPP_PEER")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("artifacts/cpp-peer")
+        });
+    let before = publication_time().unwrap().as_nanos();
+    let native = std::process::Command::new(peer)
+        .args(["publication-clock", "unused", "unused"])
+        .output()
+        .unwrap();
+    let after = publication_time().unwrap().as_nanos();
+    assert!(native.status.success(), "{:?}", native);
+    let clocks: Vec<u128> = std::str::from_utf8(&native.stdout)
+        .unwrap()
+        .split_whitespace()
+        .map(|clock| clock.parse().unwrap())
+        .collect();
+    assert_eq!(clocks.len(), 3);
+    assert!(
+        before <= clocks[0]
+            && clocks[0] <= clocks[1]
+            && clocks[1] <= clocks[2]
+            && clocks[2] <= after
+    );
+}
+
+#[test]
+fn actual_publication_advertisements_carry_rate_options() {
+    let (mut worker, _) = state(4);
+    let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    receiver
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = receiver.local_addr().unwrap().port();
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    for rate in [u64::MAX, 0, 3, u64::MAX - 1] {
+        let mut options = AdvertiseOptions::default();
+        options.set_msgs_per_sec(rate);
+        worker.command(Command::Advertise(
+            format!("/rate-{rate}"),
+            "gz.msgs.Int32".into(),
+            options,
+            Arc::new(AtomicBool::new(true)),
+            Arc::new(AtomicU8::new(0)),
+        ));
+        let size = receiver.recv(&mut buffer).unwrap();
+        let advertisement = protocol::decode(&buffer[..size]).unwrap();
+        assert_eq!(advertisement.r#type, Type::Advertise as i32);
+        let Some(DiscContents::Pub(publisher)) = advertisement.disc_contents else {
+            panic!("missing publisher");
+        };
+        assert_eq!(publisher.scope, Scope::All as i32);
+        assert_eq!(publisher.topic, format!("/rate-{rate}"));
+        let Some(PubType::MsgPub(message)) = publisher.pub_type else {
+            panic!("missing message rate");
+        };
+        assert_eq!(message.msg_type, "gz.msgs.Int32");
+        assert_eq!(message.msgs_per_sec, rate);
+        assert_eq!(message.throttled, rate != u64::MAX);
+    }
+}
 trait TestDiscovery {
     fn discovered(&mut self, channel: usize, message: Discovery);
 }
@@ -221,7 +348,7 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "old".into(),
-        Scope::All,
+        AdvertiseOptions::default(),
         old.clone(),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -230,14 +357,14 @@ fn publisher_recreation_withdraws_old_before_new_advertisement() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "never-advertised".into(),
-        Scope::All,
+        AdvertiseOptions::default(),
         retired,
         Arc::new(AtomicU8::new(0)),
     ));
     worker.command(Command::Advertise(
         "/topic".into(),
         "new".into(),
-        Scope::All,
+        AdvertiseOptions::default(),
         Arc::new(AtomicBool::new(true)),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -329,7 +456,10 @@ fn publication_scope_initial_response_and_withdrawal_follow_native() {
         worker.command(Command::Advertise(
             "/scope".into(),
             "type".into(),
-            scope,
+            AdvertiseOptions {
+                scope,
+                ..Default::default()
+            },
             active.clone(),
             Arc::new(AtomicU8::new(0)),
         ));
@@ -1341,7 +1471,7 @@ fn discovery_lifecycle_and_capacity() {
     worker.command(Command::Advertise(
         "/topic".into(),
         "type".into(),
-        Scope::All,
+        AdvertiseOptions::default(),
         active.clone(),
         Arc::new(AtomicU8::new(0)),
     ));
@@ -3407,7 +3537,7 @@ fn final_publisher_retirement_sends_unadvertise_before_bye() {
     worker.command(Command::Advertise(
         "/survivor".into(),
         "gz.msgs.Int32".into(),
-        Scope::All,
+        AdvertiseOptions::default(),
         active.clone(),
         Arc::new(AtomicU8::new(0)),
     ));

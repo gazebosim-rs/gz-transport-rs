@@ -76,6 +76,12 @@ contract](docs/NET-01-publisher-interest-snapshot.md).
 `advertise_with_options` and `advertise_typed_with_options`. Matching local Nodes
 retain direct delivery and bounded readiness. Native discovery admission and
 Process heartbeat metadata follow the [publication scope contract](docs/NET-01-publisher-scope.md).
+The same options select an unsigned message rate; the native unlimited default is
+`u64::MAX`, while zero suppresses payloads successfully. Typed and raw calls on
+one Publisher share the limiter. `throttled_update_ready()` reports eligibility
+without consuming an interval, using the qualified native Linux monotonic epoch.
+See the [bounded rate contract](docs/NET-01-publisher-throttle.md) for error,
+queue, callback, clock and concurrency limits.
 Graceful Node shutdown withdraws its subscription topics before process BYE.
 `advertised_topics()` and `subscribed_topics()` inspect this Node's live lease
 ownership without network waits; see [local topic inventory](docs/NET-01-local-topics.md).

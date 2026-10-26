@@ -1,0 +1,125 @@
+{
+  "reviewer": "/root/msgs_owner_astra",
+  "recorded_at": "2026-10-26T20:22:19.716932+00:00",
+  "verdict": "APPROVED exact source semantics, assertions and full retained strict source evidence. Final metadata binding, mandatory normal hook and exact new hosted success remain required.",
+  "parent": "7cf70b20827fe1d80dc01f4ec3aa5f658b3c632c",
+  "parent_hosted": {
+    "attempt": 1,
+    "conclusion": "success",
+    "headSha": "7cf70b20827fe1d80dc01f4ec3aa5f658b3c632c",
+    "status": "completed",
+    "url": "https://github.com/gazebosim-rs/gz-transport-rs/actions/runs/40384167730"
+  },
+  "source_tree": "5139a9a63e0d81df899b998b4186b7925f82c95b",
+  "source_manifest_sha256": "4cbddc18f98cbae50f6ee970cdd5d10c93734a5b60dbcb5dbab5eaddba97030c",
+  "files_sha256": {
+    "Cargo.toml": "5ca995c8b7b8bd84a75126034afaf100bea4e73e5bee9b84b5cf4d68ea43b485",
+    "scripts/verify.py": "186a4db556830d918c8da11ad795e199eb8c1b92ae07a0af7493f07b9caa18ea",
+    "src/runtime.rs": "1068606430368e8c747ec147a31c40ea3c4fffd6f99cf490ec94bc4b408f717e",
+    "tests/cpp_peer.cc": "539979852f707e3c93a2df299fa90c58dcb67d695a02ded594130a02825277eb",
+    "tests/interop.rs": "00ce479923cfa82f7200b44300734273df63c1fe2fa83e315f8be3797addd529",
+    "tests/publisher_throttle_originals.rs": "ed1a8706337340cb5a9bc06ac919466ae80515147b0c893f94a26bf0c71ed1ed",
+    "tests/support/runtime.rs": "ed4f6966eed6f180742ba9695d4341d70b344f356be7e66214278eb325a99d44"
+  },
+  "assertion_map_sha256": "2459f69410406a082270a95bfe07a729d567818000f3589a6938dba94266e0bb",
+  "native_baseline_review_sha256": "210c354878d2f7851f1461b8fcdf69ce055a49c7535a07aaf8ea1d6a8bdec8fe",
+  "independent_replay": {
+    "session": 98635,
+    "fresh_raw_files": 177,
+    "parent_files": 176,
+    "unchanged_parent_blobs_modes": 170,
+    "fresh_empty_exclusive_target": true,
+    "native_originals": 6,
+    "rust_unit": 89,
+    "rust_originals_and_supplements": 8,
+    "native_interop_tests": 1,
+    "typed_raw_native_scenarios": 16,
+    "restored_counts": [
+      89,
+      8,
+      16
+    ],
+    "unexpected_failures": 0,
+    "private_proof_sha256": "893de98f80445fda1614438b99f9c04cbe592fee0074c184abc7b45e5da96b43",
+    "static_audit_sha256": "0ce730600ac64b30888f45456b2aa49bff2a1c7002536c55a46cb947ffc1bfe7",
+    "fresh_cpp_peer_sha256": "3ba70f4aa686beedb7e55ad9733b0ae2c29e64907ca008ec42aeb8c5fa3c3a69",
+    "native_original_binary_sha256": {
+      "UNIT_AdvertiseOptions_TEST": "dec17e5090cdde49309b54d0507ba72bb6a1301eeb660e56cb6cce1ade849c19",
+      "UNIT_Node_TEST": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a"
+    },
+    "resolved_library_count": 25,
+    "post_native_provenance_sha256": "e30f58653bce3b072274e2466c1959f4594c65652a3becfd16f162199571f043",
+    "target_bytes": 995841855
+  },
+  "semantic_audit": [
+    "Exact six original option/1Hz publication cases preserve constructors/accessors/equality predicates, data5 callback, initial readiness, three successful publications, false readiness after each,100ms waits and live counter1 checkpoint. Stop/join occurs after checkpoint or failure unwind.",
+    "Default All/MAX remains unthrottled. Zero uses infinite double period; nonzero fractional/sub-ns thresholds compare integer nanoseconds as double and remain distinct fromMAX. Epoch initialization is zero in qualified Linux CLOCK_MONOTONIC domain, with explicit Result clock errors and actual C++ steady-clock bracket.",
+    "Typed descriptor/size validation precedes admission; typed/raw borrow shares one interval; cancellation remains observed even when suppressed. Admission consumes timestamp before later queue outcome, as explicitly bounded; readiness is not delivery acknowledgement.",
+    "Existing pinned nix time feature avoids new unsafe; Cargo.lock/pins/other170parentblobs unchanged. Shared scope tests retain all assertions while Command carries complete options.",
+    "Actual native TopicInfo validates emitted All/rate/throttled metadata separately from prior native-only FillDiscovery baseline. Old native-peer scope output remains unchanged."
+  ],
+  "controls": [
+    {
+      "change": "Bypass throttle admission",
+      "result": "Original false-readiness and borrowed-handle predicates fail; zero-rate observer receives actual Int32(5) instead ofTimeout.5pass3fail; no cleanup exception."
+    },
+    {
+      "change": "Floor fractional period",
+      "result": "3Hz333333333ns readiness assertion fails."
+    },
+    {
+      "change": "Turn positive sub-ns period intozero",
+      "result": "Same-instant readiness assertion fails."
+    },
+    {
+      "change": "Initialize last timestamp tonow",
+      "result": "Original first readiness assertion fails."
+    },
+    {
+      "change": "Advertise ratezero",
+      "result": "Actual UDP unit and native TopicInfo assertion fail; nativeSTATE reports rate0 when1expected. Zero control first passed. No secondary cleanup error."
+    }
+  ],
+  "failures_retained": "Author missing mandatory peer selected failure and metadata path error retained; reviewer observed only intended production-control failures and no setup/runtime failure. Exact raw source restored/rehashed after controls.",
+  "limits": [
+    "Readiness Result reports clock errors; query doesnot observe cancellation and doesnot acknowledge queue/delivery. NonUnix clock Unsupported; qualificationLinuxx86_64 only.",
+    "Native check/update take separate locks and clock samples; Rust admission uses one lock/sample. No concurrent race/scheduler/precision/performance or callback facade equivalence.",
+    "Epoch math tested deterministically and actual Linux clock epochs bracketed; no physical boot-time experiment. Highrate observations donot imply zero-duration/unthrottled behavior.",
+    "Historical native META is separate FillDiscovery serialization only; new actual native TopicInfo supplement qualifies emitted Rust metadata separately.",
+    "Native Publisher alias behavior remains native-only baseline; Rust borrow shares existing handle state. Subscriber/service rate,wirestats,otherbackends,stream formatting,remote PubThrottled original andbroaderNET remain open."
+  ],
+  "remaining": "Final metadata binding, mandatory normal hook, publication and exact new hosted success remain required. The source full gate is now bound; all existing semantic limits remain unchanged.",
+  "reviewed_at": "2026-10-26T20:33:31.921907+00:00",
+  "pre_gate_source_review_sha256": "db1d440c055bfd4bb04587161097f1fb54847552c127bc855fa645aefc228ba9",
+  "full_source_evidence": {
+    "audit_sha256": "15f0827735f860d8931c51a6f7f16d2c751a4b7ea0d2f663abc4173c89729809",
+    "author_gate_session": 80817,
+    "exit": 0,
+    "rust": [
+      247,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "native": "Node61/options5/pubsub11/ordinaryservice6/inputless5/outputless2 plus unchangedTopicUtils6/TopicStorage1/NodeOptions2;allmandatoryoriginalgroups passed.",
+    "totals": {
+      "lines": {
+        "covered": 2770,
+        "count": 2848
+      },
+      "regions": {
+        "covered": 4065,
+        "count": 4256
+      }
+    },
+    "changed_lines": {
+      "covered": 73,
+      "count": 73
+    },
+    "retained_files": 210,
+    "retained_hash_manifest_sha256": "31c4e573f1ab6d7b208f5575d47cc9fccb67aa786542bc74614b0e9eefcc242a",
+    "evidence_sha256": "bd73b89fe63b8fa4994579636ea33c3ba6ff73746777b3c4884d89cdcf0b6990",
+    "raw_rust_sha256": "971586c1df38f2c31ec87f39f9876bf012015c25d25c035ea2b8b45560188d6b",
+    "method": "Unchanged reviewed coverage.check, verify.changed_lines and coverage.changed_check run on full retained JSON/LCOV; only exact staged source root rebound to verified fresh private source. No filtering, exclusion, threshold change or duplicate runtime replay."
+  }
+}

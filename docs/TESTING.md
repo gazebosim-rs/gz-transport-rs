@@ -813,7 +813,39 @@ restored 95/0, then recomputed unchanged full JSON/LCOV and added-line policies.
 Expected primary and secondary control failures, author compile/readiness
 failures and reviewer assembly errors remain retained.
 
-Final metadata binding, the normal protected hook and new exact hosted success
-remain required. Native callback/storage/scheduler facades, immediate global
-visibility, physical multi-host qualification, service scope and performance
-remain open.
+The scope slice then passed final metadata binding and the normal protected
+hook on public `7cf70b20827fe1d80dc01f4ec3aa5f658b3c632c`, followed by exact
+hosted run `40384167730` SUCCESS. Native callback/storage/scheduler facades,
+immediate global visibility, physical multi-host qualification, service scope
+and performance remain open.
+
+
+## Message publication rates
+
+The [rate contract](NET-01-publisher-throttle.md) maps six fixed originals:
+NodeTest.PubThrottled and five message-option cases. It preserves the original
+1 Hz / three successful publications / false readiness / 100 ms sleeps / live
+counter-one checkpoint, plus exact default/copy/assignment/equality/accessor
+observations. Native six originals and sixteen edge runs passed before edits
+and independent native-only review. Rust zero/MAX, shared typed/raw interval,
+fractional/sub-nanosecond/epoch and explicit clock-error supplements pass.
+Sixteen native typed/raw scenarios check real discovered rate metadata and
+callback payload/counts. Native callback and Publisher copy APIs, concurrency,
+clock precision, other backends, stream formatting, the remote throttle original
+and performance remain unqualified.
+
+The exact source gate passes 247 Rust and 24 tooling tests, Node 61/0, message
+options 5/0, pub/sub 11/0, ordinary services 6/0, inputless 5/0, outputless 2/0
+and all unchanged required groups. Strict coverage is 2770/2848 lines and
+4065/4256 regions across five production files; all 73 added executable lines
+are covered. All 210 source reports are retained. Independent
+[review](reviews/publisher-throttle.json) verifies fresh raw source, native six,
+Rust 98 selected cases including sixteen native scenarios, five production
+mutations with six intended failure commands and restored passing tests/hashes.
+Full JSON/LCOV and authoritative changed-line policies are recomputed unchanged.
+
+The first selected run's two absent-peer failures are retained with exact source;
+canonical peer construction allowed an unchanged retry to pass. Metadata path
+assembly failures and a corrected commentary line-total error are also retained.
+No assertions or thresholds are waived. Final metadata binding, the mandatory
+normal hook and exact new hosted success remain required.
