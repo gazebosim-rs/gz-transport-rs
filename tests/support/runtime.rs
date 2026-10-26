@@ -277,6 +277,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.advertise("/topic", "one"));
@@ -326,6 +327,7 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_services().unwrap().is_empty());
     assert_eq!(
@@ -377,6 +379,7 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.serve("/topic", "req", "rep"));
@@ -433,6 +436,7 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     receiver
@@ -549,6 +553,7 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let service = node.serve("/race", "req", "rep").unwrap();
     let barrier = std::sync::Barrier::new(2);
@@ -2666,6 +2671,7 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.service_type_signatures("invalid service"),
@@ -2742,6 +2748,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("alias", "type").unwrap();
     assert_eq!(
@@ -2783,6 +2790,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(matches!(
         long.advertise("alias", "type"),
@@ -3086,6 +3094,7 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3129,6 +3138,7 @@ fn publisher_snapshot_uses_remembered_remote_registration_controls() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/wire", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3234,6 +3244,7 @@ fn publisher_snapshot_sees_admitted_local_interest_before_worker_commands() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     let subscription = node.subscribe("/topic", "T").unwrap();
@@ -3353,6 +3364,7 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_topics().unwrap().is_empty());
     assert!(node.subscribed_topics().unwrap().is_empty());
@@ -3478,6 +3490,7 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/one", "T").unwrap();
     drop(subscription);
@@ -3594,6 +3607,7 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.service_provider_types("invalid service"),
@@ -3688,6 +3702,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::XPUB).unwrap();
@@ -3790,6 +3805,7 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/topic", "T").unwrap();
     assert_eq!(node.unsubscribe("/topic"), Err(Error::QueueFull));
@@ -3842,6 +3858,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/typed").unwrap();
     let wrong = Vector3d {
@@ -3882,6 +3899,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/size").unwrap();
     assert_eq!(publisher.publish_typed(&right), Err(Error::InvalidFrame));

@@ -9,9 +9,9 @@ mod runtime;
 pub use config::Config;
 pub use names::{as_valid_topic, decompose_fully_qualified_topic, qualified_name};
 pub use runtime::{
-    Message, MessageInfo, Node, PendingResponse, Publisher, ReceivedMessage, Request, Service,
-    ServiceTypeResolution, ServiceTypes, Statistics, SubscribeOptions, Subscription,
-    TopicEndpointTypes,
+    Message, MessageInfo, Node, OneWayCallbackService, PendingResponse, Publisher, ReceivedMessage,
+    Request, Service, ServiceTypeResolution, ServiceTypes, Statistics, SubscribeOptions,
+    Subscription, TopicEndpointTypes,
 };
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.

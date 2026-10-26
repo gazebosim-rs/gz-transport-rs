@@ -1,0 +1,42 @@
+{
+  "decision": "approved",
+  "reviewer": "/root/msgs_review_fallback",
+  "author": "/root/transport_fallback",
+  "source_manifest_sha256": "1f715b64e8e791647b951e8e463d71290f396608c1a8cb2c04d2ec116faeb37c",
+  "parent": "80c2c4b38bf466b889a11119fefdfcde178cbbcb",
+  "source_tree": "bb0496de008e83438b1dc9427f1a775b1b36b759",
+  "source_diff_sha256": "c89773aa59c51ba9f044777b273f93ff8123682d6c7b0bfebb30443292255c81",
+  "files_sha256": {
+    "scripts/verify.py": "515f99cbee194025f4365c1173d3f0ea05e75f63a8b3dd23089be79a5c6a836b",
+    "src/lib.rs": "d961e0406bc7b3d37407d5230a97c2bdadf47b63eaf33803ac9a35c7ae0e0daa",
+    "src/runtime.rs": "2a638e33e8b2f1cf50bfa1d4a1963e4418543fadb804d0ec3cd4f263560d30e8",
+    "tests/service_oneway_lambda_original.rs": "fc0e508b641617b5d4ef6e44a6f14f3af1645750c238a22eba161a9d5fcccf47",
+    "tests/support/runtime.rs": "6053dc647998d25b1162d6a2f0c17053914484dc60997a830133f418e4740da1"
+  },
+  "no_unstaged_source_change": true,
+  "upstream_source_sha256": "4635b52dfc7297dbd04ddfa6e5e24692ddb673ea08d6b832d093d118f8e05a44",
+  "upstream_binary_sha256": "ee3ffaa34369be4d6703e7e55fa263885594501f1f62eb162500359f0e54217a",
+  "independent": {
+    "raw_export": "Exact staged tree exported without Git metadata; all five source hashes verified; separate reviewer-owned Cargo target.",
+    "native_original": "Pinned NodeTest.ServiceCallWithoutOutputAsyncLambda passed 1/0 with local sockets.",
+    "native_original_log_sha256": "4dbcfa357c672e21293549ae3b167472ff5e75417cf5cb78b5b0ba391dd27466",
+    "rust_selected": "Raw-export original passed 1/0 with immediate executed predicate after raw request_oneway return.",
+    "rust_selected_log_sha256": "31fce6a7dc9b4823e85846b21eab1e196a5a7979cfb806f691ca112e66adc2c6",
+    "rust_full": "Seven focused Rust tests passed 7/0 in the same raw export, including return barrier, typed/overflow/panic, remap/reentrancy, other-Node queued/error, Drop/shutdown.",
+    "rust_full_log_sha256": "493a40a82f6aff3d5508140cd0887468e6bbd8304115271cb2a60ce4fd93c3a7",
+    "mutant": "Independent one-line removal of direct callback invocation failed original_service_call_without_output_async_lambda at the exact executed.load assertion; no payload/deadline/assertion change.",
+    "mutant_diff_sha256": "55dcdd7da0b0edef92382624bf3a7b48e48c86af441581ce0e150107dd8c9b65",
+    "mutant_log_sha256": "8f8e06231a9ca34057240c6a1bf62c74bcc8f9a100e9a873994a528217387d54",
+    "sandbox_setup_failure": "First private native command lacked the installed zenoh library path; the next socket attempt was denied by the local sandbox. Neither reached the native assertion. Corrected escalated replay passed.",
+    "sandbox_setup_log_sha256": "d0f8bf93240cf333fd86b24c17f6cb6dd0ad59bcf5f72617e68c1b706b6bd8dd"
+  },
+  "author_gate": {
+    "result": "EXIT0",
+    "log_sha256": "8bfa5fe53d9317c4137ceb7f45d502b41c3dc7aac4bbe46cc4c06ffc4d52002f",
+    "production_lines": "2645/2714",
+    "production_regions": "3893/4071",
+    "changed_lines": "106/108"
+  },
+  "disposition": "faithful_port for the observable assertions in pinned NodeTest.ServiceCallWithoutOutputAsyncLambda: owned typed advertise succeeds, Int32 data=5 reaches callback, raw same-Node request_oneway returns success only after callback sets executed. Exact native Node.hh local RunLocalCallback precedes Request return. No test-thread wait manufactures this predicate.",
+  "limits": "C++ callback registration identity, exact scheduling/thread identity, native process-global other-Node inline path and native no-timeout API identity are not claimed. Rust queued other-Node callback delivery is supplemental; its timeout bounds queued discovery/admission, not duration of a synchronous same-Node callback. Final metadata/gate/hook/hosted remain separate."
+}

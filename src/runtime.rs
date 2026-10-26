@@ -373,6 +373,55 @@ pub struct Service {
     _lease: Lease,
     owner_dead: Arc<AtomicBool>,
 }
+type OneWayCallback = dyn Fn(&[u8]) -> Result<(), Error> + Send + Sync;
+struct OneWayCallbackState {
+    callback: Box<OneWayCallback>,
+    active: Arc<AtomicBool>,
+    slots: Arc<AtomicUsize>,
+    owner_dead: Arc<AtomicBool>,
+    sender: Sender,
+}
+impl OneWayCallbackState {
+    fn live(&self) -> bool {
+        self.active.load(Ordering::Acquire)
+            && !self.owner_dead.load(Ordering::Acquire)
+            && !self.sender.stop.load(Ordering::Acquire)
+    }
+    fn invoke(&self, data: &[u8]) -> Result<(), Error> {
+        if !self.live() {
+            return Err(Error::Shutdown);
+        }
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (self.callback)(data)))
+            .unwrap_or_else(|_| Err(Error::Native("one-way callback panicked".into())))
+    }
+    fn record_error(&self) {
+        self.sender
+            .counters
+            .routing_errors
+            .fetch_add(1, Ordering::Relaxed);
+    }
+}
+struct LocalOneWayCallback {
+    topic: String,
+    types: ServiceTypes,
+    state: Weak<OneWayCallbackState>,
+}
+/// Owned one-way callback registration. Drop waits for the queued dispatcher;
+/// a same-Node caller invocation already in progress may finish after Drop.
+pub struct OneWayCallbackService {
+    state: Arc<OneWayCallbackState>,
+    worker: Option<JoinHandle<()>>,
+}
+impl Drop for OneWayCallbackService {
+    fn drop(&mut self) {
+        release(&self.state.active, &self.state.slots);
+        if let Some(worker) = self.worker.take()
+            && worker.thread().id() != thread::current().id()
+        {
+            let _ = worker.join();
+        }
+    }
+}
 impl Service {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Request, Error> {
         if self.owner_dead.load(Ordering::Acquire) {
@@ -569,6 +618,7 @@ pub struct Node {
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
     subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
     services: Mutex<Vec<(String, Weak<AtomicBool>)>>,
+    oneway_callbacks: Mutex<Vec<LocalOneWayCallback>>,
 }
 impl Node {
     fn identity(&self) -> Result<&WorkerIdentity, Error> {
@@ -614,6 +664,7 @@ impl Node {
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
             services: Mutex::new(Vec::new()),
+            oneway_callbacks: Mutex::new(Vec::new()),
         })
     }
     fn topic(&self, topic: &str) -> Result<String, Error> {
@@ -986,6 +1037,64 @@ impl Node {
             owner_dead: self.owner_dead.clone(),
         })
     }
+    /// Register a typed one-way callback. A request from this same Node calls
+    /// it on the requesting thread before `request_oneway` returns. Requests
+    /// arriving through the service queue use an owned callback thread. No
+    /// registry lock is held during user code. Panics become typed native
+    /// errors; a callback must not recursively wait on its own service.
+    pub fn serve_oneway_callback<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        callback: F,
+    ) -> Result<OneWayCallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(), Error> + Send + Sync + 'static,
+    {
+        let topic_name = self.remapped_topic(topic)?;
+        let mut callbacks = self
+            .oneway_callbacks
+            .lock()
+            .map_err(|_| Error::Native("one-way callback registry poisoned".into()))?;
+        let service = self.serve(topic, request_type, EMPTY_TYPE)?;
+        let state = Arc::new(OneWayCallbackState {
+            callback: Box::new(callback),
+            active: service._lease.active.clone(),
+            slots: service._lease.slots.clone(),
+            owner_dead: self.owner_dead.clone(),
+            sender: self.sender.clone(),
+        });
+        let dispatch = state.clone();
+        let worker = thread::Builder::new()
+            .name("gz-transport-oneway-callback".into())
+            .spawn(move || {
+                while dispatch.live() {
+                    match service.recv_timeout(Duration::from_millis(20)) {
+                        Ok(request) if !request.expects_response() => {
+                            if dispatch.invoke(&request.data).is_err() {
+                                dispatch.record_error();
+                            }
+                        }
+                        Ok(_) => dispatch.record_error(),
+                        Err(Error::Timeout) => {}
+                        Err(_) => break,
+                    }
+                }
+            })?;
+        callbacks.retain(|entry| entry.state.upgrade().is_some_and(|state| state.live()));
+        callbacks.push(LocalOneWayCallback {
+            topic: topic_name,
+            types: ServiceTypes {
+                request_type: request_type.into(),
+                response_type: EMPTY_TYPE.into(),
+            },
+            state: Arc::downgrade(&state),
+        });
+        Ok(OneWayCallbackService {
+            state,
+            worker: Some(worker),
+        })
+    }
     /// This Node's live service topics, without partition prefixes, sorted uniquely.
     pub fn advertised_services(&self) -> Result<Vec<String>, Error> {
         if self.sender.stop.load(Ordering::Acquire) {
@@ -1031,7 +1140,8 @@ impl Node {
     }
     /// Hand a one-way request to a matching local queue or connected native peer.
     /// The timeout bounds discovery and send retries; success does not acknowledge
-    /// execution by the service. No response is sent or awaited on the wire.
+    /// execution by a queued service. A same-Node callback registration completes
+    /// on this caller before success; no response is sent or awaited on the wire.
     pub fn request_oneway(
         &self,
         topic: &str,
@@ -1039,6 +1149,39 @@ impl Node {
         data: impl Into<Vec<u8>>,
         timeout: Duration,
     ) -> Result<(), Error> {
+        let data: Vec<u8> = data.into();
+        if data.len() > self.config.max_message_bytes {
+            return Err(Error::InvalidFrame);
+        }
+        let topic_name = self.remapped_topic(topic)?;
+        let callback = {
+            let mut callbacks = self
+                .oneway_callbacks
+                .lock()
+                .map_err(|_| Error::Native("one-way callback registry poisoned".into()))?;
+            callbacks.retain(|entry| entry.state.upgrade().is_some_and(|state| state.live()));
+            callbacks
+                .iter()
+                .find(|entry| {
+                    entry.topic == topic_name
+                        && entry.types.request_type == request_type
+                        && entry.types.response_type == EMPTY_TYPE
+                })
+                .and_then(|entry| entry.state.upgrade())
+        };
+        if let Some(callback) = callback {
+            Instant::now()
+                .checked_add(timeout)
+                .ok_or(Error::InvalidConfig)?;
+            if timeout.is_zero() {
+                return Err(Error::Timeout);
+            }
+            let result = callback.invoke(&data);
+            if result.is_err() {
+                callback.record_error();
+            }
+            return result;
+        }
         self.request(topic, request_type, EMPTY_TYPE, data, timeout)
             .map(|_| ())
     }

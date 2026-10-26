@@ -499,3 +499,25 @@ while Rust invokes it after `Node::request` returns and before the test helper
 returns. Both originals are partial. Native callback registration, the actual
 post-request timing predicate, exact scheduling/thread identity, remote
 asynchronous behavior and native no-timeout semantics remain unported.
+
+## One-way local callback return boundary
+
+The pinned `NodeTest.ServiceCallWithoutOutputAsyncLambda` original checks
+Int32 data 5 and an `executed` flag immediately after its one-way request
+returns. The owned Rust callback registration now checks the flag immediately
+after raw `request_oneway` returns. A held-callback control requires that
+request to remain pending until invocation completes; queued other-Node
+requests retain their asynchronous admission boundary. The exact staged
+source gate passed pinned native originals, the Rust suite, 2645/2714
+production lines, 3893/4071 regions and 106/108 changed executable lines.
+An earlier test-only adapter was excluded because it set the flag only after
+raw request return, and the first production gate's 98/112 changed-line
+coverage failure is retained. See [the bounded callback contract](NET-02-oneway-callback.md).
+
+Independent [source review](reviews/service-oneway-callback.json) replayed
+the pinned native original 1/0 and exact raw-export Rust original 1/0, plus
+all seven focused Rust controls. Removing only the direct callback invocation
+fails the original at the post-request `executed` assertion. The reviewer
+approved the fixed same-Node observable original as `faithful_port`. C++
+callback API identity, process-global other-Node inline behavior, exact
+thread scheduling and native no-timeout API identity remain unclaimed.

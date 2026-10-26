@@ -4398,10 +4398,12 @@
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutOutputAsyncLambda",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutOutputAsyncLambda",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_call_without_output_async_lambda"
+      ],
+      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; approved exact same-Node observable original in docs/reviews/service-oneway-callback.json, with private native1/0, raw Rust original1/0, seven focused controls7/0 and direct-callback-removal mutant failing the unchanged post-request flag assertion. C++ callback API/thread identity, process-global other-Node inline behavior and native no-timeout identity remain unclaimed.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4410,8 +4412,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Pinned /foo same-Node one-way callback receives Int32 data5 and sets executed before raw Node::Request returns. Rust owned callback registration receives the actual bytes, and raw request_oneway invokes the matching local callback before returning; the test checks that return boundary directly. A held callback control rejects admission-only completion. C++ registration signature, exact thread identity, remote scheduling and native no-timeout API identity remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native local original and owned Rust same-Node callback lease; other-Node dispatch is supplemental, broader process-global behavior pending.",
+      "evidence": "docs/NET-02-oneway-callback.md; docs/reviews/service-oneway-callback.json; mandatory pinned native NodeTest original; exact staged source gate"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.MultipleServiceCallAsync",

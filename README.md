@@ -46,6 +46,9 @@ including request before local service registration, with
 Two local service lambda originals retain their fixed provider and response
 observations through an [owned request adapter](docs/NET-02-service-lambda.md).
 Their callback timing at the actual `Node::request` return remains partial.
+An owned [one-way callback service](docs/NET-02-oneway-callback.md) invokes a
+matching same-Node callback before raw `request_oneway` returns; queued
+other-Node requests use a separate callback dispatcher.
 `Config::add_topic_remap` installs bounded, exact-key substitutions before Node
 creation. Registration, subscriptions and requests apply one substitution;
 service inspection and explicit withdrawal use the advertised name, matching
