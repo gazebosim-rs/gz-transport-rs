@@ -4388,3 +4388,319 @@ fn full_subscription_queue_consumes_its_interval_and_new_registrations_are_indep
     assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
     assert!(!Arc::ptr_eq(&full, &fresh));
 }
+
+#[test]
+fn ready_topic_queries_keep_bounded_startup_deadline_and_shutdown() {
+    let (mut worker, _) = state(1);
+    let future = Instant::now() + Duration::from_secs(5);
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::ReadyTopicInfo(TopicInfoQuery {
+        topic: "/absent".into(),
+        deadline: future,
+        reply: tx,
+    }));
+    assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    let (tx2, rx2) = mpsc::sync_channel(1);
+    worker.command(Command::ReadyTopicInfo(TopicInfoQuery {
+        topic: "/absent".into(),
+        deadline: future,
+        reply: tx2,
+    }));
+    assert!(matches!(rx2.recv().unwrap(), Err(Error::QueueFull)));
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    worker.discovery_cycles = 1;
+    worker.progress_topic_info_queries(Instant::now());
+    assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    // The existing immediate inspection still replies while startup is pending.
+    let (immediate, result) = mpsc::sync_channel(1);
+    worker.command(Command::KnownTopicInfo("/absent".into(), immediate));
+    assert!(result.recv().unwrap().into_types().publishers.is_empty());
+    worker.discovery_cycles = 2;
+    worker.progress_topic_info_queries(Instant::now());
+    let ready = rx.recv().unwrap().unwrap().into_types();
+    assert!(ready.publishers.is_empty() && ready.subscribers.is_empty());
+    assert!(worker.topic_info_queries.is_empty());
+
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::ReadyTopicInfo(TopicInfoQuery {
+        topic: "/absent".into(),
+        deadline: Instant::now(),
+        reply: tx,
+    }));
+    assert!(matches!(rx.recv().unwrap(), Err(Error::Timeout)));
+    worker.discovery_cycles = 0;
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::ReadyTopicInfo(TopicInfoQuery {
+        topic: "/absent".into(),
+        deadline: future,
+        reply: tx,
+    }));
+    worker.sender.stop.store(true, Ordering::Release);
+    worker.progress_topic_info_queries(Instant::now());
+    assert!(matches!(rx.recv().unwrap(), Err(Error::Shutdown)));
+    worker.sender.stop.store(false, Ordering::Release);
+    worker.owner_dead.store(true, Ordering::Release);
+    let (tx, rx) = mpsc::sync_channel(1);
+    drop(rx);
+    worker.command(Command::ReadyTopicInfo(TopicInfoQuery {
+        topic: "/absent".into(),
+        deadline: future,
+        reply: tx,
+    }));
+    assert!(worker.topic_info_queries.is_empty());
+}
+
+#[test]
+fn prepared_publisher_snapshot_requires_exact_live_lease_and_retains_bounds() {
+    let (mut worker, _) = state(2);
+    let active = Arc::new(AtomicBool::new(true));
+    let bits = Arc::new(AtomicU8::new(0));
+    worker.command(Command::Advertise(
+        "/prepared".into(),
+        "T".into(),
+        AdvertiseOptions::default(),
+        active.clone(),
+        bits.clone(),
+    ));
+    let refresh = |topic: &str, kind: &str, lease: Arc<AtomicBool>, interest: Arc<AtomicU8>| {
+        let (tx, rx) = mpsc::sync_channel(1);
+        (
+            Command::RefreshConnections(
+                topic.into(),
+                kind.into(),
+                lease,
+                interest,
+                Instant::now() + Duration::from_secs(5),
+                tx,
+            ),
+            rx,
+        )
+    };
+    for _ in 0..2 {
+        let (cmd, rx) = refresh("/prepared", "T", active.clone(), bits.clone());
+        worker.command(cmd);
+        assert_eq!(rx.recv().unwrap(), Ok(false));
+        assert_eq!(worker.prepared_publications.len(), 1);
+    }
+    for (topic, kind, lease, interest) in [
+        ("/other", "T", active.clone(), bits.clone()),
+        ("/prepared", "wrong", active.clone(), bits.clone()),
+        (
+            "/prepared",
+            "T",
+            Arc::new(AtomicBool::new(true)),
+            bits.clone(),
+        ),
+        ("/prepared", "T", active.clone(), Arc::new(AtomicU8::new(0))),
+    ] {
+        let (cmd, rx) = refresh(topic, kind, lease, interest);
+        worker.command(cmd);
+        assert_eq!(rx.recv().unwrap(), Err(Error::Shutdown));
+    }
+    let (cmd, rx) = refresh("/prepared", "T", active.clone(), bits.clone());
+    drop(rx);
+    worker.command(cmd);
+    active.store(false, Ordering::Release);
+    let (cmd, rx) = refresh("/prepared", "T", active, bits.clone());
+    worker.command(cmd);
+    assert_eq!(rx.recv().unwrap(), Err(Error::Shutdown));
+    worker.cleanup();
+    assert!(worker.prepared_publications.is_empty());
+
+    let registry = Arc::new(Mutex::new(Vec::<LocalInterest>::new()));
+    let poisoned = registry.clone();
+    assert!(
+        thread::spawn(move || {
+            let _guard = poisoned.lock().unwrap();
+            panic!("exercise isolated registry failure");
+        })
+        .join()
+        .is_err()
+    );
+    let active = Arc::new(AtomicBool::new(true));
+    worker.command(Command::Advertise(
+        "/prepared".into(),
+        "T".into(),
+        AdvertiseOptions::default(),
+        active,
+        bits.clone(),
+    ));
+    bits.store(PROCESS_INTEREST, Ordering::Release);
+    assert!(
+        matches!(worker.refresh_process_interest_with(registry.lock()), Err(Error::Native(message)) if message.contains("poisoned"))
+    );
+    assert_eq!(bits.load(Ordering::Acquire), 0);
+    assert!(
+        worker
+            .sender
+            .counters
+            .routing_errors
+            .load(Ordering::Relaxed)
+            > 0
+    );
+}
+
+#[test]
+fn prepared_same_process_delivery_stays_single_after_a_real_wire_connection() {
+    let config = Config {
+        partition: format!("prepared-wire-{}", Uuid::new_v4()),
+        ..Default::default()
+    };
+    let observer = Node::new(config.clone()).unwrap();
+    let receiver = observer.subscribe("/first", "T").unwrap();
+    let owner = Node::new(config).unwrap();
+    let publisher = owner.advertise("/first", "T").unwrap();
+    // This bit comes only from the actual remote NEW_CONNECTION path. The
+    // first publication therefore exercises both the direct and TCP routes.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while publisher.interest.load(Ordering::Acquire) & REMOTE_INTEREST == 0 {
+        assert!(
+            Instant::now() < deadline,
+            "real local wire route did not register"
+        );
+        thread::yield_now();
+    }
+    for payload in [vec![1, 2, 3], vec![1, 2, 3], vec![4, 5, 6]] {
+        assert!(
+            publisher
+                .refresh_connection_snapshot(Duration::from_secs(5))
+                .unwrap()
+        );
+        assert!(
+            publisher
+                .refresh_connection_snapshot(Duration::from_secs(5))
+                .unwrap()
+        );
+        assert!(publisher.connection_snapshot().unwrap());
+        publisher.publish(payload.clone()).unwrap();
+        assert_eq!(
+            receiver.recv_timeout(Duration::from_secs(5)).unwrap().data,
+            payload
+        );
+    }
+    // Bounded negative observation after three positive deliveries; it is not
+    // a universal remote delivery or scheduler guarantee.
+    assert_eq!(
+        receiver.recv_timeout(Duration::from_millis(200)),
+        Err(Error::Timeout)
+    );
+}
+
+#[test]
+fn prepared_refresh_budget_rejects_without_enqueue_and_expired_work_stays_inert() {
+    let (mut worker, commands) = state(4);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
+    };
+    let publisher = node.advertise("/budget", "T").unwrap();
+    worker.command(commands.recv().unwrap());
+    assert_eq!(
+        publisher.refresh_connection_snapshot(Duration::ZERO),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        publisher.refresh_connection_snapshot(Duration::MAX),
+        Err(Error::InvalidConfig)
+    );
+    assert!(matches!(
+        commands.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    assert!(worker.prepared_publications.is_empty());
+    thread::scope(|scope| {
+        let pending =
+            scope.spawn(|| publisher.refresh_connection_snapshot(Duration::from_millis(5)));
+        let command = commands.recv_timeout(Duration::from_secs(5)).unwrap();
+        let Command::RefreshConnections(_, _, _, _, deadline, _) = &command else {
+            panic!("wrong command")
+        };
+        // This checks the propagated request deadline, not execution latency.
+        assert!(*deadline <= Instant::now() + Duration::from_millis(5));
+        assert_eq!(pending.join().unwrap(), Err(Error::Timeout));
+        worker.command(command);
+    });
+    assert!(worker.prepared_publications.is_empty());
+    assert_eq!(publisher.interest.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn prepared_all_and_host_track_live_direct_routes_without_inventing_wire_membership() {
+    for scope in [Scope::All, Scope::Host] {
+        let (mut worker, _) = state(4);
+        let observer = Node::new(worker.config.clone()).unwrap();
+        let receiver = observer.subscribe("/route", "T").unwrap();
+        let topic =
+            qualified_name(&worker.config.partition, &worker.config.namespace, "/route").unwrap();
+        let active = Arc::new(AtomicBool::new(true));
+        let bits = Arc::new(AtomicU8::new(0));
+        let mut options = AdvertiseOptions::default();
+        options.set_scope(scope);
+        worker.command(Command::Advertise(
+            topic.clone(),
+            "T".into(),
+            options,
+            active.clone(),
+            bits.clone(),
+        ));
+        let refresh = |worker: &mut Worker| {
+            let (tx, rx) = mpsc::sync_channel(1);
+            worker.command(Command::RefreshConnections(
+                topic.clone(),
+                "T".into(),
+                active.clone(),
+                bits.clone(),
+                Instant::now() + Duration::from_secs(5),
+                tx,
+            ));
+            rx.recv().unwrap()
+        };
+        for _ in 0..2 {
+            assert_eq!(refresh(&mut worker), Ok(true));
+            assert_eq!(worker.prepared_publications.len(), 1);
+            assert_eq!(
+                bits.load(Ordering::Acquire) & PROCESS_INTEREST,
+                PROCESS_INTEREST
+            );
+            // The private worker never drains discovery: subscriber metadata
+            // cannot masquerade as an established remote NEW_CONNECTION.
+            assert_eq!(bits.load(Ordering::Acquire) & REMOTE_INTEREST, 0);
+        }
+        worker.deliver_process_local(Message {
+            topic: topic.clone(),
+            type_name: "T".into(),
+            data: vec![1, 2, 3],
+        });
+        assert_eq!(
+            receiver.recv_timeout(Duration::from_secs(5)).unwrap().data,
+            [1, 2, 3]
+        );
+        drop(receiver);
+        assert_eq!(refresh(&mut worker), Ok(false));
+        assert_eq!(bits.load(Ordering::Acquire) & PROCESS_INTEREST, 0);
+        let _wrong = observer.subscribe("/route", "Wrong").unwrap();
+        let mut foreign_config = worker.config.clone();
+        foreign_config.message_port += 2;
+        let foreign = Node::new(foreign_config).unwrap();
+        let _foreign = foreign.subscribe("/route", "T").unwrap();
+        assert_eq!(refresh(&mut worker), Ok(false));
+        let _replacement = observer.subscribe("/route", "T").unwrap();
+        assert_eq!(refresh(&mut worker), Ok(true));
+        drop(observer);
+        assert_eq!(refresh(&mut worker), Ok(false));
+        active.store(false, Ordering::Release);
+        assert_eq!(refresh(&mut worker), Err(Error::Shutdown));
+        worker.cleanup();
+        assert!(worker.prepared_publications.is_empty());
+    }
+}

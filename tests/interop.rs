@@ -3088,3 +3088,35 @@ fn subscriber_rate_admission_covers_real_cpp_wire_and_same_node_delivery() {
     assert_eq!(node.statistics().subscription_clock_errors, 0);
     peer.success();
 }
+
+// Supplemental startup checks reuse the unchanged held native endpoints.
+#[test]
+fn ready_topic_info_observes_preexisting_cpp_endpoints_on_first_query() {
+    for (mode, publication) in [
+        ("list-vector3d-publisher", true),
+        ("list-subscriber", false),
+    ] {
+        let config = config();
+        // The peer's existing READY token follows successful registration;
+        // construct the fresh Rust query Node only after that token.
+        let mut native = Peer::start(&config, mode, "/ready-info", "unused");
+        let node = Node::new(config).unwrap();
+        let first = node
+            .topic_info("/ready-info", Duration::from_secs(5))
+            .unwrap();
+        if publication {
+            assert_eq!(first.publishers, ["gz.msgs.Vector3d"]);
+            assert!(first.subscribers.is_empty());
+        } else {
+            assert!(first.publishers.is_empty());
+            assert_eq!(first.subscribers, [TYPE]);
+        }
+        assert_eq!(
+            node.topic_info("/ready-info", Duration::from_secs(5))
+                .unwrap(),
+            first
+        );
+        native.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+        native.success();
+    }
+}

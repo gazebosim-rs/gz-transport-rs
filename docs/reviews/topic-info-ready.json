@@ -1,0 +1,177 @@
+{
+  "decision": "approved_source_semantics_and_full_evidence",
+  "author": "/root/transport_owner_v3",
+  "reviewer": "/root/msgs_owner_astra",
+  "source_tree": "68aac43d5b900cb3fec19d273688a31b2e211af3",
+  "freeze_sha256": "2c463b645010ca8b6401b53febab557ebe719414005847ad657d2038bee4ee6d",
+  "source_freeze_sha256": "2c463b645010ca8b6401b53febab557ebe719414005847ad657d2038bee4ee6d",
+  "files_sha256": {
+    "README.md": "4de8db90b585581dfc110e6166f55a86ac4532c553cd9780b6b95614bd6da486",
+    "docs/NET-02-ready-topic-info.md": "9dbb018098c338ae6c404ac5485f3f51ae69999ea37b191610a2e00df7bf65b0",
+    "src/runtime.rs": "189a352553d5ab0635004cd1cf992dd2b5f230d1f97eeeb537550ab9a3dcd7be",
+    "tests/interop.rs": "e262070aeb786f8eb1ec33d2c1f8cefd060a933b9d9e8044ce531dcb58319d24",
+    "tests/support/runtime.rs": "4e42da65a75ddd3a2873ec70ca90298e9fde0b1a11a251a104cd0bf08550f9f9",
+    "tests/topic_info_ready.rs": "99748e2ad001105c9c5c73ec3875cb00effbdfd005f89be94d5cd514bd186525"
+  },
+  "modes": {
+    "README.md": "100644",
+    "docs/NET-02-ready-topic-info.md": "100644",
+    "src/runtime.rs": "100644",
+    "tests/interop.rs": "100644",
+    "tests/support/runtime.rs": "100644",
+    "tests/topic_info_ready.rs": "100644"
+  },
+  "static_review_sha256": "59d98ccfc81e65bac3a5eb2f0e023ca60979d34583448f379edf3ce13beea1b0",
+  "native_actual_review_sha256": "2f7ebe14956348efbeec4052f16a4ce1c19689d2692f0cb6c369134615e4e183",
+  "runtime_proof_sha256": "23f5521077b4f6c777ef63c5fa5c80c814f7d76e161621a6ebf47662e83f96c1",
+  "runtime_executor_sha256": "1f023c9bb45a533c442dd43b172bdac234d2ce2e35fe9c12357c084ea35e4e7f",
+  "binding_executor_sha256": "8f351b4270512ec43aec0e05ec78ee2241b5054d99be4ee41f9983d0bf6e7b65",
+  "guard_controls_sha256": "40f1e8eaf7149631679f4d8992a8c8c7cc4f956d78a7523aadaf13e3d7cc49f9",
+  "session": 18101,
+  "exit_code": 0,
+  "fresh_source": {
+    "candidate_raw_files": 191,
+    "parent_raw_files": 189,
+    "changed_paths": 6,
+    "unchanged_parent_files": 185,
+    "all_git_oids_sha256_modes_verified": true,
+    "old_support_and_interop_prefixes_byte_exact": true,
+    "all_other_parent_blobs_pins_policy_hooks_fixtures_preserved": true
+  },
+  "runtime": {
+    "fresh_positive": [
+      110,
+      0,
+      0
+    ],
+    "restored": [
+      110,
+      0,
+      0
+    ],
+    "production_controls": {
+      "premature-startup": [
+        "FAILED",
+        "0",
+        "1",
+        "0"
+      ],
+      "omit-prepared-interest": [
+        "FAILED",
+        "0",
+        "1",
+        "0"
+      ],
+      "omit-lease-identity": [
+        "FAILED",
+        "0",
+        "1",
+        "0"
+      ],
+      "allow-expired-refresh": [
+        "FAILED",
+        "0",
+        "1",
+        "0"
+      ],
+      "omit-local-wire-echo": [
+        "FAILED",
+        "0",
+        "1",
+        "0"
+      ]
+    },
+    "same_original_and_restored_executable_hashes": true,
+    "retained_unique_executables": 9,
+    "all_gzip_compressed_and_decompressed_hashes_verified": true,
+    "native_inputs_rehashed": 431,
+    "new_cpp_libraries_rehashed": 25,
+    "rustc_sha256": "ef6d716e5d1c6c93def277c0afa037c21e7a74f7de3aed4ee0700646c3301b1d",
+    "all_raw_output_hashes_verified": 62,
+    "all_owned_groups_closed": true
+  },
+  "meaningful_failure_boundaries": [
+    "Discovery cycles1 must not answer pending initial query.",
+    "Prepared All/Host refresh must positively observe live direct recipient before payload and withdrawal checks.",
+    "Wrong active lease identity must return Shutdown despite same topic/type/interest bits.",
+    "Already-expired queued refresh must not enroll the publisher into tracked interest.",
+    "Real warmed TCP route echo suppression is necessary: mutant returned an extra actual payload Message where the bounded final observation expected Timeout."
+  ],
+  "resources": {
+    "peak_target_bytes": 797897843,
+    "peak_other_bytes": 124580365,
+    "minimum_free_bytes": 8217808896
+  },
+  "preserved_history": [
+    "V1 author108 correctness passed before Clippy resource stop56838; separate warm Clippy59686 passed without source/test rerun. No relabeling of failed overall attempt.",
+    "V2 author18+Clippy47738 independent raw proof retained; final freeze changes only documented postselected prose.",
+    "First static receipt assembly stopped on superseded prechecks document while author advanced declared prose; final2c463 binds actual new document. No reviewer runtime failure or retry.",
+    "Source-retainer first metadata test-name scan counted two non-test helpers and stopped before writes; corrected metadata-only regex, original script/log/note retained. No canonical runtime failure or retry.",
+    "The earlier20-control arithmetic expectation failure was preserved and corrected in control code only; frozen producer unchanged. Fullmanifest earlier1944 assembly preserved; finalEAA adds three auxiliary note hashes only.",
+    "Reviewer initial V2 full binder used an old retained-manifest filename and stopped before coverage recomputation/receipt writes. V3 corrected only to actual source-retained-sha256-v2.json; all frozen producer/source/raw evidence unchanged. Original failed binder and stderr retained."
+  ],
+  "limits": [
+    "Fresh reviewer target and C++ peer were built independently; no author cache or test-binary reuse. Qualified native4 source/actual2f7e reused only with all exact input identities verified; no duplicate native observation run.",
+    "Per-worker startup and exact prepared process-local/learned remote interest only; not remote completeness, consensus, authenticated readiness, delivery acknowledgment, universal exactly-once, timing parity or full NET-02.",
+    "Both restored suites preserve all original test predicates; no ledger retirement, fixture edit, profile override or quality waiver.",
+    "Canonical strict full source/coverage is now independently bound; final metadata review, mandatory normal commit, public exact hosted success and consumer pin qualification remain required."
+  ],
+  "reviewed_at": "2026-10-27T10:02:44.892183+00:00",
+  "source_manifest_sha256": "eaa0864c6ae9a109bde8e7be09ffbd7ad23159b08a7a6475fe3a4ee7f8e409c1",
+  "pre_gate_source_review_sha256": "3cc11848b81ab0a8e5a2692213593f579f5f748423735a5d8c3c5ec10011b277",
+  "full_source_evidence": {
+    "audit_sha256": "e7addf8a34cd6498988e0a201f8035a2c478d0afbedb3f7468578b7f6a174de1",
+    "binding_executor_sha256": "3026b9d89607b6c7b0b6a18a0d1426bca7adf2e3f67df263e3ad9debf804eebc",
+    "author_gate_session": 17683,
+    "exit_code": 0,
+    "rust": [
+      276,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "retained_files": 214,
+    "actual_retained_raw_profiles": 31,
+    "new_tests_found_in_full_raw": [
+      "startup_query_preserves_immediate_types_and_warm_absence",
+      "startup_query_has_deadline_name_overflow_and_cancel_errors",
+      "prepared_all_host_and_process_publishers_deliver_first_payload_once",
+      "prepared_snapshot_filters_domain_and_descriptor_and_tracks_process_withdrawal",
+      "prepared_membership_keeps_ignore_local_and_publisher_owner_lifetime",
+      "prepared_snapshot_reports_cancel_and_explicit_shutdown",
+      "ready_topic_queries_keep_bounded_startup_deadline_and_shutdown",
+      "prepared_publisher_snapshot_requires_exact_live_lease_and_retains_bounds",
+      "prepared_same_process_delivery_stays_single_after_a_real_wire_connection",
+      "prepared_refresh_budget_rejects_without_enqueue_and_expired_work_stays_inert",
+      "prepared_all_and_host_track_live_direct_routes_without_inventing_wire_membership",
+      "ready_topic_info_observes_preexisting_cpp_endpoints_on_first_query"
+    ],
+    "totals": {
+      "lines": {
+        "covered": 2987,
+        "count": 3047
+      },
+      "regions": {
+        "covered": 4393,
+        "count": 4565
+      }
+    },
+    "changed_lines": {
+      "covered": 165,
+      "count": 165
+    },
+    "retained_hash_manifest_sha256": "7d2f671cabcdbb00878af029827c33c765e80df10474c019ed03a93b4497787a",
+    "evidence_sha256": "9c038161d33b79bf89ae36280d6e8f2be7a396cd2586fbe1ccb6cd499978a1d9",
+    "raw_rust_sha256": "6ae378c3ad43acde73f5562e4d4a4f87c46b6ad234e25bc8d08cac6b161ce8fa",
+    "method": "Unchanged independently reviewed coverage.check, verify.changed_lines and coverage.changed_check on entire unfiltered retained JSON/LCOV, exact staged root replaced only with verified private source root; all data preserved, no exclusions/threshold/policy/profile/test change or runtime replay.",
+    "resource_minimum_free_bytes": 6177095680,
+    "resource_peaks_bytes": {
+      "target": 2864969164,
+      "scratch": 8442382,
+      "canonical": 5716631,
+      "wrapper": 5757615
+    }
+  },
+  "remaining": "Final metadata/protected binding, mandatory normal hook, public exact hosted success and consumer pin qualification. No new original retirement or broad NET-02 completion.",
+  "reviewer_setup_note_sha256": "e0364e512560bdb9e9c686425224056c6245ac32aa030388fe9f99793de514f7"
+}

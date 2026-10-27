@@ -389,6 +389,31 @@ impl Publisher {
         ))?;
         rx.recv_timeout(self.reply_timeout).map_err(receive_error)
     }
+    /// Refresh the cached membership outside a latency-sensitive step.
+    /// The explicit timeout bounds this exact publisher's worker reply wait.
+    /// Zero returns `Timeout`; an unrepresentable deadline is `InvalidConfig`.
+    /// Those validation errors enqueue nothing.
+    /// Matching live process-local routes and learned remote registrations count;
+    /// this does not acknowledge remote authentication or payload delivery.
+    pub fn refresh_connection_snapshot(&self, timeout: Duration) -> Result<bool, Error> {
+        let deadline = Instant::now()
+            .checked_add(timeout)
+            .ok_or(Error::InvalidConfig)?;
+        if timeout.is_zero() {
+            return Err(Error::Timeout);
+        }
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::RefreshConnections(
+            self.topic.clone(),
+            self.type_name.clone(),
+            self._lease.active.clone(),
+            self.interest.clone(),
+            deadline,
+            tx,
+        ))?;
+        rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .map_err(receive_error)?
+    }
     /// Encode a canonical value after checking its descriptor and size.
     /// Typed reencoding does not preserve unknown fields from original wire bytes.
     pub fn publish_typed<M: gz_msgs::CanonicalMessage>(&self, value: &M) -> Result<(), Error> {
@@ -1123,9 +1148,40 @@ impl Node {
         let (tx, rx) = mpsc::sync_channel(1);
         self.sender
             .send(Command::KnownTopicInfo(topic.clone(), tx))?;
-        let mut records = rx
+        let records = rx
             .recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)?;
+        self.merge_topic_info(&topic, records)
+    }
+    /// Wait for message discovery startup, then snapshot this original topic.
+    /// The timeout bounds startup and worker reply waits; zero returns `Timeout`. The IO worker
+    /// keeps processing discovery and other commands while the query is pending.
+    /// Startup is per Rust worker, not native process-global state. Initialization
+    /// is not consensus, delivery readiness or complete remote subscriber replies.
+    pub fn topic_info(&self, topic: &str, timeout: Duration) -> Result<TopicEndpointTypes, Error> {
+        let topic = self.topic(topic)?;
+        let deadline = Instant::now()
+            .checked_add(timeout)
+            .ok_or(Error::InvalidConfig)?;
+        if timeout.is_zero() {
+            return Err(Error::Timeout);
+        }
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::ReadyTopicInfo(TopicInfoQuery {
+            topic: topic.clone(),
+            deadline,
+            reply: tx,
+        }))?;
+        let records = rx
+            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .map_err(receive_error)??;
+        self.merge_topic_info(&topic, records)
+    }
+    fn merge_topic_info(
+        &self,
+        topic: &str,
+        mut records: TopicEndpointRecords,
+    ) -> Result<TopicEndpointTypes, Error> {
         let domain = MessageDomain::from_config(&self.config);
         {
             let mut publications = local_publications()
@@ -1549,6 +1605,7 @@ enum Command {
     KnownPublisherTopics(SyncSender<TopicNameRecords>),
     KnownTopics(SyncSender<TopicNameRecords>),
     KnownTopicInfo(String, SyncSender<TopicEndpointRecords>),
+    ReadyTopicInfo(TopicInfoQuery),
     Publish(String, String, Vec<u8>, Option<PublicationHandle>),
     Subscribe(
         String,
@@ -1564,11 +1621,24 @@ enum Command {
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     HasConnections(String, String, SyncSender<bool>),
+    RefreshConnections(
+        String,
+        String,
+        Arc<AtomicBool>,
+        Arc<AtomicU8>,
+        Instant,
+        SyncSender<Result<bool, Error>>,
+    ),
     Request(Pending),
     Respond(Vec<Vec<u8>>, Vec<u8>, bool),
 }
 const EMPTY_TYPE: &str = "gz.msgs.Empty";
 
+struct TopicInfoQuery {
+    topic: String,
+    deadline: Instant,
+    reply: SyncSender<Result<TopicEndpointRecords, Error>>,
+}
 struct Pending {
     topic: String,
     request_type: String,
@@ -1685,6 +1755,9 @@ struct Worker {
     owner_dead: Arc<AtomicBool>,
     local_interest_generation: u64,
     has_other_local_interest: bool,
+    discovery_cycles: u8,
+    topic_info_queries: VecDeque<TopicInfoQuery>,
+    prepared_publications: Vec<(Weak<AtomicBool>, Weak<AtomicU8>)>,
     process: String,
     node: String,
     udp: [UdpSocket; 2],
@@ -1872,6 +1945,9 @@ impl Worker {
             owner_dead,
             local_interest_generation: u64::MAX,
             has_other_local_interest: false,
+            discovery_cycles: 0,
+            topic_info_queries: VecDeque::new(),
+            prepared_publications: Vec::new(),
             process,
             node,
             udp,
@@ -2256,6 +2332,24 @@ impl Worker {
                 );
                 let _ = reply.try_send(self.topic_endpoint_records(&topic));
             }
+            Command::ReadyTopicInfo(query) => {
+                // Native sends SUBSCRIBERS_REQ before its initialization wait.
+                self.announce(
+                    0,
+                    protocol::discovery(&self.process, Type::SubscribersReq, None),
+                );
+                self.progress_topic_info_queries(Instant::now());
+                if self.topic_info_queries.len() >= self.config.capacity {
+                    self.sender
+                        .counters
+                        .queue_drops
+                        .fetch_add(1, Ordering::Relaxed);
+                    let _ = query.reply.try_send(Err(Error::QueueFull));
+                } else {
+                    self.topic_info_queries.push_back(query);
+                    self.progress_topic_info_queries(Instant::now());
+                }
+            }
             Command::Publish(topic, type_name, data, publication) => {
                 if let Some(publication) = publication {
                     // An admitted Publisher owns this exact history. A queued
@@ -2366,6 +2460,42 @@ impl Worker {
             }
             Command::HasConnections(topic, type_name, reply) => {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));
+            }
+            Command::RefreshConnections(topic, type_name, active, bits, deadline, reply) => {
+                // A request still queued after its caller times out must not
+                // enroll a stale lease into prepared-interest tracking.
+                if Instant::now() >= deadline {
+                    let _ = reply.try_send(Err(Error::Timeout));
+                    return;
+                }
+                let valid = active.load(Ordering::Acquire) && !self.sender.stop.load(Ordering::Acquire)
+                    && self.advertisements.iter().any(|(publisher, lease, interest)| {
+                        publisher.topic == topic
+                            && matches!(&publisher.pub_type, Some(PubType::MsgPub(info)) if info.msg_type == type_name)
+                            && Arc::ptr_eq(lease, &active) && Arc::ptr_eq(interest, &bits)
+                    });
+                let result = if valid {
+                    self.prepared_publications.retain(|(lease, _)| {
+                        lease
+                            .upgrade()
+                            .is_some_and(|lease| lease.load(Ordering::Acquire))
+                    });
+                    if !self
+                        .prepared_publications
+                        .iter()
+                        .any(|(_, interest)| interest.as_ptr() == Arc::as_ptr(&bits))
+                    {
+                        // Each tracked entry belongs to one existing live advertisement,
+                        // so the Node's existing lease capacity bounds this collection.
+                        self.prepared_publications
+                            .push((Arc::downgrade(&active), Arc::downgrade(&bits)));
+                    }
+                    self.refresh_process_interest()
+                        .map(|()| bits.load(Ordering::Acquire) != 0)
+                } else {
+                    Err(Error::Shutdown)
+                };
+                let _ = reply.try_send(result);
             }
             Command::Request(pending) => {
                 if self.owner_dead.load(Ordering::Acquire) {
@@ -2920,7 +3050,9 @@ impl Worker {
                     self.subscribe_message(1, &p.topic);
                 }
                 heartbeat = Instant::now();
+                self.discovery_cycles = self.discovery_cycles.saturating_add(1).min(2);
             }
+            self.progress_topic_info_queries(Instant::now());
             self.peers
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
             self.subscriber_interests
@@ -2930,6 +3062,7 @@ impl Worker {
                 self.command(cmd);
             }
         }
+        self.progress_topic_info_queries(Instant::now());
         // Graceful Node shutdown withdraws subscriptions before process BYE.
         // Native publishers intentionally retain registration on BYE alone.
         let mut topics = HashSet::new();
@@ -2953,6 +3086,24 @@ impl Worker {
         self.cleanup();
         for channel in 0..2 {
             self.announce(channel, protocol::discovery(&self.process, Type::Bye, None));
+        }
+    }
+    fn progress_topic_info_queries(&mut self, now: Instant) {
+        for _ in 0..self.topic_info_queries.len() {
+            let query = self.topic_info_queries.pop_front().unwrap();
+            let result = if self.sender.stop.load(Ordering::Acquire)
+                || self.owner_dead.load(Ordering::Acquire)
+            {
+                Err(Error::Shutdown)
+            } else if now >= query.deadline {
+                Err(Error::Timeout)
+            } else if self.discovery_cycles >= 2 {
+                Ok(self.topic_endpoint_records(&query.topic))
+            } else {
+                self.topic_info_queries.push_back(query);
+                continue;
+            };
+            let _ = query.reply.try_send(result);
         }
     }
     fn retire_owner_requests(&mut self) {
@@ -3011,6 +3162,68 @@ impl Worker {
             }
         });
     }
+    fn refresh_process_interest(&mut self) -> Result<(), Error> {
+        self.refresh_process_interest_with(local_interests().lock())
+    }
+    fn refresh_process_interest_with(
+        &mut self,
+        registry: std::sync::LockResult<std::sync::MutexGuard<'_, Vec<LocalInterest>>>,
+    ) -> Result<(), Error> {
+        self.prepared_publications.retain(|(lease, _)| {
+            lease
+                .upgrade()
+                .is_some_and(|lease| lease.load(Ordering::Acquire))
+        });
+        match registry {
+            Ok(mut interests) => {
+                for interest in interests.iter_mut().filter(|s| s.key.node == self.node) {
+                    if !interest.live() {
+                        interest.tx = None;
+                    }
+                }
+                // Process scope and explicitly prepared publishers use the same
+                // live registrations as direct process-local delivery.
+                for (publisher, _, bits) in &self.advertisements {
+                    if publisher.scope != i32::from(Scope::Process)
+                        && !self
+                            .prepared_publications
+                            .iter()
+                            .any(|(_, prepared)| prepared.as_ptr() == Arc::as_ptr(bits))
+                    {
+                        continue;
+                    }
+                    let domain = MessageDomain::from_config(&self.config);
+                    let matching = interests.iter().any(|interest| {
+                        interest.live()
+                            && interest.domain == domain
+                            && interest.key.node != self.node
+                            && interest.key.topic == publisher.topic
+                            && matches!(&publisher.pub_type, Some(PubType::MsgPub(info))
+                                if interest.key.type_name == "google.protobuf.Message"
+                                    || interest.key.type_name == info.msg_type)
+                    });
+                    if matching {
+                        bits.fetch_or(PROCESS_INTEREST, Ordering::AcqRel);
+                    } else {
+                        bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
+                    }
+                }
+            }
+            Err(_) => {
+                for (_, _, bits) in &self.advertisements {
+                    bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
+                }
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+                return Err(Error::Native(
+                    "process-local subscriber registry poisoned".into(),
+                ));
+            }
+        }
+        Ok(())
+    }
     fn cleanup(&mut self) {
         let mut removed = Vec::new();
         self.advertisements.retain(|(p, a, _)| {
@@ -3050,47 +3263,7 @@ impl Worker {
         // Match the worker's withdrawal boundary: before cleanup an already
         // queued receiver can still time out; afterward no registry clone may
         // keep its channel open once the worker drops its sender.
-        match local_interests().lock() {
-            Ok(mut interests) => {
-                for interest in interests.iter_mut().filter(|s| s.key.node == self.node) {
-                    if !interest.live() {
-                        interest.tx = None;
-                    }
-                }
-                // Process publishers never learn other local Nodes through
-                // discovery. Refresh their cached readiness from the same
-                // live registrations used by process-local delivery.
-                for (publisher, _, bits) in &self.advertisements {
-                    if publisher.scope != i32::from(Scope::Process) {
-                        continue;
-                    }
-                    let domain = MessageDomain::from_config(&self.config);
-                    let matching = interests.iter().any(|interest| {
-                        interest.live()
-                            && interest.domain == domain
-                            && interest.key.node != self.node
-                            && interest.key.topic == publisher.topic
-                            && matches!(&publisher.pub_type, Some(PubType::MsgPub(info))
-                                if interest.key.type_name == "google.protobuf.Message"
-                                    || interest.key.type_name == info.msg_type)
-                    });
-                    if matching {
-                        bits.fetch_or(PROCESS_INTEREST, Ordering::AcqRel);
-                    } else {
-                        bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
-                    }
-                }
-            }
-            Err(_) => {
-                for (_, _, bits) in &self.advertisements {
-                    bits.fetch_and(!PROCESS_INTEREST, Ordering::AcqRel);
-                }
-                self.sender
-                    .counters
-                    .routing_errors
-                    .fetch_add(1, Ordering::Relaxed);
-            }
-        }
+        let _ = self.refresh_process_interest();
         let mut topics: Vec<_> = topics.into_iter().collect();
         topics.sort();
         for topic in topics {
