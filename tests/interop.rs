@@ -3039,3 +3039,52 @@ fn original_two_process_topic_list() {
     writeln!(publisher.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
     publisher.success();
 }
+
+#[test]
+fn subscriber_rate_admission_covers_real_cpp_wire_and_same_node_delivery() {
+    let config = config();
+    let node = Node::new(config.clone()).unwrap();
+    let mut options = SubscribeOptions::default();
+    options.set_msgs_per_sec(0);
+    let zero = node
+        .subscribe_with_options("/subscriber_rate", TYPE, options)
+        .unwrap();
+    options.set_msgs_per_sec(1);
+    let limited = node
+        .subscribe_with_options("/subscriber_rate", TYPE, options)
+        .unwrap();
+    let witness = node.subscribe("/subscriber_rate", TYPE).unwrap();
+    let local = node.advertise("/subscriber_rate", TYPE).unwrap();
+    let mut peer = Peer::start(&config, "publish", "/subscriber_rate", "cpp-rate");
+    let first = limited
+        .recv_with_info_timeout(Duration::from_secs(5))
+        .unwrap();
+    assert!(!first.info().intra_process);
+    assert_eq!(first.data, data("cpp-rate"));
+    assert_eq!(
+        witness.recv_timeout(Duration::from_secs(2)).unwrap().data,
+        data("cpp-rate")
+    );
+    local.publish(data("local-rate")).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        let message = witness.recv_timeout(Duration::from_millis(100)).unwrap();
+        if message.data == data("local-rate") {
+            break;
+        }
+        assert_eq!(message.data, data("cpp-rate"));
+        assert!(Instant::now() < deadline);
+    }
+    // The first actual wire admission and local publication use one budget.
+    // These bounded checkpoints do not assert a settled callback count.
+    assert_eq!(
+        limited.recv_timeout(Duration::from_millis(100)),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        zero.recv_timeout(Duration::from_millis(100)),
+        Err(Error::Timeout)
+    );
+    assert_eq!(node.statistics().subscription_clock_errors, 0);
+    peer.success();
+}

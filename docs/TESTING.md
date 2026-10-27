@@ -874,3 +874,29 @@ formatting or performance claim follows from this bounded default-byte port.
 The native review's stdout hash timing correction is retained; no candidate
 runtime failure, assertion relaxation or coverage waiver applies. Final metadata
 binding, the mandatory normal hook and exact new hosted success remain required.
+
+
+## Subscription rate admission
+
+The prior message-option formatting slice passed its normal protected hook on
+public `468cdf4783ed35059126059df688427cdcc15aae`, followed by exact hosted run
+`40416633542` attempt 1 SUCCESS.
+
+The [subscription rate contract](NET-02-subscription-rate.md) maps four fixed
+native originals: NodeTest.SubThrottled and SubscribeOptions copy construction,
+accessors and throttled state. Their original publication/readiness/value/count,
+100 ms waits and option predicates remain intact. Native four passed before
+edits; the independent 64-row probe is bounded characterization, with raw
+ignore-local divergences retained and no blanket Rust port credit. All earlier
+raw-ignore assertions remain unchanged.
+
+Author and independent selections pass 101 Rust checks. Independent production
+controls verify admission, shared local budget, filter order and recipient clock
+errors, followed by restored passing source. The exact full gate passes
+259 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions; 47/47 changed
+executable lines are covered, and all 212 source
+reports are retained. Full JSON/LCOV and authoritative changed-line policy are
+independently checked without filtering. Fixed original mappings do not imply
+native callback lifetime/concurrency, queue, settled/remote count or performance
+parity. Final metadata binding, mandatory normal hooks and exact new hosted
+success remain required. No assertions or coverage thresholds are waived.

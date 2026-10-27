@@ -94,6 +94,8 @@ see the [retirement contract](docs/NET-01-unsubscribe.md).
 to that registration from its owning Node. Ordinary `subscribe()` retains local
 delivery, and ignored registrations remain discoverable; see the
 [bounded ignore-local contract](docs/NET-02-ignore-local.md).
+`SubscribeOptions` also selects a per-registration rate shared across local and
+wire admission; see the [subscription rate contract](docs/NET-02-subscription-rate.md).
 `Subscription::recv_with_info_timeout()` returns an owned envelope with borrowed
 partition, topic, descriptor and delivery-path metadata; raw receive remains
 available. Matching same-process Nodes now receive direct copies with native

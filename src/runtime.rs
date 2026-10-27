@@ -32,6 +32,8 @@ pub struct Statistics {
     pub reply_timeouts: u64,
     /// Process-local direct routing failures; the ordinary wire send is still attempted.
     pub routing_errors: u64,
+    /// Recipient clock failures while admitting rate-limited subscription deliveries.
+    pub subscription_clock_errors: u64,
 }
 #[derive(Default)]
 struct Counters {
@@ -40,6 +42,7 @@ struct Counters {
     send_failures: AtomicU64,
     reply_timeouts: AtomicU64,
     routing_errors: AtomicU64,
+    subscription_clock_errors: AtomicU64,
 }
 impl Counters {
     fn snapshot(&self) -> Statistics {
@@ -49,6 +52,7 @@ impl Counters {
             send_failures: self.send_failures.load(Ordering::Relaxed),
             reply_timeouts: self.reply_timeouts.load(Ordering::Relaxed),
             routing_errors: self.routing_errors.load(Ordering::Relaxed),
+            subscription_clock_errors: self.subscription_clock_errors.load(Ordering::Relaxed),
         }
     }
     fn sent<E>(&self, result: Result<(), E>) -> bool {
@@ -329,6 +333,31 @@ impl PublicationThrottle {
         Ok(true)
     }
 }
+// Both worker delivery and other-Node direct delivery share this registration's
+// admission clock. Suppression happens before its bounded queue is attempted.
+struct SubscriptionThrottle {
+    limiter: PublicationThrottle,
+    counters: Arc<Counters>,
+}
+impl SubscriptionThrottle {
+    fn new(rate: u64, counters: Arc<Counters>) -> Option<Arc<Self>> {
+        PublicationThrottle::new(rate).map(|limiter| Arc::new(Self { limiter, counters }))
+    }
+    fn admission(&self, result: Result<bool, Error>) -> bool {
+        match result {
+            Ok(admitted) => admitted,
+            Err(_) => {
+                self.counters
+                    .subscription_clock_errors
+                    .fetch_add(1, Ordering::Relaxed);
+                false
+            }
+        }
+    }
+    fn admit(&self) -> bool {
+        self.admission(self.limiter.admit())
+    }
+}
 impl Publisher {
     /// Inspect rate eligibility without consuming a publication interval.
     /// This clock query does not acknowledge queue admission or delivery.
@@ -459,11 +488,29 @@ impl std::fmt::Display for AdvertiseOptions {
 }
 /// Per-subscription local-delivery policy. The default receives publications
 /// from the owning Node as well as matching wire publishers.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SubscribeOptions {
     ignore_local_messages: bool,
+    msgs_per_sec: u64,
+}
+impl Default for SubscribeOptions {
+    fn default() -> Self {
+        Self {
+            ignore_local_messages: false,
+            msgs_per_sec: u64::MAX,
+        }
+    }
 }
 impl SubscribeOptions {
+    pub fn msgs_per_sec(&self) -> u64 {
+        self.msgs_per_sec
+    }
+    pub fn set_msgs_per_sec(&mut self, rate: u64) {
+        self.msgs_per_sec = rate;
+    }
+    pub fn throttled(&self) -> bool {
+        self.msgs_per_sec != u64::MAX
+    }
     pub fn ignore_local_messages(&self) -> bool {
         self.ignore_local_messages
     }
@@ -702,6 +749,7 @@ struct LocalInterest {
     stopped: Weak<AtomicBool>,
     owner_dead: Weak<AtomicBool>,
     tx: Option<SyncSender<ReceivedMessage>>,
+    throttle: Option<Arc<SubscriptionThrottle>>,
     retired_at: Option<Instant>,
 }
 impl LocalInterest {
@@ -913,8 +961,9 @@ impl Node {
     pub fn subscribe(&self, topic: &str, type_name: &str) -> Result<Subscription, Error> {
         self.subscribe_with_options(topic, type_name, SubscribeOptions::default())
     }
-    /// Subscribe with an optional same-Node delivery filter. An ignored local
-    /// registration remains visible to discovery and other Node publishers.
+    /// Subscribe with per-registration rate admission and a same-Node filter.
+    /// Suppression keeps discovery visible. Clock errors drop admission and are
+    /// counted on this Node; queue saturation still uses the queue-drop counter.
     pub fn subscribe_with_options(
         &self,
         topic: &str,
@@ -938,12 +987,15 @@ impl Node {
             .local_interest
             .lock()
             .map_err(|_| Error::Native("local interest cache poisoned".into()))?;
+        let throttle =
+            SubscriptionThrottle::new(options.msgs_per_sec, self.sender.counters.clone());
         self.sender.send(Command::Subscribe(
             topic.clone(),
             type_name.into(),
             tx.clone(),
             lease.active.clone(),
             options,
+            throttle.clone(),
         ))?;
         subscriptions.push((topic.clone(), Arc::downgrade(&lease.active)));
         local.retain_mut(LocalInterest::retain_for_peer_expiry);
@@ -965,6 +1017,7 @@ impl Node {
             stopped: Arc::downgrade(&self.sender.stop),
             owner_dead: Arc::downgrade(&self.owner_dead),
             tx: Some(tx),
+            throttle,
             retired_at: None,
         });
         let _ = LOCAL_INTEREST_GENERATION.fetch_update(
@@ -1503,6 +1556,7 @@ enum Command {
         SyncSender<ReceivedMessage>,
         Arc<AtomicBool>,
         SubscribeOptions,
+        Option<Arc<SubscriptionThrottle>>,
     ),
     Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
@@ -1530,6 +1584,7 @@ struct SubscriberState {
     tx: SyncSender<ReceivedMessage>,
     active: Arc<AtomicBool>,
     options: SubscribeOptions,
+    throttle: Option<Arc<SubscriptionThrottle>>,
 }
 struct ServiceState {
     publisher: WirePublisher,
@@ -2235,7 +2290,7 @@ impl Worker {
                 self.deliver(&message, true);
                 self.deliver_process_local(message);
             }
-            Command::Subscribe(topic, type_name, tx, active, options) => {
+            Command::Subscribe(topic, type_name, tx, active, options, throttle) => {
                 // Retire old filters/registrations before a replacement. This
                 // also bounds inactive entries during continuous command traffic.
                 self.cleanup();
@@ -2254,6 +2309,7 @@ impl Worker {
                     tx,
                     active,
                     options,
+                    throttle,
                 });
                 for peer in self
                     .peers
@@ -2413,6 +2469,7 @@ impl Worker {
                 && s.topic == message.topic
                 && (s.type_name.is_empty() || s.type_name == message.type_name)
                 && !(intra_process && s.options.ignore_local_messages())
+                && s.throttle.as_ref().is_none_or(|throttle| throttle.admit())
             {
                 self.sender.counters.dropped(s.tx.try_send(ReceivedMessage {
                     message: message.clone(),
@@ -2447,7 +2504,12 @@ impl Worker {
                             && (interest.key.type_name == "google.protobuf.Message"
                                 || interest.key.type_name == message.type_name)
                     })
-                    .filter_map(|interest| interest.tx.clone())
+                    .filter_map(|interest| {
+                        interest
+                            .tx
+                            .clone()
+                            .map(|tx| (tx, interest.throttle.clone()))
+                    })
                     .collect::<Vec<_>>();
                 (targets, has_other)
             }
@@ -2463,7 +2525,10 @@ impl Worker {
         self.has_other_local_interest = has_other;
         let last = targets.len().saturating_sub(1);
         let mut message = Some(message);
-        for (index, target) in targets.into_iter().enumerate() {
+        for (index, (target, throttle)) in targets.into_iter().enumerate() {
+            if throttle.as_ref().is_some_and(|throttle| !throttle.admit()) {
+                continue;
+            }
             // Every receiver still owns an independent Message. Move the
             // worker's final copy into the last queue after same-Node
             // delivery, avoiding an extra payload clone for one target.

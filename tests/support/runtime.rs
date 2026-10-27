@@ -1466,6 +1466,7 @@ fn discovery_lifecycle_and_capacity() {
         tx,
         active.clone(),
         SubscribeOptions::default(),
+        None,
     ));
     assert_eq!(worker.subscriptions_connected.len(), 1);
     worker.command(Command::Advertise(
@@ -1972,6 +1973,7 @@ fn queue_saturation_is_observable_in_local_counters() {
         tx,
         active,
         SubscribeOptions::default(),
+        None,
     ));
     let message = Message {
         topic: "topic".into(),
@@ -2007,6 +2009,7 @@ fn malformed_publications_and_discovery_errors_are_counted() {
         tx,
         active: Arc::new(AtomicBool::new(true)),
         options: SubscribeOptions::default(),
+        throttle: None,
     });
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::XPUB).unwrap();
@@ -2065,6 +2068,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
         tx,
         active: old,
         options: SubscribeOptions::default(),
+        throttle: None,
     });
     let (tx, rx) = mpsc::sync_channel(1);
     worker.subscriptions.push(SubscriberState {
@@ -2073,6 +2077,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
         tx,
         active: Arc::new(AtomicBool::new(true)),
         options: SubscribeOptions::default(),
+        throttle: None,
     });
     worker.cleanup();
     assert_eq!(worker.subscriptions.len(), 1);
@@ -2341,6 +2346,7 @@ fn subscriber_listing_uses_message_channel_live_leases_and_native_wildcard() {
             tx,
             active,
             SubscribeOptions::default(),
+            None,
         ));
     }
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -2401,6 +2407,7 @@ fn subscriber_withdrawal_waits_for_last_lease_and_emits_one_generic_end() {
             tx,
             active,
             SubscribeOptions::default(),
+            None,
         ));
     }
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -2629,6 +2636,7 @@ fn discovered_endpoints_only_connect_and_stay_alive_on_their_native_channel() {
         tx,
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
+        None,
     ));
     assert!(worker.subscriptions_connected.is_empty());
     worker.discovered(0, protocol::advertisement("remote", publication.clone()));
@@ -2729,6 +2737,7 @@ fn duplicate_or_capacity_rejected_advertisements_cannot_register_new_metadata() 
         tx,
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
+        None,
     ));
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     receiver
@@ -3020,6 +3029,7 @@ fn remembered_subscribers_preserve_native_control_identity_and_lifecycle() {
         tx,
         active.clone(),
         SubscribeOptions::default(),
+        None,
     ));
     assert!(!worker.has_subscribers("/topic", "T"));
     worker.subscriptions[0].type_name.clear();
@@ -3487,6 +3497,7 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
             tx,
             active.clone(),
             SubscribeOptions::default(),
+            None,
         ));
         if !keep {
             retire.push(active);
@@ -3643,6 +3654,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
         tx,
         old.clone(),
         SubscribeOptions::default(),
+        None,
     ));
     for (index, type_name) in [(0, "old"), (1, "new")] {
         let mut p = worker.wire_publisher(
@@ -3666,6 +3678,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
         tx,
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
+        None,
     ));
     let mut trace = Vec::new();
     while let Ok(len) = receiver.recv(&mut buffer) {
@@ -3768,6 +3781,7 @@ fn duplicate_receivers_share_one_socket_filter_until_final_retirement() {
             tx,
             flag.clone(),
             SubscribeOptions::default(),
+            None,
         ));
         active.push(flag);
     }
@@ -4217,6 +4231,7 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
         tx,
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
+        None,
     ));
     assert!(publisher.poll(zmq::POLLIN, 1000).unwrap() > 0);
     assert_eq!(
@@ -4256,4 +4271,120 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
         }
     );
     assert_eq!(worker.sender.counters.snapshot().malformed_frames, 1);
+}
+
+#[test]
+fn subscription_clock_failures_are_recipient_errors_and_suppression_is_not_queue_loss() {
+    let counters = Arc::new(Counters::default());
+    assert!(SubscriptionThrottle::new(u64::MAX, counters.clone()).is_none());
+    let throttle = SubscriptionThrottle::new(1, counters.clone()).unwrap();
+    assert!(!throttle.admission(Err(Error::Native("injected subscription clock".into()))));
+    assert!(!throttle.admission(Ok(false)));
+    assert!(throttle.admission(Ok(true)));
+    let snapshot = counters.snapshot();
+    assert_eq!(snapshot.subscription_clock_errors, 1);
+    assert_eq!(snapshot.queue_drops, 0);
+    assert_eq!(snapshot.routing_errors, 0);
+    assert_eq!(snapshot.send_failures, 0);
+    assert_eq!(*throttle.limiter.last.lock().unwrap(), Duration::ZERO);
+}
+
+#[test]
+fn subscription_filters_precede_one_shared_wire_and_local_admission_clock() {
+    let (mut worker, _) = state(4);
+    let (tx, rx) = mpsc::sync_channel(2);
+    let mut options = SubscribeOptions::default();
+    options.set_msgs_per_sec(1);
+    options.set_ignore_local_messages(true);
+    let throttle = SubscriptionThrottle::new(1, worker.sender.counters.clone()).unwrap();
+    worker.command(Command::Subscribe(
+        "topic".into(),
+        "type".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+        options,
+        Some(throttle.clone()),
+    ));
+    let mut message = Message {
+        topic: "other".into(),
+        type_name: "type".into(),
+        data: vec![7],
+    };
+    worker.deliver(&message, false);
+    message.topic = "topic".into();
+    message.type_name = "wrong".into();
+    worker.deliver(&message, false);
+    message.type_name = "type".into();
+    worker.deliver(&message, true);
+    assert_eq!(*throttle.limiter.last.lock().unwrap(), Duration::ZERO);
+    assert!(rx.try_recv().is_err());
+    worker.deliver(&message, false);
+    assert_eq!(
+        rx.recv_timeout(Duration::from_secs(1)).unwrap().message,
+        message
+    );
+    assert!(*throttle.limiter.last.lock().unwrap() > Duration::ZERO);
+    worker.subscriptions[0]
+        .options
+        .set_ignore_local_messages(false);
+    worker.deliver(&message, true);
+    assert!(rx.try_recv().is_err());
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+    assert_eq!(
+        worker.sender.counters.snapshot().subscription_clock_errors,
+        0
+    );
+}
+
+#[test]
+fn full_subscription_queue_consumes_its_interval_and_new_registrations_are_independent() {
+    let (mut worker, _) = state(4);
+    let mut options = SubscribeOptions::default();
+    options.set_msgs_per_sec(1);
+    let message = Message {
+        topic: "topic".into(),
+        type_name: "type".into(),
+        data: vec![7],
+    };
+    let (full_tx, full_rx) = mpsc::sync_channel(1);
+    full_tx
+        .try_send(ReceivedMessage {
+            message: message.clone(),
+            intra_process: false,
+        })
+        .unwrap();
+    let full = SubscriptionThrottle::new(1, worker.sender.counters.clone()).unwrap();
+    worker.command(Command::Subscribe(
+        "topic".into(),
+        "type".into(),
+        full_tx,
+        Arc::new(AtomicBool::new(true)),
+        options,
+        Some(full.clone()),
+    ));
+    worker.deliver(&message, false);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    assert!(*full.limiter.last.lock().unwrap() > Duration::ZERO);
+    full_rx.recv().unwrap();
+    let (fresh_tx, fresh_rx) = mpsc::sync_channel(1);
+    let fresh = SubscriptionThrottle::new(1, worker.sender.counters.clone()).unwrap();
+    worker.command(Command::Subscribe(
+        "topic".into(),
+        "type".into(),
+        fresh_tx,
+        Arc::new(AtomicBool::new(true)),
+        options,
+        Some(fresh.clone()),
+    ));
+    worker.deliver(&message, true);
+    assert!(full_rx.try_recv().is_err());
+    assert_eq!(
+        fresh_rx
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap()
+            .message,
+        message
+    );
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    assert!(!Arc::ptr_eq(&full, &fresh));
 }

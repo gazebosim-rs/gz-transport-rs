@@ -1,0 +1,185 @@
+{
+  "decision": "approved_source_semantics_and_full_evidence",
+  "author": "transport_owner_v3",
+  "reviewer": "msgs_owner_astra",
+  "utc": "2026-10-27T03:15:23.656635+00:00",
+  "source_tree": "2721ddfcf1821a3f4dedbeb1da1d31f9019af6a2",
+  "parent": "468cdf4783ed35059126059df688427cdcc15aae",
+  "freeze_sha256": "9ac14ebab4e424c15a95cc3b797799c9099b4db3143b0da0c6f83d27439ced70",
+  "source_diff_sha256": "71a8aaf81de515145631e4a9f52ca0475a0f4d8f6cbaeef9f8679845dea1d6c3",
+  "files_sha256": {
+    "docs/NET-02-subscription-rate.md": "ba684fa3b142d9e27aa73266cede2e1e7dff511e9472aecdf1f581fe6accc962",
+    "scripts/verify.py": "a6a9f0d2ea4bf14f7c5433b62825ad8fc64d71af750bfa0ce6bdcd4b9598bc50",
+    "src/runtime.rs": "a9e6cf10970c432c82ec786096cc5deab1332ef6ffad5b675f83aa27bc1cd511",
+    "tests/interop.rs": "59f7a3d09e209f6b0af66fad8006e5f5fc4525486cc7866962601d0f8916f2d1",
+    "tests/subscriber_throttle_originals.rs": "0105c18db17800d108e79b6d50d3ef6f0190164315345e0a418656d7b073efcf",
+    "tests/support/runtime.rs": "046d45fc39d2a40a61f8f4f655f2daeef4c5e9c3ea8be97f6668a0280f1dcb78"
+  },
+  "modes": {
+    "docs/NET-02-subscription-rate.md": "100644",
+    "scripts/verify.py": "100644",
+    "src/runtime.rs": "100644",
+    "tests/interop.rs": "100644",
+    "tests/subscriber_throttle_originals.rs": "100644",
+    "tests/support/runtime.rs": "100644"
+  },
+  "assertion_map_sha256": "66008b4c6090a01b36926a17d997669b71ba4e8ec7470c7566f4debdf605c9d3",
+  "protected_review": {
+    "candidate_raw_files": 185,
+    "parent_raw_files": 183,
+    "unchanged_parent_blobs_and_modes": 179,
+    "old_interop_byte_exact_prefix": true,
+    "old_support_byte_exact_reconstruction": "Remove exactly twelve added None arguments, three throttle fields and three new tests; parent bytes restored.",
+    "verifier": "Only required native filters added; existing assertions, hooks, coverage policy, pins and other parent blobs remain.",
+    "source_restored": true,
+    "parent_unchanged": true,
+    "author_source_unchanged": true
+  },
+  "semantic_review": [
+    "Each registration passes one Arc limiter to both worker and local-interest paths; independent registrations create independent limiters.",
+    "Descriptor, domain, ownership and ignore-local filters precede admission; unlimited default has no state or clock query.",
+    "Clock errors count on recipient counters; rate suppression does not increment queue loss. Existing sender-side direct-route queue-drop behavior is unchanged.",
+    "All original raw ignore-local assertions remain; native raw-path divergences explicitly unqualified.",
+    "Native fixed original count is four; 64 checkpoint rows do not establish 64 Rust ports or settled callback parity.",
+    "MAX default avoids limiter allocation and clock calls. One optional shared Arc per registration covers wire, same-Node and other-Node owned delivery; independent registrations have independent budgets.",
+    "Admission follows descriptor/domain/owner/origin filters and precedes queue admission; a full queue consumes its rate interval. Clock errors suppress delivery and increment the recipient-owned clock counter.",
+    "Original SubThrottled retains three readiness/publish assertions with 100ms sleeps, decoded Int32(5), and a live observer count of one at the original checkpoint. Owned stop/join occurs afterward."
+  ],
+  "native_evidence": {
+    "native_baseline_sha256": "86e999b74c6575e5433f249a59b534db54447caa47171449014eb6a8f1892388",
+    "native_preuse_sha256": "88fdf5b7bd09619a2003cafc9b3f583c9742170397befff2a635cc505945459a",
+    "native_actual_review_sha256": "d913dfbfade586be4607ebdea969407764de161cf33c52e0fcd45d0f9c551269",
+    "native_actual_packet_sha256": "067b56d1a7bc116057225c7242ad41ac6443773a349e24096601eccd0d7e19ce"
+  },
+  "runtime_review": {
+    "state": "passed",
+    "fresh_private_source": true,
+    "fresh_empty_reviewer_target": true,
+    "native_originals_passed": 4,
+    "positive_rust_passed": 101,
+    "restored_rust_passed": 101,
+    "rust_failed": 0,
+    "rust_ignored": 0,
+    "selection": "92 library tests, five original/supplement tests, three preserved raw-ignore/routing tests, one real C++ wire interop test.",
+    "effective_production_controls": [
+      {
+        "name": "bypass-rate",
+        "exit": 101,
+        "assertions": [
+          "left: 3",
+          "right: 1"
+        ],
+        "stdout_sha256": "e297ea2f291184205871599ccc17902176c0c3ed3ed5f410b35d7ec9a99e04fe",
+        "stderr_sha256": "12b2b72a1e92b35bf1f11df4c46094666830515b3b1bd0710d71df292839ecc9",
+        "compiled_executable_sha256": [
+          "1cd9320b06dae3a7e967c79881dd3e821bb1089507d340b88f20f80532822808"
+        ]
+      },
+      {
+        "name": "omit-local-budget",
+        "exit": 101,
+        "assertions": [
+          "assertion `left == right` failed",
+          "right: Err(Timeout)"
+        ],
+        "stdout_sha256": "6b3d22422febd7139fa32600e606f57bd54305778315c2fe0cf696884e4c1e91",
+        "stderr_sha256": "f0164df4fb641b2f11385707dada471e1ff13513a9501aeb03974ed1e86e00b0",
+        "compiled_executable_sha256": [
+          "c5dd13ffbddc34f8ab5f92d16cec919b4ba93af08cf05c9718c0cfae88e02b49"
+        ]
+      },
+      {
+        "name": "admit-before-filters",
+        "exit": 101,
+        "assertions": [
+          "assertion `left == right` failed",
+          "right: 0ns"
+        ],
+        "stdout_sha256": "1150cfe3f6f260a58068d4cf49444fb3b82f3c5564130d0fe69ff26e89bfea9e",
+        "stderr_sha256": "3f154ab500c141e9535f97623a76127e99b04794c8396129a164eaa45757ced8",
+        "compiled_executable_sha256": [
+          "711c6acabb998aacacf211ffd5715fb3d3499def2a20d96b33fb3325449e9bc0"
+        ]
+      },
+      {
+        "name": "hide-clock-error",
+        "exit": 101,
+        "assertions": [
+          "left: 0",
+          "right: 1"
+        ],
+        "stdout_sha256": "a9b1d95e4af691c52507a5f6a50425b23dcc8a694c46596bb46d9e977801868c",
+        "stderr_sha256": "26e178e2e10639f52978e5539a8b44bf27a82bec173cf7cd391bdcf92eb52b16",
+        "compiled_executable_sha256": [
+          "eeb0a08dcf776e3f20325670c687c626b8d53ae315f4688d58b8deca5815957a"
+        ]
+      }
+    ],
+    "control_qualification": "Every control failed the designated runtime assertion with zero passed/one failed/zero ignored; no compilation/setup failure counted. Source restored between mutations and after all controls. Positive and restored executable hashes identical.",
+    "raw_streams_reverified": 44,
+    "cargo": "locked/offline/default test profile; CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0; reviewer selection only, no full canonical gate claim.",
+    "actual_rustc_elf_sha256": "ef6d716e5d1c6c93def277c0afa037c21e7a74f7de3aed4ee0700646c3301b1d",
+    "actual_rustc_before_after_identical": true,
+    "cpp_peer_sha256": "3ba70f4aa686beedb7e55ad9733b0ae2c29e64907ca008ec42aeb8c5fa3c3a69",
+    "cpp_loaded_libraries": 25,
+    "resource_guards_passed": true,
+    "target_bytes": 768191528,
+    "other_bytes": 6687454
+  },
+  "evidence_sha256": {
+    "early-static-review.json": "b6eebeb68db84c9076b83b4d3cb25f627e40ce4288805a5ae2473cc185ac0654",
+    "run-review-v1.py": "ce58176e6e99a9a11a7a082b3cf9137b1e3f76ae377c6ffa75ef6cfe19bf8c1d",
+    "preuse-plan-v1.json": "7ae9b57807157fd00c75ddb87522be2d13cf57fea46e62908fc52d25b0371c44",
+    "runtime-review-v1.json": "e0299a871dbe60a8321cb15687336217d24662f3578bdda4fe8670ca67e28eb5",
+    "post-review-proof.json": "b72f69734f260909817d2516a933662ba4aa38af6f5d8de0c65683de3d8131c7",
+    "actual-rustc-before.json": "14ccec3b15f70139ce1db46b2920c8c6d316f09c45d7da52de819e525785d453",
+    "actual-rustc-after.json": "47af43915d035eb1c30dba5e8bb8d34a092e6754509a014edaacac10f627a298"
+  },
+  "failures_and_exclusions": [
+    "First in-memory old-support reconstruction added one separator newline; stopped before receipt. Exact Git addition-range removal corrected the reviewer reconstruction and reproduced parent bytes. No producer/test mutation.",
+    "No execution or resource-guard failure in independent runtime review 22438. Four intentional production mutants are retained as expected failures.",
+    "Author native-capture metadata restoration and selected-input-history note remain retained; no change to captured native source/output evidence."
+  ],
+  "limits": [
+    "Only four fixed native originals are mapped; native 64-row bounded checkpoint characterization is not 64 Rust ports or settled callback parity.",
+    "Native raw ignore-local divergences remain explicit unqualified gaps; every existing stronger Rust raw-ignore assertion is preserved.",
+    "No callback-facade, lifetime, race/concurrency, early-boot, fractional precision, settled-count, general throughput or performance equivalence claim.",
+    "Rust queue and clock-error accounting are explicit owned behavior, not blanket native queue parity."
+  ],
+  "remaining": "Final metadata binding, mandatory normal hook, publication and exact new hosted success remain required. The source full gate is now bound; all existing semantic limits remain unchanged.",
+  "reviewed_at": "2026-10-27T03:44:53.977260+00:00",
+  "verdict": "APPROVED exact source semantics, assertions and full retained strict source evidence. Final metadata binding, mandatory normal hook and exact new hosted success remain required.",
+  "pre_gate_source_review_sha256": "b593cae431a34564c94825f1e56f5b0fbb0a74a47ae35625d10e7d6384d9f459",
+  "source_manifest_sha256": "c6ccee05d3178c2bf8208182e174e4eb482b4bd81cdde8c2d979d0abbe1910bb",
+  "full_source_evidence": {
+    "audit_sha256": "507325d977c65cb636660b2812bba583b21c2cd87513e4e4ee496d56ff5e46b1",
+    "author_gate_session": 15631,
+    "exit": 0,
+    "rust": [
+      259,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "native": "Mandatory native groups passed, including the four fixed subscriber originals; no duplicate replay",
+    "totals": {
+      "lines": {
+        "covered": 2829,
+        "count": 2907
+      },
+      "regions": {
+        "covered": 4146,
+        "count": 4337
+      }
+    },
+    "changed_lines": {
+      "covered": 47,
+      "count": 47
+    },
+    "retained_files": 212,
+    "retained_hash_manifest_sha256": "962f9bc355dca01c7fceeea9feee0b430fe2802eb931ca3f39ff431518754af3",
+    "evidence_sha256": "84e4d79871a34e989e69dfc45059f0f0d6618cdd0431fcbdf6d4897d0a90eee3",
+    "raw_rust_sha256": "65a2d960e09940edbc00da38c021526470d6338506ae8ce58e1a9d864932ab07",
+    "method": "Unchanged reviewed coverage.check, verify.changed_lines and coverage.changed_check run on full retained JSON/LCOV; only exact staged source root rebound to verified fresh private source. No filtering, exclusion, threshold change or duplicate runtime replay."
+  }
+}

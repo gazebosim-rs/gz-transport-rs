@@ -4803,10 +4803,12 @@
       "id": "UNIT_Node_TEST:NodeTest.SubThrottled",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SubThrottled",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_sub_throttled"
+      ],
+      "review": "/root/msgs_owner_astra;fresh185raw/native4/Rust101;four effective production controls and restored101;full unfiltered coverage binding in docs/reviews/subscriber-throttle.json.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4815,8 +4817,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Successful default unthrottled Int32 publisher and sameNode1Hz subscription; Three readiness=true and publish-success checks with100ms sleeps; Live observer checkpoint count1 after third sleep; Callback Int32 value5 assertion retained.",
+      "configuration": "Pinned Linux x86_64; owned receiver adaptation, local same-Node fixed count checkpoint. Native callback scheduling/lifetime/concurrency and stronger Rust raw-ignore differences remain unqualified.",
+      "evidence": "docs/NET-02-subscription-rate.md;docs/reviews/subscriber-throttle.json;native4beforeedits;source259 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;47/47added;all212reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubThrottled",
@@ -6812,10 +6815,12 @@
       "id": "UNIT_SubscribeOptions_TEST:SubscribeOptionsTest.copyConstructor",
       "target": "UNIT_SubscribeOptions_TEST",
       "case": "SubscribeOptionsTest.copyConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_subscribe_options_copy_constructor"
+      ],
+      "review": "/root/msgs_owner_astra;fresh185raw/native4/Rust101;four effective production controls and restored101;full unfiltered coverage binding in docs/reviews/subscriber-throttle.json.",
       "source": [
         {
           "path": "src/SubscribeOptions_TEST.cc",
@@ -6824,17 +6829,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Setrate2/get2; Copy/get copied rate equal.",
+      "configuration": "Pinned Linux x86_64; owned receiver adaptation, local same-Node fixed count checkpoint. Native callback scheduling/lifetime/concurrency and stronger Rust raw-ignore differences remain unqualified.",
+      "evidence": "docs/NET-02-subscription-rate.md;docs/reviews/subscriber-throttle.json;native4beforeedits;source259 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;47/47added;all212reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_SubscribeOptions_TEST:SubscribeOptionsTest.accessors",
       "target": "UNIT_SubscribeOptions_TEST",
       "case": "SubscribeOptionsTest.accessors",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_subscribe_options_accessors"
+      ],
+      "review": "/root/msgs_owner_astra;fresh185raw/native4/Rust101;four effective production controls and restored101;full unfiltered coverage binding in docs/reviews/subscriber-throttle.json.",
       "source": [
         {
           "path": "src/SubscribeOptions_TEST.cc",
@@ -6843,17 +6851,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "DefaultMAX/getMAX; Set3/get3.",
+      "configuration": "Pinned Linux x86_64; owned receiver adaptation, local same-Node fixed count checkpoint. Native callback scheduling/lifetime/concurrency and stronger Rust raw-ignore differences remain unqualified.",
+      "evidence": "docs/NET-02-subscription-rate.md;docs/reviews/subscriber-throttle.json;native4beforeedits;source259 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;47/47added;all212reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_SubscribeOptions_TEST:SubscribeOptionsTest.throttled",
       "target": "UNIT_SubscribeOptions_TEST",
       "case": "SubscribeOptionsTest.throttled",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_subscribe_options_throttled"
+      ],
+      "review": "/root/msgs_owner_astra;fresh185raw/native4/Rust101;four effective production controls and restored101;full unfiltered coverage binding in docs/reviews/subscriber-throttle.json.",
       "source": [
         {
           "path": "src/SubscribeOptions_TEST.cc",
@@ -6862,8 +6873,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Defaultfalse; Set3/true.",
+      "configuration": "Pinned Linux x86_64; owned receiver adaptation, local same-Node fixed count checkpoint. Native callback scheduling/lifetime/concurrency and stronger Rust raw-ignore differences remain unqualified.",
+      "evidence": "docs/NET-02-subscription-rate.md;docs/reviews/subscriber-throttle.json;native4beforeedits;source259 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;47/47added;all212reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_TopicStatistics_TEST:TopicsStatistics.Constructor",
