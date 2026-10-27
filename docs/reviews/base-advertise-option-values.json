@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "reviewer": "/root/msgs_owner_astra",
+  "author": "/root/transport_owner_v3",
+  "decision": "approved_source_semantics_and_full_evidence",
+  "utc": "2026-10-27T05:18:00.159541+00:00",
+  "source_tree": "40a2b208a60cd1e0d77a975f50061b47ccc4dd43",
+  "parent": "4af4e1872c0f1e38f07dcbb5ee4c49a441fd52a2",
+  "source_freeze_sha256": "0584fa2e4d76c1120f0380137bd3f2cd470c9e6e14975d9cfed0ca493b08b658",
+  "source_paths_sha256": {
+    "docs/NET-01-base-option-values.md": "5963bf9e24d127ac0ac3c63d5e8da55458f76d80bf063992af97c41bb5de2a4b",
+    "scripts/verify.py": "2cf82e96ee0740a1420773be57f021aad2695e705d44c86fe73dd6148e764681",
+    "tests/base_advertise_options_originals.rs": "dba0558e1d95c5320ac2e659c92c74e74005b36774859e562335ca36f1805677"
+  },
+  "raw_source_binding": {
+    "candidate_blobs": 188,
+    "parent_blobs": 186,
+    "unchanged_parent_blobs": 185,
+    "changed_paths": 3,
+    "all_git_blob_bytes_modes_verified": true,
+    "protected": "All old production/tests/fixtures/pins/policies/hooks/ledger bytes and modes identical; sole existing-file change is additive five original native filter names. Removing exact additions restores verifier bytes. Two other paths are new tests and scoped contract."
+  },
+  "native_baseline_mapping_sha256": "1e3e9b96601dcda2f41ace1c6c5884c8ab5a52255434848fc0cac9f188d267c9",
+  "assertion_mapping": {
+    "native_originals": 5,
+    "native_predicates": 9,
+    "separate_supplement": 1,
+    "copyright": "2015 original notice preserved alongside2026 rewrite notice",
+    "qualification": "Fixed All/Host/Process inputs with message rate unchanged MAX. No general native-base/Rust-combined Eq across differing rates or lifecycle/stream/service/network claim."
+  },
+  "fresh_runtime": {
+    "session": 95521,
+    "proof_sha256": "8803c1f76a5329fae36c6195c881f87397ccd3ca3d70e88f9479c4264a404176",
+    "driver_sha256": "f3c9981489eb932afd5716251534eca622e47dd9b68079c4f8ee9ce3b8be0829",
+    "plan_sha256": "d1361ef804dfa92cd9864f7cd98e552c08ab6de1682dda4a1aee7431de86db57",
+    "isolated_guard_controls_sha256": "9f4720a9a620d65c9101de1b6f743e7c2b94ef1e91a3aab6e05d8cde6d89ba8c",
+    "initial_target_empty": true,
+    "positive": [
+      5,
+      0,
+      0
+    ],
+    "restored": [
+      5,
+      0,
+      0
+    ],
+    "effective_production_controls": [
+      {
+        "label": "wrong-default",
+        "actual_exit": 101,
+        "required_assertions": [
+          "left: Host",
+          "right: All"
+        ],
+        "mutated_production_snapshot_sha256": "60fbb4eb0d9ecf14ad1638beb6b5fdd9e986a2c2bc6af8fdc9b463fda848119a",
+        "stdout_sha256": "4d65c685fecb5656d1ffe3b016561110d2ea4ac61a485691ac654f6835246683",
+        "stderr_sha256": "a44e98a1342f073ff015c939fe365f41da1937a2e6a29616367b8c4bfcd206f1",
+        "executable_sha256": "4f7d86706db9cef0b5348abb2d4b2c29c81f31e99b1b79e15ac6401a8c79d676"
+      },
+      {
+        "label": "omit-scope-write",
+        "actual_exit": 101,
+        "required_assertions": [
+          "left: All",
+          "right: Host"
+        ],
+        "mutated_production_snapshot_sha256": "6d81c79b82411f386947bb471328f8889239e94a5c478b9f684b3537628e188b",
+        "stdout_sha256": "f5bed0ecf3f8bbbdf7b5b83082901faa071709a6be209e2226075df7610cafa2",
+        "stderr_sha256": "adc6a67a8fdf12cd6f3e8eed5608d7d0e09e6999add715c0cd81534dc70e826d",
+        "executable_sha256": "f733115ad795fc10e6f96789e0e959734d40a6b68aa77dfc23fd0c1d065c5d5a"
+      },
+      {
+        "label": "wrong-equality",
+        "actual_exit": 101,
+        "required_assertions": [
+          "assertion failed: !(first == second)"
+        ],
+        "mutated_production_snapshot_sha256": "506cb095d227117cfdcb4e376b5adbea532818694872a2d1cfbc6b3063686067",
+        "stdout_sha256": "ba82d2956cc3962bee71b767700daa71538a7b28b2b117cb75f32a2e2c5a1a7b",
+        "stderr_sha256": "326e8517a31ac43fc98e1cb240dce7931a7f997a6c5eee7139d6f4761c2bedd9",
+        "executable_sha256": "0f688240c8f2c59b1ee4b18d09d69f4ac1178d93934eb68486d131eed41ed0a8"
+      }
+    ],
+    "final_source_parent_native_author_restored_or_unchanged": true,
+    "baseline_restored_executable_sha256": "474581063cd2b890484a96e3b25e5c06c678df35c092af010578711d8ffb4458",
+    "actual_rustc_elf_sha256": "ef6d716e5d1c6c93def277c0afa037c21e7a74f7de3aed4ee0700646c3301b1d",
+    "toolchain": "1.94.1",
+    "jobs": 2,
+    "incremental": "0",
+    "profile": "default",
+    "peak_target_bytes": 664211840,
+    "peak_other_including_observer_bytes": 9110938,
+    "minimum_free_bytes": 17241661440,
+    "native_reuse": "No duplicate native execution/CPPcompile; independent native5 proof reused only after all exact native source/ELF/25libs identities revalidated before/after."
+  },
+  "author_selected": {
+    "session": 44754,
+    "result_sha256": "8cfb91c76376a2afe99f278999a47e80ec4926dc9c70987b11bb5fd5552a552b",
+    "tests": [
+      5,
+      0,
+      0
+    ],
+    "targeted_clippy": "passed",
+    "semantic_test_and_filter_bytes_unchanged_since_selection": true
+  },
+  "preserved_findings": [
+    "Author first commentary17libs corrected to actual25; raw original proof unchanged.",
+    "Author pre-gate V1 limits incorrectly said selected unrun; old2eaf packet preserved, metadata-only0584 correction checked.",
+    "Reviewer V1 scanner/final-checkpoint guard gaps fixed before runtime; V1 preserved,9 isolated V2 controls passed."
+  ],
+  "unexpected_runtime_failures": [],
+  "remaining": "Final metadata binding, mandatory normal hook, publication and exact new hosted success remain required. The source full gate is now bound; all existing semantic limits remain unchanged.",
+  "freeze_sha256": "0584fa2e4d76c1120f0380137bd3f2cd470c9e6e14975d9cfed0ca493b08b658",
+  "receipt_schema_note": {
+    "previous_sha256": "5f1fada7ca556ba2f2365bf0b0127d9713121281fe00863cf16ae9a659fb26d8",
+    "change": "Canonical pre-gate decision vocabulary and freeze_sha256 alias only; all source/runtime/protected facts, proofs, remaining gates and limits unchanged. No replay."
+  },
+  "reviewed_at": "2026-10-27T05:38:37.384998+00:00",
+  "verdict": "APPROVED exact source semantics, assertions and full retained strict source evidence. Final metadata binding, mandatory normal hook and exact new hosted success remain required.",
+  "pre_gate_source_review_sha256": "bf4912ef2866d7e0cafad192338bf31c2d27e30f24065509b60163d66eb206ae",
+  "source_manifest_sha256": "2e663e86e377a571faf100b8e88d2b2a854b3e27bc30914892fdf0fba42debca",
+  "full_source_evidence": {
+    "audit_sha256": "1611c01c689f36be48f505a58d1a1313f48273fbb44af8c74974da97338a9570",
+    "author_gate_session": 64970,
+    "exit": 0,
+    "rust": [
+      264,
+      0,
+      0
+    ],
+    "tooling": 24,
+    "native": "Mandatory native groups passed, including the five fixed base-options originals; no duplicate replay",
+    "totals": {
+      "lines": {
+        "covered": 2829,
+        "count": 2907
+      },
+      "regions": {
+        "covered": 4146,
+        "count": 4337
+      }
+    },
+    "changed_lines": {
+      "covered": 0,
+      "count": 0
+    },
+    "retained_files": 213,
+    "retained_hash_manifest_sha256": "86e62a491e9493903e5d781a5e8f739ebb968575d5d3728995c63ffd966c74a1",
+    "evidence_sha256": "ad225c18302e166f84d52e059a3c420786685898a96605c1a2250c43d71b978c",
+    "raw_rust_sha256": "6c536fe4bc7c2ad0cde7194dbc27853071a9ea6890bd7f0d84e9ca25ae082ed2",
+    "method": "Unchanged reviewed coverage.check, verify.changed_lines and coverage.changed_check run on full retained JSON/LCOV; only exact staged source root rebound to verified fresh private source. No filtering, exclusion, threshold change or duplicate runtime replay.",
+    "canonical_retained_all_files_equal": true,
+    "production_diff": "Empty parent-to-candidate src diff; automatic changed-lines denominator zero, not a waived threshold."
+  },
+  "full_binding_reviewer_setup": {
+    "note_sha256": "4a7feda5b5ebad7036f5ea5acb352cf0e2698a03f612e3fa12fd20b3079c06c4",
+    "description": "Reviewer initial canonical directory assumption stopped before recomputation. Corrected to verifier actual artifacts/staged; all213 canonical/retained files and full policy recomputation then passed. No candidate/runtime failure."
+  }
+}

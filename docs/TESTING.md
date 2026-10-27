@@ -900,3 +900,25 @@ independently checked without filtering. Fixed original mappings do not imply
 native callback lifetime/concurrency, queue, settled/remote count or performance
 parity. Final metadata binding, mandatory normal hooks and exact new hosted
 success remain required. No assertions or coverage thresholds are waived.
+
+
+## Fixed base-option scope values
+
+The preceding subscription-rate slice passed its ordinary protected hook on
+public `4af4e1872c0f1e38f07dcbb5ee4c49a441fd52a2`, followed by exact hosted
+`40447602240` attempt 1 SUCCESS.
+
+The [base-option value contract](NET-01-base-option-values.md) preserves five
+fixed native originals and their nine scope predicates. The combined Rust options
+retain the default message rate for all these inputs; base/service stream bytes
+and broader equality/lifetime/network semantics remain outside this mapping.
+Five native originals passed before edits, independent native replay passed five,
+and author and fresh reviewer Rust selections each passed five. Three production
+controls fail the intended predicates and restored source/tests pass.
+
+The canonical source gate passes 264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions, with
+no production source changes. All 213 source reports
+are retained. Independent [review](reviews/base-advertise-option-values.json)
+recomputes full unfiltered JSON/LCOV and the empty production delta using unchanged
+policies. Every old test and partial mapping remains. Final metadata binding,
+mandatory normal hooks and exact new hosted success remain required.

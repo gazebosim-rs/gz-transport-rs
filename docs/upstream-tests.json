@@ -1583,10 +1583,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.defConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.defConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_base_options_default_constructor"
+      ],
+      "review": "/root/msgs_owner_astra;freshnative5/fixed-inputmapping/fresh188raw/Rust5;three effective productioncontrols/restored5;full unfilteredcoveragebinding in docs/reviews/base-advertise-option-values.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1595,17 +1597,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Default Scope All.",
+      "configuration": "Pinned Linux x86_64 native base scope-value originals mapped to combined Rust options only at unchanged defaultMAX message rate. No general base/message equality across rates, lifecycle, service/stream/network or performance equivalence.",
+      "evidence": "docs/NET-01-base-option-values.md;native5beforeedits+fresh5;source264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;no productiondelta;all213source reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.copyConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.copyConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_base_options_copy_constructor"
+      ],
+      "review": "/root/msgs_owner_astra;freshnative5/fixed-inputmapping/fresh188raw/Rust5;three effective productioncontrols/restored5;full unfilteredcoveragebinding in docs/reviews/base-advertise-option-values.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1614,17 +1619,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Set Host; copy; copied scope equals source.",
+      "configuration": "Pinned Linux x86_64 native base scope-value originals mapped to combined Rust options only at unchanged defaultMAX message rate. No general base/message equality across rates, lifecycle, service/stream/network or performance equivalence.",
+      "evidence": "docs/NET-01-base-option-values.md;native5beforeedits+fresh5;source264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;no productiondelta;all213source reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.assignmentOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.assignmentOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_base_options_assignment"
+      ],
+      "review": "/root/msgs_owner_astra;freshnative5/fixed-inputmapping/fresh188raw/Rust5;three effective productioncontrols/restored5;full unfilteredcoveragebinding in docs/reviews/base-advertise-option-values.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1633,17 +1641,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Two defaults; set source Process; assignment; destination scope equals source.",
+      "configuration": "Pinned Linux x86_64 native base scope-value originals mapped to combined Rust options only at unchanged defaultMAX message rate. No general base/message equality across rates, lifecycle, service/stream/network or performance equivalence.",
+      "evidence": "docs/NET-01-base-option-values.md;native5beforeedits+fresh5;source264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;no productiondelta;all213source reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.equalityOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.equalityOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_base_options_equality"
+      ],
+      "review": "/root/msgs_owner_astra;freshnative5/fixed-inputmapping/fresh188raw/Rust5;three effective productioncontrols/restored5;full unfilteredcoveragebinding in docs/reviews/base-advertise-option-values.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1652,8 +1663,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Process versus All == false; Process versus All != true; Both Process == true; Both Process != false.",
+      "configuration": "Pinned Linux x86_64 native base scope-value originals mapped to combined Rust options only at unchanged defaultMAX message rate. No general base/message equality across rates, lifecycle, service/stream/network or performance equivalence.",
+      "evidence": "docs/NET-01-base-option-values.md;native5beforeedits+fresh5;source264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;no productiondelta;all213source reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.streamInsertion",
@@ -1678,10 +1690,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.accessors",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.accessors",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_base_options_accessors"
+      ],
+      "review": "/root/msgs_owner_astra;freshnative5/fixed-inputmapping/fresh188raw/Rust5;three effective productioncontrols/restored5;full unfilteredcoveragebinding in docs/reviews/base-advertise-option-values.json.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1690,8 +1704,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Default Scope All; Set Host then Scope Host.",
+      "configuration": "Pinned Linux x86_64 native base scope-value originals mapped to combined Rust options only at unchanged defaultMAX message rate. No general base/message equality across rates, lifecycle, service/stream/network or performance equivalence.",
+      "evidence": "docs/NET-01-base-option-values.md;native5beforeedits+fresh5;source264 Rust and 24 tooling tests, 2829/2907 lines and 4146/4337 regions;no productiondelta;all213source reports retained. Mandatorynormal/newhosted required."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.msgDefConstructor",
