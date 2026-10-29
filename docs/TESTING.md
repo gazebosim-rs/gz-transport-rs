@@ -173,11 +173,12 @@ every gate. Its three output tuples and five negative inputs are retained in
 Rust; see the [decomposition contract](NET-01-decomposition.md) and
 [review receipt](reviews/decomposition.json). It is a faithful port.
 
-The reviewed partial remapped service-list assertion port additionally requires the
-unchanged native NodeTest.ServiceListRemap original in every gate. The exact
-one-entry `/bar` result is retained through local service inspection; see the
-[service-list contract](NET-02-service-list-remap.md) and
-[review receipt](reviews/service-list-remap.json). Global discovery and timing
+The remapped service-list assertion ports require the unchanged native
+NodeTest.ServiceListRemap original in every gate. The discovered query retains
+its exact one-entry, index-zero `/bar` result; the older local-inspection test
+remains unchanged. A separate supplement covers withdrawal and recreation; see
+the [service-list contract](NET-02-discovered-service-remap.md). The selected
+one-Node original is a faithful port; global convergence and general latency
 remain unqualified.
 
 The reviewed partial remapped topic-list assertion port additionally requires the

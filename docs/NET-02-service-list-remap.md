@@ -1,21 +1,15 @@
-# Remapped local service listing assertion
+# Remapped service listing
 
-The reviewed partial port retains the complete selected
-`NodeTest.ServiceListRemap` assertion body. The pinned native test maps `/foo`
-to `/bar`, advertises a service at `/foo`, then asserts the service list has
-one entry and index zero is `/bar`. Rust uses the existing single-hop
-`Config::add_topic_remap`, `Node::serve`, and `Node::advertised_services` paths
-with those exact names and both list assertions. The live `Service` handle is
-kept until after inspection.
+The original local-inspection port, `original_service_list_remap`, retains the
+native `/foo` to `/bar` remap, service registration, one-entry list and index-zero
+`/bar` assertions through `advertised_services()`. That test remains unchanged.
 
-The unchanged native original passes 1/0 from upstream SHA
-`41913b9dfc3dbce33ac5464ddcb427cc82450f26`, and the full gate now runs
-it with the previously required Node originals. This selected one-node
-observation does not qualify global discovery listing, a remote service, the
-separate `ServiceList` latency assertion, or cross-process behavior. No
-production rule, dependency, API, or wire format changes.
+The [discovered-service port](NET-02-discovered-service-remap.md) now checks the
+same original predicates through `known_services()`, the actual bounded
+worker/discovery query. Independent review approved the selected one-Node case
+as a faithful port. The earlier [partial review](reviews/service-list-remap.json)
+remains historical evidence for the local-inspection test.
 
-Independent [review](reviews/service-list-remap.json) approved this selected
-one-node assertion mapping as partial. The ledger remains partial because the
-Rust local list does not establish native global discovery behavior. Broader
-NET-02 service contracts remain open.
+The unchanged native original is required in every gate. This selected mapping
+does not qualify a process-global registry, remote convergence, general query
+latency, or broader NET-02 completion.

@@ -440,3 +440,46 @@ fn discovered_signatures_select_requests_and_deduplicate_providers() {
         Ok(NoProviders)
     );
 }
+
+// Node_TEST.cc:NodeTest.ServiceListRemap. Keep the original /foo -> /bar
+// inputs and both list predicates, using the discovered-service query itself.
+#[test]
+fn original_service_list_remap_discovered() {
+    let mut config = Config {
+        partition: format!("service-remap-discovered-{}", uuid::Uuid::new_v4()),
+        ..Default::default()
+    };
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let _service = node.serve("/foo", INT32, INT32).unwrap();
+
+    let services = node.known_services().unwrap();
+    assert_eq!(services.len(), 1);
+    assert_eq!(services[0], "/bar");
+}
+
+#[test]
+fn discovered_service_list_remap_keeps_registration_until_destination_withdrawal() {
+    let mut config = Config {
+        partition: format!("service-remap-retirement-{}", uuid::Uuid::new_v4()),
+        ..Default::default()
+    };
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let service = node.serve("/foo", INT32, INT32).unwrap();
+    assert_eq!(node.known_services().unwrap(), ["/bar"]);
+    assert!(node.known_publisher_topics().unwrap().is_empty());
+
+    // Explicit withdrawal inspects the original qualified name; it must not
+    // apply the registration remap and accidentally retire the destination.
+    node.unadvertise_service("/foo").unwrap();
+    assert_eq!(node.known_services().unwrap(), ["/bar"]);
+    node.unadvertise_service("/bar").unwrap();
+    assert!(node.known_services().unwrap().is_empty());
+    drop(service);
+
+    let replacement = node.serve("/foo", INT32, INT32).unwrap();
+    assert_eq!(node.known_services().unwrap(), ["/bar"]);
+    drop(replacement);
+    assert!(node.known_services().unwrap().is_empty());
+}

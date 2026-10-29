@@ -5127,11 +5127,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceListRemap",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
-        "original_service_list_remap"
+        "original_service_list_remap",
+        "original_service_list_remap_discovered"
       ],
-      "review": "docs/reviews/service-list-remap.json",
+      "review": "2026-10-29: independent coordinator review compared the unchanged native one-Node source and replayed both new Rust tests. Exact /foo to /bar, size one and index-zero predicates through known_services approved; no broad global-registry or API completion.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5140,9 +5141,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Native /foo to /bar single-hop remap and service advertisement map to Config::add_topic_remap and Node::serve; both original ServiceList size1 and indexed /bar assertions retained through advertised_services. No global discovery list, timing or cross-process claim.",
+      "contract": "One Node maps /foo to /bar and retains a live Int32 service registration. The known_services worker/discovery query preserves both original ServiceList size1 and indexed /bar assertions without added sleeps or polling. The older advertised_services test remains unchanged. Lifecycle supplements add no original-case credit; no process-global sharing, remote convergence or general latency claim.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-service-list-remap.md; native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-discovered-service-remap.md; unchanged native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.WrongTopicRemap",
