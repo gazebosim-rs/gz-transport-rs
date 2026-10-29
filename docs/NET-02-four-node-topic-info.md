@@ -1,59 +1,55 @@
 <!-- Copyright (C) 2026 Open Source Robotics Foundation -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Four same-process topic records
+# Four-node all-topic information mapping
 
-Pinned `NodeTest.AllTopicInfo` in `gz-transport/src/Node_TEST.cc:2695–2736`
-creates four Nodes in one process. Two advertise `gz.msgs.Int32` on `/topic1`
-and `/topic2`; two subscribe to `/topic1` and `/topic3`. The fourth Node
-queries immediately. The original requires exactly three named records and
-publisher/subscriber counts `(1,1)`, `(1,0)` and `(0,1)`. The unchanged native
-original passes one run without failures or skips. A pre-fix private Rust
-replay returned only two names; the first exact count assertion failed.
+The pinned `NodeTest.AllTopicInfo` creates four Nodes in one process. Two
+advertise Int32 on `/topic1` and `/topic2`; node2 subscribes to `/topic1` and
+node3 to `/topic3`. Node4 requires a successful query with exactly three named
+records and publisher/subscriber counts `(1,1)`, `(1,0)` and `(0,1)` respectively.
+No callback payload or timing is asserted.
 
-The Rust port retains those names and counts through `known_topics()` followed
-by `known_topic_info()` for each original topic. This is a **partial mapping**:
-the native method returns one vector snapshot with full `MessagePublisher`
-metadata, while Rust makes separate bounded name and descriptor queries and
-returns descriptor names only. The original asserts counts, not metadata
-fields or cross-query atomicity. No new public API or general global-registry
-claim is introduced.
+Native `Node::AllTopicInfo` first calls `TopicList`, whose discovery path sends
+`SUBSCRIBERS_REQ` and waits for initialization before enumerating names. It then
+calls `TopicInfoHelper` separately for each name. Each helper takes its own
+shared-state lock. The returned vector is not an atomic global snapshot; the
+older review's atomic-vector rationale was incorrect.
 
-Each worker keeps its existing wire process UUID, node UUID and publication
-address. Private worker replies now carry those endpoint keys until after
-the caller merges same-process registrations; only then are descriptor vectors
-or topic names sorted and returned. The process index holds weak publisher
-and subscriber leases plus a weak Node-stop flag. It is keyed by the canonical
-partition and explicit message interface, multicast address and port.
-Successful admission/enqueue creates an entry; it does not confirm multicast
-discovery. Duplicate subscriptions of the same type on one Node count once;
-distinct Nodes with the same descriptor remain separate. Remapping applies at
-registration, while inspection uses the original query name. A dropped or
-shut-down local lease overrides an old peer copy with the same wire identity;
-retired keys remain for the peer's three-second freshness window and then
-expire. Worker reply errors and timeouts remain authoritative; no registry
-lock is held while waiting for a worker.
+The existing `original_four_node_all_topic_info` snapshot test remains unchanged.
+The new `original_four_node_all_topic_info_ready` keeps the same four-node
+fixture and typed Int32 registrations. A `topic_info` query on node4 for the
+original `/topic1` models native's internal startup wait. It then enumerates
+actual `known_topics()` names and collects each actual `topic_info` result.
+Every query must succeed; failed queries are not omitted. The vector's count,
+name-presence and endpoint-count assertions match the original. No sleeps,
+expected-name polling or hardcoded result records are introduced.
 
-Supplemental controls cover duplicate and distinct endpoint identities,
-multicast convergence without double counting, last-lease withdrawal,
-partition and message-port isolation, remap, and explicit shutdown. Remote
-discovery and subscriber-interest replies remain eventual; `known_topics()`
-and `known_topic_info()` are inspection snapshots, not delivery guarantees.
-Native Publisher ownership after Node destruction is a separate open gap:
-the existing Rust explicit shutdown cancels its worker even when a handle
-survives. This packet does not change that contract.
+This is a caller-side composition of accepted bounded APIs, not a new public
+AllTopicInfo facade. Each ready query has a five-second bound; the native
+original is untimed. The composition can send additional discovery requests
+and does not claim equal traffic, latency, dynamic-snapshot behavior or complete
+process-global initialization. Endpoint vectors still expose descriptor names,
+not full native MessagePublisher address/control/options metadata.
 
-The later [Publisher ownership slice](NET-02-publisher-after-node-drop.md)
-covers ordinary Node destruction separately; the partial four-Node descriptor
-mapping and its metadata limits remain unchanged.
+All fixture Nodes and registration handles stay alive through inspection.
+Existing endpoint identity, duplicate collapse, retirement, domain, remap and
+shutdown tests remain unchanged. Ordinary Publisher survival after Node drop
+is covered by the separate [ownership contract](NET-02-publisher-after-node-drop.md);
+this mapping does not establish every native process-global ownership or
+callback-lifetime relationship. Remote convergence and delivery readiness remain
+separate contracts.
 
-Independent source/API/assertion review passed on the frozen seven-file tree
-`0d205871c583dd0796f4d55855f139dd8fb45955`. A separate raw export
-passed the pinned native original 1/0, exact Rust port 1/0, both supplemental
-checks 2/0, and all 166 Rust tests in the pinned serial environment. Removing
-subscriber-only names failed the original count; collapsing equal descriptors
-from distinct Nodes failed the supplemental multiplicity assertion. The
-[review receipt](reviews/four-node-topic-info.json) records setup-only failures
-separately. The author exact staged gate passed 2085/2124 production lines,
-3142/3271 regions and 249/251 changed lines. Final metadata binding, the
-normal commit hook and hosted qualification remain separate gates.
+The earlier [runtime review](reviews/four-node-topic-info.json) remains historical
+evidence for the process-local indexes. Its original snapshot test and both
+supplements are retained; this slice changes tests and documentation only.
+Independent source comparison and replay approved the selected four-node
+mapping as a faithful port. The broader limits above remain unchanged.
+
+Run the focused variants with:
+
+```sh
+cargo test --locked --test interop original_four_node_all_topic_info
+```
+
+Every mandatory gate also runs the unchanged native `NodeTest.AllTopicInfo`
+original from the pinned reference.

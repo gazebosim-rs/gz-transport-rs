@@ -274,21 +274,15 @@ Final staged verification, normal hook and hosted CI remain pending.
 
 ## Four Node topic information original
 
-`NodeTest.AllTopicInfo` is mapped partially by
-`original_four_node_all_topic_info`: all original immediate four Node topic
-names and endpoint count assertions are retained, while native one-vector
-`MessagePublisher` metadata and atomicity remain unqualified. The frozen
-seven-file source passed the exact staged native/Rust/strict coverage gate
-(166 Rust; 2085/2124 production lines, 3142/3271 regions, 249/251 changed
-lines). Independent [review](reviews/four-node-topic-info.json) replayed the
-original and Rust selected cases, both supplemental cases, serial full Rust
-and two boundary mutants. Native Publisher lifetime after Node destruction
-remains open. Normal final hook and hosted CI are pending at this review point.
-
-The later [Publisher ownership review](NET-02-publisher-after-node-drop.md)
-covers ordinary Node destruction with a surviving Publisher and retains the
-earlier staged interop failure as unclassified. That later slice does not
-change the partial AllTopicInfo disposition above.
+The faithful four-node `NodeTest.AllTopicInfo` mapping retains the old snapshot variant
+and adds a startup-ready composition using actual enumerated topics. Every
+per-topic query must succeed, and the three original names and endpoint counts
+remain unchanged. Native initialization precedes enumeration, followed by
+separate helper snapshots; it has no atomic whole-vector guarantee. See the
+[four-node contract](NET-02-four-node-topic-info.md). Full endpoint metadata,
+process-global initialization, dynamic-snapshot behavior and ownership remain
+separate. Existing Publisher-after-Node-drop tests and explicit shutdown rules
+are unchanged.
 
 ## Failed staged test output
 

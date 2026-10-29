@@ -5086,11 +5086,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.AllTopicInfo",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
-        "original_four_node_all_topic_info"
+        "original_four_node_all_topic_info",
+        "original_four_node_all_topic_info_ready"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-25; seven-file source/API/assertion review approved on tree 0d205871; private native original1/0, selected1/0, supplements2/0, serial full166/0 and two focused mutant failures. Receipt docs/reviews/four-node-topic-info.json. Partial: separate bounded name/descriptor queries lack native atomic full MessagePublisher vector and metadata; remote discovery/timing and Publisher-after-Node-drop lifetime unqualified.",
+      "review": "2026-10-29: independent integration reviewer compared native startup/enumeration/helper flow and all original assertions, then replayed old and new Rust variants. Exact four Nodes, typed Int32 registrations, required query success, vector size3, all names and endpoint counts approved. Native is not an atomic global snapshot. Full endpoint metadata, ownership, global initialization, traffic, dynamic behavior and latency remain unqualified.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5099,9 +5100,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Original four-Node immediate topic count3, exact /topic1 /topic2 /topic3 presence and per-topic publisher/subscriber counts (1,1), (1,0), (0,1) retained via known_topics plus known_topic_info. No one-vector atomicity, MessagePublisher address metadata, remote timing or native Publisher lifetime retirement.",
+      "contract": "Four live Nodes retain exact Int32 registrations on /topic1 and /topic2 with subscriptions on /topic1 and /topic3. After accepted readiness on querying node4, actual discovered names and successful per-topic queries build the result vector; success, size3, all three names and counts (1,1), (1,0), (0,1) are asserted. Old snapshot test remains unchanged. Full MessagePublisher metadata, global initialization, dynamic snapshots, query-count/traffic equality, general latency and complete ownership remain unqualified.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-four-node-topic-info.md; exact native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-four-node-topic-info.md; unchanged native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceList",

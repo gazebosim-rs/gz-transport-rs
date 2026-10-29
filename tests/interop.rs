@@ -320,6 +320,46 @@ fn original_four_node_all_topic_info() {
 }
 
 #[test]
+fn original_four_node_all_topic_info_ready() {
+    let config = config();
+    let node1 = Node::new(config.clone()).unwrap();
+    let node2 = Node::new(config.clone()).unwrap();
+    let node3 = Node::new(config.clone()).unwrap();
+    let node4 = Node::new(config).unwrap();
+    let _pub1 = node1
+        .advertise_typed::<gz_msgs::int32::Int32>("/topic1")
+        .unwrap();
+    let _pub2 = node2
+        .advertise_typed::<gz_msgs::int32::Int32>("/topic2")
+        .unwrap();
+    let _sub2 = node2.subscribe("/topic1", "gz.msgs.Int32").unwrap();
+    let _sub3 = node3.subscribe("/topic3", "gz.msgs.Int32").unwrap();
+
+    // Native AllTopicInfo initializes discovery before enumerating topic names.
+    node4.topic_info("/topic1", Duration::from_secs(5)).unwrap();
+    let topic_info: Vec<_> = node4
+        .known_topics()
+        .unwrap()
+        .into_iter()
+        .map(|topic| {
+            let endpoints = node4.topic_info(&topic, Duration::from_secs(5)).unwrap();
+            (topic, endpoints)
+        })
+        .collect();
+    assert_eq!(topic_info.len(), 3);
+    for (topic, publishers, subscribers) in
+        [("/topic1", 1, 1), ("/topic2", 1, 0), ("/topic3", 0, 1)]
+    {
+        let (_, info) = topic_info
+            .iter()
+            .find(|(name, _)| name == topic)
+            .unwrap_or_else(|| panic!("missing topic {topic}"));
+        assert_eq!(info.publishers.len(), publishers, "{topic} publishers");
+        assert_eq!(info.subscribers.len(), subscribers, "{topic} subscribers");
+    }
+}
+
+#[test]
 fn process_local_topic_info_endpoint_identity_and_lifecycle() {
     let config = config();
     let observer = Node::new(config.clone()).unwrap();
