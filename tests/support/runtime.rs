@@ -6358,3 +6358,215 @@ fn response_callbacks_enforce_provider_and_caller_payload_bounds_before_response
         Err(Error::InvalidFrame)
     );
 }
+
+struct CallbackUserDrop(Box<dyn Fn() + Send + Sync>);
+impl Drop for CallbackUserDrop {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+#[test]
+fn inline_response_admission_includes_last_captured_destructor() {
+    let cfg = callback_config(2);
+    let provider = Node::new(cfg.clone()).unwrap();
+    let mut cfg = cfg;
+    cfg.capacity = 1;
+    let caller = Arc::new(Node::new(cfg).unwrap());
+    let (entered, entry) = mpsc::sync_channel(1);
+    let (resume, resumed) = mpsc::sync_channel(1);
+    let resumed = Mutex::new(resumed);
+    let (destroying, destruction) = mpsc::sync_channel(1);
+    let (release, released) = mpsc::sync_channel(1);
+    let released = Mutex::new(released);
+    let user_drop = CallbackUserDrop(Box::new(move || {
+        destroying.send(()).unwrap();
+        released
+            .lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+    }));
+    let service = provider
+        .serve_callback("/drop", "in", "out", move |_| {
+            let _ = &user_drop;
+            entered.send(()).unwrap();
+            resumed
+                .lock()
+                .unwrap()
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap();
+            Ok((vec![], true))
+        })
+        .unwrap();
+    let resume = CallbackUnblockOnDrop(resume);
+    let calls = Arc::new(AtomicUsize::new(0));
+    let called = calls.clone();
+    let _other = provider
+        .serve_callback("/other", "in", "out", move |_| {
+            called.fetch_add(1, Ordering::AcqRel);
+            Ok((vec![], true))
+        })
+        .unwrap();
+    let client = caller.clone();
+    let request = thread::spawn(move || {
+        client.request_callback(
+            "/drop",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(5),
+            |_, _| {},
+        )
+    });
+    let release = CallbackUnblockOnDrop(release);
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    // The request now owns the last callback reference after this dispatcher
+    // retires. Its captured user value must be destroyed on the requesting path.
+    drop(service);
+    resume.0.send(()).unwrap();
+    destruction.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(!request.is_finished());
+    assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 1);
+    assert!(matches!(
+        caller.request_callback(
+            "/other",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(1),
+            |_, _| {},
+        ),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    release.0.send(()).unwrap();
+    request
+        .join()
+        .unwrap()
+        .unwrap()
+        .wait(Duration::from_secs(1))
+        .unwrap();
+    assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 0);
+    caller
+        .request_callback(
+            "/other",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(1),
+            |_, _| {},
+        )
+        .unwrap()
+        .wait(Duration::from_secs(1))
+        .unwrap();
+    assert_eq!(calls.load(Ordering::Acquire), 1);
+}
+#[test]
+fn inline_response_destructor_reentry_and_unwind_preserve_locks_and_admission() {
+    for panic_on_drop in [false, true] {
+        let cfg = callback_config(2);
+        let provider = Arc::new(Node::new(cfg.clone()).unwrap());
+        let mut cfg = cfg;
+        cfg.capacity = 1;
+        let caller = Arc::new(Node::new(cfg).unwrap());
+        let (entered, entry) = mpsc::sync_channel(1);
+        let (resume, resumed) = mpsc::sync_channel(1);
+        let resumed = Mutex::new(resumed);
+        let weak_provider = Arc::downgrade(&provider);
+        let weak_caller = Arc::downgrade(&caller);
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let drops = dropped.clone();
+        let user_drop = CallbackUserDrop(Box::new(move || {
+            let provider = weak_provider.upgrade().unwrap();
+            let caller = weak_caller.upgrade().unwrap();
+            // Other test workers may briefly hold the shared owner index.
+            // A lock held by this destructor's caller could never pass these
+            // bounded probes, even while unrelated workers make progress.
+            callback_wait_until(|| provider.services.try_lock().is_ok());
+            callback_wait_until(|| local_service_workers().try_lock().is_ok());
+            assert_eq!(provider.advertised_services().unwrap(), ["/other"]);
+            assert_eq!(
+                provider.resolve_service_types("/other", "", "", Duration::ZERO),
+                Ok(ServiceTypeResolution::Resolved(ServiceTypes {
+                    request_type: "in".into(),
+                    response_type: "out".into(),
+                }))
+            );
+            assert!(matches!(
+                caller.request_callback(
+                    "/other",
+                    "in",
+                    "out",
+                    vec![],
+                    Duration::from_secs(1),
+                    |_, _| unreachable!(),
+                ),
+                Err(Error::QueueFull)
+            ));
+            drops.fetch_add(1, Ordering::AcqRel);
+            if panic_on_drop {
+                panic!("intentional captured destructor panic");
+            }
+        }));
+        let service = provider
+            .serve_callback("/drop", "in", "out", move |_| {
+                let _ = &user_drop;
+                entered.send(()).unwrap();
+                resumed
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(5))
+                    .unwrap();
+                Ok((vec![], true))
+            })
+            .unwrap();
+        let resume = CallbackUnblockOnDrop(resume);
+        let _other = provider
+            .serve_callback("/other", "in", "out", |_| Ok((vec![], true)))
+            .unwrap();
+        let client = caller.clone();
+        let request = thread::spawn(move || {
+            client.request_callback(
+                "/drop",
+                "in",
+                "out",
+                vec![],
+                Duration::from_secs(5),
+                |_, _| {},
+            )
+        });
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        drop(service);
+        resume.0.send(()).unwrap();
+        let result = request.join();
+        if panic_on_drop {
+            let panic = result.err().expect("ordinary user Drop panic must unwind");
+            assert_eq!(
+                panic.downcast_ref::<&str>(),
+                Some(&"intentional captured destructor panic")
+            );
+        } else {
+            result
+                .unwrap()
+                .unwrap()
+                .wait(Duration::from_secs(1))
+                .unwrap();
+        }
+        assert_eq!(dropped.load(Ordering::Acquire), 1);
+        assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 0);
+        assert!(!provider.services.is_poisoned());
+        assert!(!local_service_workers().is_poisoned());
+        caller
+            .request_callback(
+                "/other",
+                "in",
+                "out",
+                vec![],
+                Duration::from_secs(1),
+                |_, _| {},
+            )
+            .unwrap()
+            .wait(Duration::from_secs(1))
+            .unwrap();
+    }
+}

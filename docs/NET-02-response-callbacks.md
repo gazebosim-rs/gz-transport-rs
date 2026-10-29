@@ -64,6 +64,10 @@ handle cancels and joins its dispatcher, except when dropped on that dispatcher
 itself. A service invocation selected inline may finish after service handle
 destruction. Thread and request permits remain held until actual dispatch or
 inline execution finishes, even if cancellation frees a registration slot.
+An inline request destroys its selected strong callback state before signaling
+completion or releasing admission. Captured user values can run ordinary Rust
+`Drop` code at that point; the request still occupies its admission slot through
+that cleanup.
 User functions cannot be interrupted, so Drop can wait for running user code.
 `CallbackRequest::wait` observes completion once; its wait bound alone does not
 cancel. Deadlines bound selection and response dispatch, not execution time of
@@ -75,8 +79,11 @@ completion errors. Local callback errors preserve the registration and never
 trigger a second invocation. Queued service errors send an empty false result
 and increment `routing_errors`, because the unchanged Gazebo response wire has
 no Rust error channel. A response callback panic completes with an error. No
-user callback is invoked across an FFI boundary. These rules do not change
-panic handling of the existing one-way API.
+user callback is invoked across an FFI boundary. Captured values retain ordinary
+Rust destructor behavior: a destructor panic unwinds rather than becoming a
+typed invocation error. Admission guards still release during unwind, and user
+destruction runs outside transport registry and worker locks. These rules do
+not change panic handling of the existing one-way API.
 
 Controls exercise direct and queued delivery, every applicable admission bound,
 spawn and command-queue rollback, cancellation, stopped owners, payload limits,

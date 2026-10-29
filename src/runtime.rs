@@ -1823,6 +1823,9 @@ impl Node {
                 callback_progress(&self.sender, &cancelled, deadline)?;
                 run_response_callback(callback, response, self.config.max_message_bytes)
             });
+            // Last captured user values may block or unwind during destruction.
+            // Keep admission until that cleanup finishes, outside registry locks.
+            drop(service);
             let _ = done.try_send(result);
             drop(permit);
             return Ok(CallbackRequest {
