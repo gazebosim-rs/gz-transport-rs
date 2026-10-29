@@ -3281,3 +3281,82 @@ fn ready_service_list_matches_fresh_native_queries_for_held_providers_and_absenc
         }
     }
 }
+
+#[test]
+fn owned_service_info_matches_every_native_provider_field() {
+    for (kind, count) in [
+        ("ordinary", 1),
+        ("ordinary-host", 1),
+        ("inputless", 1),
+        ("outputless", 1),
+        ("ordinary", 2),
+        ("absent", 0),
+    ] {
+        let cfg = config();
+        let mut providers: Vec<_> = (0..count)
+            .map(|_| Peer::start(&cfg, "service-info-reference", "/full-info", kind))
+            .collect();
+        let mut native = Peer::start(&cfg, "service-info-details", "/full-info", "unused");
+        let node = Node::new(cfg.clone()).unwrap();
+        // Service startup is separate from message topic_info preparation.
+        node.service_list(Duration::from_secs(5)).unwrap();
+        let actual = node.known_service_info("/full-info").unwrap();
+        let mut line = String::new();
+        native.1.read_line(&mut line).unwrap();
+        assert_eq!(
+            line,
+            format!("{} {count}\n", usize::from(count != 0)),
+            "{kind}"
+        );
+        let mut expected = Vec::new();
+        for _ in 0..count {
+            let fields: Vec<_> = (0..8)
+                .map(|_| {
+                    let mut line = String::new();
+                    assert!(native.1.read_line(&mut line).unwrap() > 0);
+                    line.strip_suffix('\n').unwrap().to_owned()
+                })
+                .collect();
+            expected.push(gz_transport::ServiceProviderInfo {
+                topic: fields[0].clone(),
+                address: fields[1].clone(),
+                process_uuid: fields[2].clone(),
+                node_uuid: fields[3].clone(),
+                scope: Scope::try_from(fields[4].parse::<i32>().unwrap()).unwrap(),
+                socket_id: fields[5].clone(),
+                request_type: fields[6].clone(),
+                response_type: fields[7].clone(),
+            });
+        }
+        expected.sort();
+        assert_eq!(actual, expected, "{kind}");
+        assert_eq!(actual.len(), count);
+        assert_eq!(node.known_service_info("/full-info").unwrap(), actual);
+        assert_eq!(
+            node.service_provider_types("/full-info").unwrap().len(),
+            count
+        );
+        if count == 2 {
+            assert_ne!(actual[0].process_uuid, actual[1].process_uuid);
+            assert_eq!(node.service_type_signatures("/full-info").unwrap().len(), 1);
+        }
+        native.success();
+        for provider in &mut providers {
+            provider
+                .0
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(b"QUIT\n")
+                .unwrap();
+            provider.success();
+        }
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !node.known_service_info("/full-info").unwrap().is_empty() {
+            assert!(Instant::now() < deadline, "native provider not retired");
+            thread::sleep(Duration::from_millis(10));
+        }
+        // Owned observations do not keep the remote services registered.
+        assert_eq!(actual, expected);
+    }
+}

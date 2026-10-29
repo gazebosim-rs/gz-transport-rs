@@ -40,6 +40,8 @@ explicit deadline; startup is per worker and does not imply remote consensus.
 Already admitted requests remain available to drain and complete.
 `service_provider_types()` preserves one type entry per known provider record,
 including equal-signature providers; see [service inspection](docs/NET-01-service-info-ports.md).
+`known_service_info()` snapshots the owned provider address, identities, scope,
+socket and descriptor fields; see [owned service metadata](docs/NET-01-owned-service-info.md).
 `service_type_signatures()` snapshots known canonical service type pairs;
 `resolve_service_types()` selects providers and waits for missing names with
 explicit absence, incompatibility and ambiguity outcomes. These APIs use each

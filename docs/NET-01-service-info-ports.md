@@ -11,8 +11,8 @@ service-channel peers from this Node's worker. Wrong-topic, message-channel and
 wrong-kind records are excluded. Original-name qualification matches native
 ServiceInfo and the existing remapping contract. A service-channel SUBSCRIBE
 refresh may be sent; inspection never runs a service handler. The result has at
-most twice the configured registration/peer capacity. No address or provider
-identity is exposed, and ordering is by type names rather than native storage
+most twice the configured registration/peer capacity. This type-only method exposes no address or provider
+identity, and ordering is by type names rather than native storage
 order.
 
 Invalid names return `InvalidName`. Absent providers yield an empty successful
@@ -45,9 +45,9 @@ bounded query failure paths.
 All three untouched native originals previously passed with XML one run and zero
 failures each; source and binary hashes are retained. They are mandatory in every
 new full gate. The full author gate and independent assertion/API review below qualify this
-bounded production API increment. Provider address/identity inspection,
-global query/cache timing, process-global visibility and complete NET-01/NET-02
-acceptance remain pending. No wire, schema, dependency or performance change is
+bounded production API increment. The later [owned service metadata API](NET-01-owned-service-info.md) separately
+exposes admitted provider fields. Global query/cache timing, process-global
+visibility and complete NET-01/NET-02 acceptance remain pending. No wire, schema, dependency or performance change is
 claimed.
 
 The integrated author gate passes 121 Rust checks and 22 tooling checks, with

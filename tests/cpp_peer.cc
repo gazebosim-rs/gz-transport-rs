@@ -175,6 +175,21 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "service-info-details") {
+    std::cout << "READY" << std::endl;
+    std::vector<gz::transport::ServicePublisher> providers;
+    const bool found=node.ServiceInfo(topic,providers);
+    std::cout << found << ' ' << providers.size() << '\n';
+    for (const auto &provider:providers) {
+      std::cout << provider.Topic() << '\n' << provider.Addr() << '\n'
+                << provider.PUuid() << '\n' << provider.NUuid() << '\n'
+                << static_cast<int>(provider.Options().Scope()) << '\n'
+                << provider.SocketId() << '\n' << provider.ReqTypeName() << '\n'
+                << provider.RepTypeName() << '\n';
+    }
+    std::cout << std::flush;
+    return 0;
+  }
   if (mode == "service-list-startup") {
     std::cout << "READY" << std::endl;
     for (int query=0; query<2; ++query) {
@@ -469,9 +484,11 @@ int main(int argc, char **argv) {
       if (provider.ReqTypeName()!="gz.msgs.Int32" || provider.RepTypeName()!="gz.msgs.Int32") return 87;
     std::cout << "READY" << std::endl;
   } else if (mode == "service-info-reference") {
-    if (value == "ordinary") {
+    if (value == "ordinary" || value == "ordinary-host") {
       std::function<bool(const gz::msgs::Int32&,gz::msgs::Int32&)> callback=[](const auto &request,auto &response){response=request;return true;};
-      if (!node.Advertise(topic,callback)) return 80;
+      gz::transport::AdvertiseServiceOptions options;
+      if (value == "ordinary-host") options.SetScope(gz::transport::Scope_t::HOST);
+      if (!node.Advertise(topic,callback,options)) return 80;
     } else if (value == "inputless") {
       std::function<bool(gz::msgs::Int32&)> callback=[](auto &response){response.set_data(5);return true;};
       if (!node.Advertise(topic,callback)) return 81;

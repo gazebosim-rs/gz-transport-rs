@@ -129,6 +129,21 @@ pub struct ServiceTypes {
     pub request_type: String,
     pub response_type: String,
 }
+/// Owned discovery metadata for one known service provider record.
+/// Retaining this value does not keep the provider alive or prove reachability.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ServiceProviderInfo {
+    /// The original fully qualified wire topic, including its partition.
+    pub topic: String,
+    pub address: String,
+    /// Advertised process identity; Rust generates this per worker.
+    pub process_uuid: String,
+    pub node_uuid: String,
+    pub scope: Scope,
+    pub socket_id: String,
+    pub request_type: String,
+    pub response_type: String,
+}
 /// Descriptor names from one bounded topic endpoint snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopicEndpointTypes {
@@ -1521,6 +1536,17 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Snapshot owned metadata for each known provider of this original topic.
+    /// Records are sorted without collapsing equal signatures. This method does
+    /// not wait for startup or convergence; `service_list` can prepare service
+    /// discovery first. Addresses and identities are observations, not leases.
+    pub fn known_service_info(&self, topic: &str) -> Result<Vec<ServiceProviderInfo>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::KnownServiceInfo(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// Resolve empty descriptor names from matching providers. Explicit names
     /// select providers; both explicit names return immediately without lookup.
     /// The provider wait is polled every 100ms on the caller, never the IO worker.
@@ -1641,6 +1667,7 @@ enum Command {
     ReadyServiceList(ServiceListQuery),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
+    KnownServiceInfo(String, SyncSender<Vec<ServiceProviderInfo>>),
     HasConnections(String, String, SyncSender<bool>),
     RefreshConnections(
         String,
@@ -2260,7 +2287,10 @@ impl Worker {
     fn topic_endpoint_types(&self, topic: &str) -> TopicEndpointTypes {
         self.topic_endpoint_records(topic).into_types()
     }
-    fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
+    fn service_provider_records<'a>(
+        &'a self,
+        topic: &'a str,
+    ) -> impl Iterator<Item = (&'a WirePublisher, &'a ServicePublisher)> {
         let local = self.services.iter().filter_map(|service| {
             service
                 .active
@@ -2270,19 +2300,41 @@ impl Worker {
         let remote = self.peers.iter().filter_map(|(key, (publisher, stamp))| {
             (key.channel == 1 && stamp.elapsed() < Duration::from_secs(3)).then_some(publisher)
         });
-        let mut signatures: Vec<_> = local
+        local
             .chain(remote)
-            .filter(|publisher| publisher.topic == topic)
+            .filter(move |publisher| publisher.topic == topic)
             .filter_map(|publisher| match &publisher.pub_type {
-                Some(PubType::SrvPub(types)) => Some(ServiceTypes {
-                    request_type: types.request_type.clone(),
-                    response_type: types.response_type.clone(),
-                }),
+                Some(PubType::SrvPub(types)) => Some((publisher, types)),
                 _ => None,
+            })
+    }
+    fn service_provider_types(&self, topic: &str) -> Vec<ServiceTypes> {
+        let mut signatures: Vec<_> = self
+            .service_provider_records(topic)
+            .map(|(_, types)| ServiceTypes {
+                request_type: types.request_type.clone(),
+                response_type: types.response_type.clone(),
             })
             .collect();
         signatures.sort();
         signatures
+    }
+    fn service_provider_info(&self, topic: &str) -> Vec<ServiceProviderInfo> {
+        let mut records: Vec<_> = self
+            .service_provider_records(topic)
+            .map(|(publisher, types)| ServiceProviderInfo {
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+                process_uuid: publisher.process_uuid.clone(),
+                node_uuid: publisher.node_uuid.clone(),
+                scope: publisher.scope(),
+                socket_id: types.socket_id.clone(),
+                request_type: types.request_type.clone(),
+                response_type: types.response_type.clone(),
+            })
+            .collect();
+        records.sort();
+        records
     }
     fn has_remote_subscribers(&self, topic: &str, type_name: &str) -> bool {
         self.remote_subscribers.values().any(|p| {
@@ -2499,6 +2551,9 @@ impl Worker {
             Command::ServiceProviderTypes(topic, reply) => {
                 self.subscribe_message(1, &topic);
                 let _ = reply.try_send(self.service_provider_types(&topic));
+            }
+            Command::KnownServiceInfo(topic, reply) => {
+                let _ = reply.try_send(self.service_provider_info(&topic));
             }
             Command::HasConnections(topic, type_name, reply) => {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));

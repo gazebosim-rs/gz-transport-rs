@@ -4762,3 +4762,130 @@ fn ready_service_queries_keep_bounds_expiry_and_shutdown_for_all_waiters() {
     worker.progress_service_list_queries(Instant::now());
     assert!(worker.service_list_queries.is_empty());
 }
+
+#[test]
+fn service_info_records_preserve_metadata_multiplicity_and_filter_stale_inputs() {
+    let (mut worker, _) = state(16);
+    let topic = qualified_name(&worker.config.partition, "", "/info").unwrap();
+    let active = Arc::new(AtomicBool::new(true));
+    worker.command(Command::Serve(
+        topic.clone(),
+        "req".into(),
+        "rep".into(),
+        mpsc::sync_channel(1).0,
+        active.clone(),
+    ));
+    let local = worker.services[0].publisher.clone();
+    let mut expected = worker.service_provider_info(&topic);
+    assert_eq!(expected.len(), 1);
+    for (index, channel, name, age, message) in [
+        (0, 1, topic.clone(), 0, false),
+        (1, 1, topic.clone(), 0, false),
+        (2, 0, topic.clone(), 0, false),
+        (
+            3,
+            1,
+            qualified_name("foreign", "", "/info").unwrap(),
+            0,
+            false,
+        ),
+        (4, 1, topic.clone(), 4, false),
+        (5, 1, topic.clone(), 0, true),
+    ] {
+        let mut publisher = local.clone();
+        publisher.topic = name;
+        publisher.address = format!("tcp://127.0.0.1:{}", 45000 + index);
+        publisher.process_uuid = "remote".into();
+        publisher.node_uuid = format!("node-{index}");
+        publisher.scope = Scope::Host.into();
+        publisher.pub_type = if message {
+            Some(PubType::MsgPub(MessagePublisher::default()))
+        } else {
+            Some(PubType::SrvPub(ServicePublisher {
+                socket_id: format!("socket-{index}"),
+                request_type: "req".into(),
+                response_type: "rep".into(),
+            }))
+        };
+        if index < 2 {
+            expected.push(ServiceProviderInfo {
+                topic: topic.clone(),
+                address: publisher.address.clone(),
+                process_uuid: "remote".into(),
+                node_uuid: publisher.node_uuid.clone(),
+                scope: Scope::Host,
+                socket_id: format!("socket-{index}"),
+                request_type: "req".into(),
+                response_type: "rep".into(),
+            });
+        }
+        worker.peers.insert(
+            PeerKey {
+                channel,
+                process: publisher.process_uuid.clone(),
+                node: publisher.node_uuid.clone(),
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+            },
+            (publisher, Instant::now() - Duration::from_secs(age)),
+        );
+    }
+    expected.sort();
+    assert_eq!(worker.service_provider_info(&topic), expected);
+    assert_eq!(worker.service_provider_types(&topic).len(), 3);
+    assert_eq!(worker.service_signatures(&topic).len(), 1);
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::KnownServiceInfo(topic.clone(), tx));
+    assert_eq!(rx.recv().unwrap(), expected);
+    let (tx, rx) = mpsc::sync_channel(1);
+    drop(rx);
+    worker.command(Command::KnownServiceInfo(topic.clone(), tx));
+    active.store(false, Ordering::Release);
+    assert_eq!(worker.service_provider_info(&topic).len(), 2);
+    worker.discovered(1, protocol::discovery("remote", Type::Bye, None));
+    assert!(worker.service_provider_info(&topic).is_empty());
+    assert_eq!(expected.len(), 3);
+}
+
+#[test]
+fn service_info_query_keeps_validation_timeout_backpressure_and_shutdown_errors() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
+    };
+    assert_eq!(node.known_service_info("bad name"), Err(Error::InvalidName));
+    assert_eq!(node.known_service_info("/info"), Err(Error::Timeout));
+    assert_eq!(node.known_service_info("/info"), Err(Error::QueueFull));
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::KnownServiceInfo(_, _)
+    ));
+    let commands = thread::scope(|scope| {
+        let consumer = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(node.known_service_info("/info"), Err(Error::Shutdown));
+        consumer.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(node.known_service_info("/info"), Err(Error::Shutdown));
+    node.cancel();
+    assert_eq!(node.known_service_info("/info"), Err(Error::Shutdown));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 1);
+}

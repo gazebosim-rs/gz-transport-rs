@@ -926,3 +926,13 @@ A real native peer compares fresh and warm native/Rust lists for three service
 signatures and an absent provider, then checks native withdrawal separately.
 These tests run in the ordinary full gate; they confer no additional original
 case credit and claim no convergence or latency equality.
+
+## Owned service-provider metadata
+
+The [owned service metadata contract](NET-01-owned-service-info.md) adds actual
+provider records while preserving type-only queries and original assertions.
+Five supplemental tests cover public/worker boundaries and fresh native
+every-field comparisons for six service fixtures. Equal signatures retain
+provider multiplicity; retired metadata remains owned without keeping a
+registration live. The ordinary full gate runs these tests; no original case
+gains additional credit or a general discovery/latency claim.
