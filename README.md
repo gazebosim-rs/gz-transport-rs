@@ -63,7 +63,9 @@ See the [bounded inspection contract](docs/NET-01-service-types.md) and
 [local resolver contract](docs/NET-01-local-service-resolution.md).
 `begin_request()` admits a response request and returns a one-shot
 `PendingResponse`; `request()` retains its existing bounded wait through that
-handle. The [wrong-request contract](docs/NET-02-service-wrong-request.md) checks
+handle. Admitted queues on other live local Nodes are reachable without waiting
+for their wire advertisements; replies retain the provider response lane. See the
+[local queued service contract](docs/NET-02-local-service-queue.md). The [wrong-request contract](docs/NET-02-service-wrong-request.md) checks
 asynchronous admission without a response and synchronous Timeout for a
 Vector3d request sent to a local Int32 service. The
 [wrong-response originals](docs/NET-02-service-wrong-response.md) retain the

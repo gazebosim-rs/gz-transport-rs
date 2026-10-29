@@ -230,6 +230,7 @@ struct LocalService {
     types: ServiceTypes,
     active: Weak<AtomicBool>,
     callback: Option<LocalCallback>,
+    queue: Weak<LocalServiceQueue>,
 }
 #[derive(Clone)]
 enum LocalCallback {
@@ -260,6 +261,8 @@ struct WorkerIdentity {
     process: String,
     node: String,
     address: String,
+    response_address: String,
+    response_id: String,
     service_domain: MessageDomain,
     services: Arc<Mutex<Vec<LocalService>>>,
     stopped: Weak<AtomicBool>,
@@ -701,6 +704,89 @@ pub struct Service {
     rx: Receiver<Request>,
     _lease: Lease,
     owner_dead: Arc<AtomicBool>,
+    _queue: Arc<LocalServiceQueue>,
+}
+struct LocalServiceQueue {
+    tx: Weak<SyncSender<Request>>,
+    sender: Sender,
+    active: Weak<AtomicBool>,
+    owner_dead: Arc<AtomicBool>,
+    max: usize,
+}
+impl LocalServiceQueue {
+    fn send(
+        &self,
+        caller: &Sender,
+        caller_dead: &AtomicBool,
+        id: &str,
+        pending: &Pending,
+    ) -> Result<bool, Error> {
+        let Some(tx) = self.tx.upgrade() else {
+            return Ok(false);
+        };
+        self.send_on(tx, caller, caller_dead, id, pending)
+    }
+    // The upgraded sender is an in-flight lease. Recheck liveness after that
+    // upgrade, outside all registries, before the one nonblocking handoff.
+    fn send_on(
+        &self,
+        tx: Arc<SyncSender<Request>>,
+        caller: &Sender,
+        caller_dead: &AtomicBool,
+        id: &str,
+        pending: &Pending,
+    ) -> Result<bool, Error> {
+        if caller.stop.load(Ordering::Acquire) || caller_dead.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        if Instant::now() >= pending.deadline {
+            return Err(Error::Timeout);
+        }
+        if self.sender.stop.load(Ordering::Acquire)
+            || self.owner_dead.load(Ordering::Acquire)
+            || !self
+                .active
+                .upgrade()
+                .is_some_and(|active| active.load(Ordering::Acquire))
+        {
+            return Ok(false);
+        }
+        if pending.data.len() > self.max {
+            return Err(Error::InvalidFrame);
+        }
+        let identity = caller
+            .identity
+            .get()
+            .expect("worker initialized caller identity");
+        tx.try_send(Request {
+            data: pending.data.clone(),
+            sender: self.sender.clone(),
+            route: if pending.response_type == EMPTY_TYPE {
+                Vec::new()
+            } else {
+                // Same route as an actual received request, using the caller
+                // worker's bound response endpoint. Replies keep the provider
+                // response queue and ordinary mandatory ZeroMQ routing.
+                vec![
+                    identity.response_address.as_bytes().to_vec(),
+                    identity.response_id.as_bytes().to_vec(),
+                    pending.topic.as_bytes().to_vec(),
+                    identity.node.as_bytes().to_vec(),
+                    id.as_bytes().to_vec(),
+                ]
+            },
+            max: self.max,
+            owner_dead: self.owner_dead.clone(),
+        })
+        .map_err(|_| {
+            self.sender
+                .counters
+                .queue_drops
+                .fetch_add(1, Ordering::Relaxed);
+            Error::QueueFull
+        })?;
+        Ok(true)
+    }
 }
 type OneWayCallback = dyn Fn(&[u8]) -> Result<(), Error> + Send + Sync;
 struct OneWayCallbackState {
@@ -1556,6 +1642,14 @@ impl Node {
         }
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
         let lease = self.reserve()?;
+        let tx = Arc::new(tx);
+        let queue = Arc::new(LocalServiceQueue {
+            tx: Arc::downgrade(&tx),
+            sender: self.sender.clone(),
+            active: Arc::downgrade(&lease.active),
+            owner_dead: self.owner_dead.clone(),
+            max: self.config.max_message_bytes,
+        });
         self.sender.send(Command::Serve(
             topic.clone(),
             request_type.into(),
@@ -1571,11 +1665,13 @@ impl Node {
             },
             active: Arc::downgrade(&lease.active),
             callback: None,
+            queue: Arc::downgrade(&queue),
         });
         Ok(Service {
             rx,
             _lease: lease,
             owner_dead: self.owner_dead.clone(),
+            _queue: queue,
         })
     }
     /// Register a typed one-way callback. Matching live callbacks in this
@@ -2345,7 +2441,13 @@ enum Command {
         Option<Arc<SubscriptionThrottle>>,
     ),
     Unsubscribe(String),
-    Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
+    Serve(
+        String,
+        String,
+        String,
+        Arc<SyncSender<Request>>,
+        Arc<AtomicBool>,
+    ),
     KnownServices(SyncSender<Vec<String>>),
     ReadyServiceList(ServiceListQuery),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
@@ -2422,7 +2524,7 @@ struct SubscriberState {
 }
 struct ServiceState {
     publisher: WirePublisher,
-    tx: SyncSender<Request>,
+    tx: Arc<SyncSender<Request>>,
     active: Arc<AtomicBool>,
 }
 fn send_local_request(
@@ -2440,7 +2542,13 @@ fn send_local_request(
                 if types.request_type == pending.request_type
                     && types.response_type == pending.response_type)
     }) else {
-        return Ok(false);
+        return send_admitted_service_request(
+            local_service_workers(),
+            sender,
+            owner_dead,
+            id,
+            pending,
+        );
     };
     service
         .tx
@@ -2461,6 +2569,68 @@ fn send_local_request(
         })?;
     Ok(true)
 }
+fn local_service_queue(
+    identity: &WorkerIdentity,
+    pending: &Pending,
+) -> Result<Option<Weak<LocalServiceQueue>>, Error> {
+    if identity
+        .stopped
+        .upgrade()
+        .is_none_or(|stop| stop.load(Ordering::Acquire))
+    {
+        return Ok(None);
+    }
+    let services = identity
+        .services
+        .lock()
+        .map_err(|_| Error::Native("service registry poisoned".into()))?;
+    Ok(services
+        .iter()
+        .find(|service| {
+            service.topic == pending.topic
+                && service.types.request_type == pending.request_type
+                && service.types.response_type == pending.response_type
+                && service
+                    .active
+                    .upgrade()
+                    .is_some_and(|active| active.load(Ordering::Acquire))
+        })
+        .map(|service| service.queue.clone()))
+}
+fn send_admitted_service_request(
+    index: &Mutex<Vec<WeakWorkerOwner>>,
+    sender: &Sender,
+    owner_dead: &AtomicBool,
+    id: &str,
+    pending: &Pending,
+) -> Result<bool, Error> {
+    let caller = sender
+        .identity
+        .get()
+        .expect("worker initialized caller identity");
+    // An admitted own receiver keeps priority even if its Serve command has not
+    // reached the worker yet. Upgrade queue payloads only outside registry locks.
+    if let Some(queue) = local_service_queue(caller, pending)?.and_then(|queue| queue.upgrade())
+        && queue.send(sender, owner_dead, id, pending)?
+    {
+        return Ok(true);
+    }
+    for owner in service_workers(index)? {
+        if Arc::ptr_eq(&owner, &sender.identity) {
+            continue;
+        }
+        let identity = owner.get().expect("registered worker identity");
+        if identity.service_domain == caller.service_domain
+            && let Some(queue) =
+                local_service_queue(identity, pending)?.and_then(|queue| queue.upgrade())
+            && queue.send(sender, owner_dead, id, pending)?
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 #[derive(Clone, Hash, PartialEq, Eq)]
 struct PeerKey {
     channel: usize,
@@ -2707,6 +2877,8 @@ impl Worker {
                 process: process.clone(),
                 node: node.clone(),
                 address: address.clone(),
+                response_address: response_address.clone(),
+                response_id: response_id.clone(),
                 service_domain: MessageDomain::from_service_config(&config),
                 services: Arc::new(Mutex::new(Vec::new())),
                 stopped: Arc::downgrade(&sender.stop),

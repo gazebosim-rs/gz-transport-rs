@@ -183,6 +183,29 @@ int main(int argc, char **argv) {
     std::cout << added << ' ' << duplicate << ' ' << found << '\n' << output;
     return 0;
   }
+  if (mode == "service-local-process-scope") {
+    gz::transport::Node owner, caller;
+    gz::transport::AdvertiseServiceOptions options;
+    options.SetScope(gz::transport::Scope_t::PROCESS);
+    std::atomic<int> calls{0};
+    std::function<bool(const gz::msgs::Int32 &,gz::msgs::Int32 &)> cb =
+      [&](const auto &request, auto &reply) { ++calls; reply.set_data(request.data()); return true; };
+    if (!owner.Advertise(topic,cb,options)) return 157;
+    std::vector<gz::transport::ServicePublisher> providers;
+    if (!caller.ServiceInfo(topic,providers) || providers.size()!=1 ||
+        providers[0].Options().Scope()!=gz::transport::Scope_t::PROCESS) return 158;
+    gz::msgs::Int32 request,reply;
+    request.set_data(5);
+    bool result=false;
+    const bool returned=caller.Request(topic,request,300,reply,result);
+    if (!returned || !result || reply.data()!=5 || calls!=1) return 159;
+    if (!owner.UnadvertiseSrv(topic)) return 160;
+    providers.clear();
+    if (caller.ServiceInfo(topic,providers) || !providers.empty()) return 161;
+    std::cout << "scope=Process providers=1 returned=" << returned << " result=" << result
+      << " data=" << reply.data() << " calls=" << calls << " withdrawn=" << providers.size() << std::endl;
+    return 0;
+  }
   if (mode == "remap-service-lifecycle") {
     gz::transport::NodeOptions options;
     if (!options.AddTopicRemap(topic,value) || !options.AddTopicRemap(value,"/third")) return 35;

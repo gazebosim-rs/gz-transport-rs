@@ -1028,3 +1028,25 @@ lifetime/rollback, stale copied peer masking, bounded retained owners, actual
 worker expiry and domain isolation. Private Node construction shares the admitted
 vector with its worker identity; all prior assertions remain. Normal production
 coverage and real native gates remain mandatory before promotion/publication.
+
+The admitted cross-Node queue implementation has separate supplemental
+`admitted_service_queue_*` controls and `tests/service_queue_local.rs`; no
+ledger row changes. It reuses the original sender through Weak/Arc ownership,
+keeps own receiver priority, sends real replies through the provider lane and
+mandatory ZeroMQ route, and preserves worker-only inspection. Private race
+coverage explicitly pauses an upgraded sender across withdrawal/cleanup;
+concurrent disconnect can wait for that single operation. The new native
+`service-local-process-scope` peer control checks actual PROCESS metadata and
+cross-Node request/withdrawal. No scope-option API, native scheduling guarantee
+or process-global identity completion is inferred. See the
+[queued service contract](NET-02-local-service-queue.md).
+
+Independent `/root/sdformat_owner` source/contract review passed fresh 134 library
+and 31 public/native candidate tests versus accepted cf8f2ec's 127 and 24,
+followed by the final seven bounded-receive controls. Proper loopback permission
+is required; the initial sandbox EPERM/abort is failed setup, not a candidate
+regression. Root approved the unchanged production ordering and final contract.
+Author-only handoff and sender-retention negatives remain separate evidence.
+Resumed/merged author coverage is diagnostic only; the single normal staged hook
+must run from scratch and exact hosted CI must pass before acceptance. No
+upstream row or accepted count changes for this queue slice.

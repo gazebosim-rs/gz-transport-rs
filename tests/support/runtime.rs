@@ -156,7 +156,7 @@ fn known_lists_filter_partition_kind_age_and_malformed_paths() {
     ));
     worker.services.push(ServiceState {
         publisher: local_service,
-        tx: mpsc::sync_channel(1).0,
+        tx: Arc::new(mpsc::sync_channel(1).0),
         active: Arc::new(AtomicBool::new(true)),
     });
     {
@@ -1481,7 +1481,7 @@ fn discovery_lifecycle_and_capacity() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         active.clone(),
     ));
     for channel in 0..2 {
@@ -1632,7 +1632,7 @@ fn local_request_overload_and_reply_routes() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         active,
     ));
     let (p1, r1) = pending(Instant::now() + Duration::from_secs(1));
@@ -1695,7 +1695,7 @@ fn unmatched_request_uses_later_typed_local_service_once() {
         "/service".into(),
         "wrong".into(),
         "rep".into(),
-        wrong_tx,
+        Arc::new(wrong_tx),
         Arc::new(AtomicBool::new(true)),
     ));
     worker.send_requests();
@@ -1710,7 +1710,7 @@ fn unmatched_request_uses_later_typed_local_service_once() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
     worker.send_requests();
@@ -1734,7 +1734,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         EMPTY_TYPE.into(),
-        tx,
+        Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
     worker.send_requests();
@@ -1750,7 +1750,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
     worker.send_requests();
@@ -1767,7 +1767,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
     worker.send_requests();
@@ -1784,7 +1784,7 @@ fn service_frames_validate_type_node_topic_and_request_correlation() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        tx,
+        Arc::new(tx),
         active.clone(),
     ));
     let context = zmq::Context::new();
@@ -2158,7 +2158,7 @@ fn oneway_wire_provider_does_not_enqueue_or_connect_a_reply() {
         "/oneway".into(),
         "req".into(),
         EMPTY_TYPE.into(),
-        tx,
+        Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
     let context = zmq::Context::new();
@@ -2203,7 +2203,7 @@ fn expired_local_requests_never_enter_the_service_queue() {
             "/service".into(),
             "req".into(),
             response_type.into(),
-            tx,
+            Arc::new(tx),
             Arc::new(AtomicBool::new(true)),
         ));
         let (mut pending, reply) = pending(Instant::now());
@@ -2798,7 +2798,7 @@ fn service_signature_snapshot_filters_lifetimes_channels_and_kinds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
-        requests,
+        Arc::new(requests),
         active.clone(),
     ));
     let local = worker.services[0].publisher.clone();
@@ -4758,7 +4758,7 @@ fn service_info_records_preserve_metadata_multiplicity_and_filter_stale_inputs()
         topic.clone(),
         "req".into(),
         "rep".into(),
-        mpsc::sync_channel(1).0,
+        Arc::new(mpsc::sync_channel(1).0),
         active.clone(),
     ));
     let local = worker.services[0].publisher.clone();
@@ -5642,6 +5642,7 @@ fn local_service_resolution_masks_stale_copies_without_changing_worker_views() {
             },
             active: Arc::downgrade(&active),
             callback: None,
+            queue: Weak::new(),
         });
     active.store(true, Ordering::Release);
     assert_eq!(
@@ -6875,4 +6876,604 @@ fn oneway_dispatcher_can_drop_its_own_handle_without_early_permit_release() {
     let _replacement = node
         .serve_oneway_callback("/next", "in", |_| Ok(()))
         .unwrap();
+}
+
+// These manual workers deliberately do not process the provider's Serve command:
+// admission must reuse the live Service queue without discovery or a wire request.
+fn queued_local_pending(node: &Node, deadline: Instant) -> (Pending, ReplyReceiver) {
+    let (mut pending, reply) = pending(deadline);
+    pending.topic = node.topic("/service").unwrap();
+    (pending, reply)
+}
+fn progress_queued_local_reply(
+    provider: &mut Worker,
+    caller: &mut Worker,
+    reply: &ReplyReceiver,
+) -> Result<(Vec<u8>, bool), Error> {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        provider.send_replies();
+        caller.receive_responses();
+        match reply.try_recv() {
+            Ok(result) => return result,
+            Err(mpsc::TryRecvError::Empty) => {}
+            Err(error) => panic!("reply disconnected: {error:?}"),
+        }
+        assert!(
+            Instant::now() < deadline,
+            "queued local reply was not routed"
+        );
+        thread::sleep(Duration::from_millis(2));
+    }
+}
+#[test]
+fn admitted_service_queue_preserves_provider_reply_route_and_single_handoff() {
+    let cfg = callback_config(4);
+    let (mut provider, _commands) = service_state(cfg.clone());
+    let node = service_registry_node(&provider);
+    let service = node.serve("/service", "req", "rep").unwrap();
+    let (mut caller, _) = service_state(cfg);
+    let (request, reply) = queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    caller.command(Command::Request(request));
+    assert!(provider.services.is_empty());
+    assert!(caller.peers.is_empty());
+    assert!(
+        caller
+            .service_provider_info(&node.topic("/service").unwrap())
+            .is_empty()
+    );
+    assert!(caller.connected.is_empty());
+    assert_eq!(caller.pending.len(), 1);
+    assert!(caller.pending.values().all(|pending| pending.sent));
+    let incoming = service.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert_eq!(incoming.data, [1]);
+    let id = caller.pending.keys().next().unwrap();
+    assert_eq!(
+        incoming.route,
+        [
+            caller.response_address.as_bytes().to_vec(),
+            caller.response_id.as_bytes().to_vec(),
+            node.topic("/service").unwrap().as_bytes().to_vec(),
+            caller.node.as_bytes().to_vec(),
+            id.as_bytes().to_vec()
+        ]
+    );
+    assert!(Arc::ptr_eq(
+        &incoming.sender.identity,
+        &provider.sender.identity
+    ));
+    caller.send_requests();
+    assert!(caller.connected.is_empty());
+    assert!(matches!(
+        service.rx.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    incoming.respond(vec![9], false).unwrap();
+    assert!(caller.response_rx.try_recv().is_err());
+    provider.command(
+        provider
+            .response_rx
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap(),
+    );
+    assert_eq!(
+        progress_queued_local_reply(&mut provider, &mut caller, &reply),
+        Ok((vec![9], false))
+    );
+    assert!(caller.pending.is_empty());
+    assert!(provider.replies.is_empty());
+    assert!(matches!(
+        service.rx.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+}
+#[test]
+fn admitted_service_queue_keeps_provider_backpressure_and_weak_retirement() {
+    let cfg = callback_config(1);
+    let (mut provider, commands) = service_state(cfg.clone());
+    let node = service_registry_node(&provider);
+    let service = node.serve("/service", "req", EMPTY_TYPE).unwrap();
+    let retained_owner = provider.sender.identity.clone();
+    let weak_queue = Arc::downgrade(&service._queue);
+    let (mut caller, _) = service_state(cfg.clone());
+    let (mut first, first_reply) =
+        queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    first.response_type = EMPTY_TYPE.into();
+    caller.command(Command::Request(first));
+    assert_eq!(
+        first_reply.recv_timeout(Duration::from_secs(1)).unwrap(),
+        Ok((vec![], true))
+    );
+    assert!(caller.pending.is_empty());
+    let (mut second, second_reply) =
+        queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    second.response_type = EMPTY_TYPE.into();
+    caller.command(Command::Request(second));
+    assert_eq!(
+        second_reply.recv_timeout(Duration::from_secs(1)).unwrap(),
+        Err(Error::QueueFull)
+    );
+    assert_eq!(provider.sender.counters.snapshot().queue_drops, 1);
+    assert_eq!(caller.sender.counters.snapshot().queue_drops, 0);
+    let incoming = service.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(!incoming.expects_response());
+    assert_eq!(incoming.respond(vec![], true), Ok(()));
+    let (mut request, _) = queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    request.response_type = EMPTY_TYPE.into();
+    let index = Mutex::new(vec![Arc::downgrade(&retained_owner)]);
+    provider.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    node.unadvertise_service("/service").unwrap();
+    provider.cleanup();
+    assert_eq!(
+        service.recv_timeout(Duration::from_millis(20)).err(),
+        Some(Error::Shutdown)
+    );
+    assert!(service._queue.tx.upgrade().is_none());
+    assert!(
+        !send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "retired",
+            &request
+        )
+        .unwrap()
+    );
+    drop(service);
+    assert!(weak_queue.upgrade().is_none());
+    assert!(
+        !send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "retired",
+            &request
+        )
+        .unwrap()
+    );
+    drop(node);
+    assert!(
+        retained_owner
+            .get()
+            .unwrap()
+            .stopped
+            .upgrade()
+            .unwrap()
+            .load(Ordering::Acquire)
+    );
+}
+#[test]
+fn admitted_service_queue_preserves_deadlines_abandonment_and_late_wire_reply() {
+    let cfg = callback_config(4);
+    let (mut provider, _commands) = service_state(cfg.clone());
+    let node = service_registry_node(&provider);
+    let service = node.serve("/service", "req", "rep").unwrap();
+    let (mut caller, _) = service_state(cfg);
+    let (request, reply) = queued_local_pending(&node, Instant::now() + Duration::from_millis(20));
+    caller.command(Command::Request(request));
+    let incoming = service.recv_timeout(Duration::from_secs(1)).unwrap();
+    thread::sleep(Duration::from_millis(30));
+    caller.send_requests();
+    assert_eq!(
+        reply.recv_timeout(Duration::from_secs(1)).unwrap(),
+        Err(Error::Timeout)
+    );
+    incoming.respond(vec![9], true).unwrap();
+    provider.command(
+        provider
+            .response_rx
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap(),
+    );
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while !provider.replies.is_empty() {
+        provider.send_replies();
+        caller.receive_responses();
+        assert!(Instant::now() < deadline);
+        thread::sleep(Duration::from_millis(2));
+    }
+    caller.receive_responses();
+    assert!(caller.pending.is_empty());
+    let (request, reply) = queued_local_pending(&node, Instant::now() + Duration::from_secs(1));
+    caller.command(Command::Request(request));
+    drop(reply);
+    let incoming = service.recv_timeout(Duration::from_secs(1)).unwrap();
+    incoming.respond(vec![7], true).unwrap();
+    provider.command(
+        provider
+            .response_rx
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap(),
+    );
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while !caller.pending.is_empty() {
+        provider.send_replies();
+        caller.receive_responses();
+        assert!(Instant::now() < deadline);
+        thread::sleep(Duration::from_millis(2));
+    }
+    assert!(provider.replies.is_empty());
+}
+
+#[test]
+fn admitted_service_queue_obeys_domains_payloads_and_final_live_guards() {
+    let mut cfg = callback_config(4);
+    cfg.max_message_bytes = 1;
+    let (provider, commands) = service_state(cfg.clone());
+    let node = service_registry_node(&provider);
+    let service = node.serve("/service", "req", "rep").unwrap();
+    let target = service._queue.clone();
+    let mut caller_cfg = cfg.clone();
+    caller_cfg.max_message_bytes = 3;
+    let (caller, _) = service_state(caller_cfg);
+    let index = Mutex::new(vec![Arc::downgrade(&provider.sender.identity)]);
+    let (mut request, _) = queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    request.data = vec![1, 2];
+    assert_eq!(
+        send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "large",
+            &request
+        ),
+        Err(Error::InvalidFrame)
+    );
+    assert!(service.rx.try_recv().is_err());
+    request.data = vec![1];
+    for field in [0, 1, 2] {
+        let (mut mismatch, _) = queued_local_pending(&node, request.deadline);
+        match field {
+            0 => mismatch.topic.push_str("-absent"),
+            1 => mismatch.request_type.push_str("-wrong"),
+            _ => mismatch.response_type.push_str("-wrong"),
+        }
+        assert!(
+            !send_admitted_service_request(
+                &index,
+                &caller.sender,
+                &caller.owner_dead,
+                "mismatch",
+                &mismatch
+            )
+            .unwrap()
+        );
+    }
+    for field in [0, 1, 2, 3] {
+        let mut isolated = cfg.clone();
+        match field {
+            0 => isolated.partition.push_str("-other"),
+            1 => isolated.service_port += 31,
+            2 => isolated.multicast = "239.255.0.8".parse().unwrap(),
+            _ => isolated.interface = "127.0.0.2".parse().unwrap(),
+        }
+        let (isolated, _) = service_state(isolated);
+        assert!(
+            !send_admitted_service_request(
+                &index,
+                &isolated.sender,
+                &isolated.owner_dead,
+                "domain",
+                &request
+            )
+            .unwrap()
+        );
+    }
+    cfg.message_port += 33;
+    let (same_service, _) = service_state(cfg);
+    assert!(
+        send_admitted_service_request(
+            &index,
+            &same_service.sender,
+            &same_service.owner_dead,
+            "same-domain",
+            &request
+        )
+        .unwrap()
+    );
+    assert_eq!(service.rx.try_recv().unwrap().data, [1]);
+    caller.owner_dead.store(true, Ordering::Release);
+    assert_eq!(
+        target.send(&caller.sender, &caller.owner_dead, "dead-caller", &request),
+        Err(Error::Shutdown)
+    );
+    caller.owner_dead.store(false, Ordering::Release);
+    caller.sender.stop.store(true, Ordering::Release);
+    assert_eq!(
+        target.send(
+            &caller.sender,
+            &caller.owner_dead,
+            "stopped-caller",
+            &request
+        ),
+        Err(Error::Shutdown)
+    );
+    caller.sender.stop.store(false, Ordering::Release);
+    let (expired, _) = queued_local_pending(&node, Instant::now());
+    assert_eq!(
+        target.send(&caller.sender, &caller.owner_dead, "expired", &expired),
+        Err(Error::Timeout)
+    );
+    provider.owner_dead.store(true, Ordering::Release);
+    assert!(
+        !target
+            .send(&caller.sender, &caller.owner_dead, "dead-owner", &request)
+            .unwrap()
+    );
+    provider.owner_dead.store(false, Ordering::Release);
+    provider.sender.stop.store(true, Ordering::Release);
+    assert!(
+        !target
+            .send(
+                &caller.sender,
+                &caller.owner_dead,
+                "stopped-owner",
+                &request
+            )
+            .unwrap()
+    );
+    assert!(
+        !send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "stopped-owner",
+            &request
+        )
+        .unwrap()
+    );
+    provider.sender.stop.store(false, Ordering::Release);
+    drop(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert!(target.tx.upgrade().is_none());
+    assert!(
+        !target
+            .send(
+                &caller.sender,
+                &caller.owner_dead,
+                "closed-channel",
+                &request
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        service.recv_timeout(Duration::from_millis(20)).err(),
+        Some(Error::Shutdown)
+    );
+    service._lease.active.store(false, Ordering::Release);
+    assert!(
+        !target
+            .send(&caller.sender, &caller.owner_dead, "retired", &request)
+            .unwrap()
+    );
+    drop(service);
+    assert!(target.active.upgrade().is_none());
+    assert!(
+        !target
+            .send(
+                &caller.sender,
+                &caller.owner_dead,
+                "expired-lease",
+                &request
+            )
+            .unwrap()
+    );
+}
+#[test]
+fn admitted_service_queue_preserves_own_receiver_priority_and_poison_errors() {
+    let cfg = callback_config(1);
+    let (foreign, _foreign_commands) = service_state(cfg.clone());
+    let foreign_node = service_registry_node(&foreign);
+    let foreign_queue = foreign_node.serve("/service", "req", "rep").unwrap();
+    let (mut caller, commands) = service_state(cfg);
+    let node = service_registry_node(&caller);
+    let own_queue = node.serve("/service", "req", "rep").unwrap();
+    let (request, _) = queued_local_pending(&node, Instant::now() + Duration::from_secs(2));
+    assert!(
+        send_local_request(
+            &caller.services,
+            &caller.sender,
+            &caller.owner_dead,
+            caller.config.max_message_bytes,
+            "own",
+            &request
+        )
+        .unwrap()
+    );
+    assert!(foreign_queue.rx.try_recv().is_err());
+    assert_eq!(
+        send_local_request(
+            &caller.services,
+            &caller.sender,
+            &caller.owner_dead,
+            caller.config.max_message_bytes,
+            "full",
+            &request
+        ),
+        Err(Error::QueueFull)
+    );
+    assert!(foreign_queue.rx.try_recv().is_err());
+    assert_eq!(own_queue.rx.try_recv().unwrap().route.len(), 5);
+    caller.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert!(
+        send_local_request(
+            &caller.services,
+            &caller.sender,
+            &caller.owner_dead,
+            caller.config.max_message_bytes,
+            "processed",
+            &request
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        own_queue.rx.try_recv().unwrap().route,
+        [b"processed".to_vec()]
+    );
+    drop(own_queue);
+    let index = Mutex::new(vec![Arc::downgrade(&foreign.sender.identity)]);
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = index.lock().unwrap();
+                    panic!("isolated queue index poison");
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(matches!(
+        send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "poison",
+            &request
+        ),
+        Err(Error::Native(_))
+    ));
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = foreign_node.services.lock().unwrap();
+                    panic!("isolated queue registry poison");
+                })
+                .join()
+                .is_err()
+        );
+    });
+    let index = Mutex::new(vec![Arc::downgrade(&foreign.sender.identity)]);
+    assert!(matches!(
+        send_admitted_service_request(
+            &index,
+            &caller.sender,
+            &caller.owner_dead,
+            "poison",
+            &request
+        ),
+        Err(Error::Native(_))
+    ));
+}
+
+#[test]
+fn admitted_service_queue_inflight_sender_lease_does_not_reopen_a_withdrawn_service() {
+    let cfg = callback_config(2);
+    let (mut provider, commands) = service_state(cfg.clone());
+    let node = service_registry_node(&provider);
+    let service = node.serve("/service", "req", "rep").unwrap();
+    provider.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    let queue = service._queue.clone();
+    // Pause the actual production path after Weak::upgrade and before its
+    // final live checks. This temporary strong sender can delay disconnect.
+    let inflight = queue.tx.upgrade().unwrap();
+    let (caller, _) = service_state(cfg);
+    let (request, _) = queued_local_pending(&node, Instant::now() + Duration::from_secs(1));
+    node.unadvertise_service("/service").unwrap();
+    provider.cleanup();
+    assert!(matches!(
+        service.rx.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    let index = Mutex::new(vec![Arc::downgrade(&provider.sender.identity)]);
+    assert!(
+        !send_admitted_service_request(&index, &caller.sender, &caller.owner_dead, "new", &request)
+            .unwrap()
+    );
+    assert!(
+        !queue
+            .send_on(
+                inflight,
+                &caller.sender,
+                &caller.owner_dead,
+                "inflight",
+                &request
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        service.recv_timeout(Duration::from_millis(20)).err(),
+        Some(Error::Shutdown)
+    );
+    assert!(queue.tx.upgrade().is_none());
+}
+
+fn queued_spawn_failure_after_hook(task: CallbackTask) -> std::io::Result<JoinHandle<()>> {
+    let hook = ONEWAY_SPAWN_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+    callback_spawn_failure(task)
+}
+#[test]
+fn admitted_service_queue_does_not_execute_a_failed_callback_registration() {
+    let cfg = callback_config(2);
+    let provider = Arc::new(Node::new(cfg.clone()).unwrap());
+    let caller = Arc::new(Node::new(cfg).unwrap());
+    let (saved, received) = mpsc::sync_channel(1);
+    let weak = Arc::downgrade(&provider);
+    let client = caller.clone();
+    ONEWAY_SPAWN_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            let provider = weak.upgrade().unwrap();
+            let pending = client
+                .begin_request("/race", "req", "rep", vec![1], Duration::from_secs(2))
+                .unwrap();
+            // Bounded command ordering only: no discovery or expected-data poll.
+            let (barrier, barrier_reply) = mpsc::sync_channel(1);
+            let deadline = Instant::now() + Duration::from_secs(1);
+            loop {
+                match client.sender.send(Command::KnownServices(barrier.clone())) {
+                    Ok(()) => break,
+                    Err(Error::QueueFull) => {
+                        assert!(Instant::now() < deadline);
+                        thread::sleep(Duration::from_millis(2));
+                    }
+                    Err(error) => panic!("queue barrier failed: {error:?}"),
+                }
+            }
+            barrier_reply
+                .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .unwrap();
+            let queue = provider.services.lock().unwrap()[0].queue.clone();
+            let target = queue.upgrade().unwrap();
+            let (mut probe, _) =
+                queued_local_pending(&provider, Instant::now() + Duration::from_secs(1));
+            probe.topic = provider.topic("/race").unwrap();
+            // One first request occupies the two-slot queue. Fill the second and
+            // verify a third cannot enter before the failed spawner drops Service.
+            assert!(
+                target
+                    .send(&client.sender, &client.owner_dead, "probe", &probe)
+                    .unwrap()
+            );
+            assert_eq!(
+                target.send(&client.sender, &client.owner_dead, "full", &probe),
+                Err(Error::QueueFull)
+            );
+            saved.send((pending, queue)).unwrap();
+        }))
+    });
+    let entries = Arc::new(AtomicUsize::new(0));
+    let calls = entries.clone();
+    assert!(matches!(
+        provider.serve_callback_with_spawner(
+            "/race",
+            "req",
+            "rep",
+            move |_| {
+                calls.fetch_add(1, Ordering::AcqRel);
+                Ok((vec![], true))
+            },
+            queued_spawn_failure_after_hook
+        ),
+        Err(Error::Native(_))
+    ));
+    let (pending, queue) = received.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(queue.upgrade().is_none());
+    assert_eq!(pending.wait(Duration::from_secs(3)), Err(Error::Timeout));
+    assert_eq!(entries.load(Ordering::Acquire), 0);
+    assert_eq!(provider.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(provider.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert!(provider.advertised_services().unwrap().is_empty());
 }
