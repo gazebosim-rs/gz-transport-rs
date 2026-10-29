@@ -218,6 +218,30 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "oneway-local-immediate") {
+    gz::transport::Node provider;
+    std::atomic<int> calls{0};
+    std::atomic<bool> bad{false};
+    const auto callerThread=std::this_thread::get_id();
+    std::function<void(const gz::msgs::Int32&)> callback=[&](const auto &request) {
+      ++calls;
+      if (request.data()!=5 || std::this_thread::get_id()!=callerThread) bad=true;
+    };
+    gz::msgs::Int32 request; request.set_data(5);
+    if (!provider.Advertise(topic,callback) || !node.Request(topic,request)) return 161;
+    if (calls!=1 || bad) return 162;
+    calls=0;
+    if (node.Request("Bad Srv",request)) return 163;
+    gz::msgs::Vector3d wrong;
+    if (!node.Request(topic,wrong)) return 164;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    if (calls!=0 || bad) return 165;
+    if (!provider.UnadvertiseSrv(topic) || !node.Request(topic,request)) return 166;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    if (calls!=0 || bad) return 167;
+    std::cout<<"inline=1 caller-thread=1 data=5 wrong-type=quiet withdrawal=quiet invalid-name=rejected\n";
+    return 0;
+  }
   if (mode == "resolve-local-immediate") {
     using Resolution=gz::transport::Node::ServiceTypeResolution;
     std::string request,response;

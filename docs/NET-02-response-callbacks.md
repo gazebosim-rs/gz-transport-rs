@@ -42,6 +42,8 @@ also checked. All new request operations, including inline ones, reserve from
 a separate per-Node counter limited by `Config::capacity`. New server and reply
 dispatchers share a separate per-Node thread counter with the same limit.
 Registration slots and existing command/pending queues retain their own bounds.
+Calls to `request_oneway` now share the request admission counter, and one-way callback
+dispatchers share the thread counter; see the [one-way contract](NET-02-oneway-callback.md).
 An exhausted callback counter returns `QueueFull` and increments `queue_drops`.
 An inline call creates no dispatcher thread and does not consume thread capacity.
 

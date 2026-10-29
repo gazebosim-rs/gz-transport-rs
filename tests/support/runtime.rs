@@ -407,7 +407,6 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.advertise("/topic", "one"));
@@ -537,7 +536,6 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_services().unwrap().is_empty());
     assert_eq!(
@@ -589,7 +587,6 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.serve("/topic", "req", "rep"));
@@ -646,7 +643,6 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     receiver
@@ -763,7 +759,6 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let service = node.serve("/race", "req", "rep").unwrap();
     let barrier = std::sync::Barrier::new(2);
@@ -2896,7 +2891,6 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.service_type_signatures("invalid service"),
@@ -2973,7 +2967,6 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("alias", "type").unwrap();
     assert_eq!(
@@ -3015,7 +3008,6 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(matches!(
         long.advertise("alias", "type"),
@@ -3320,7 +3312,6 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3364,7 +3355,6 @@ fn publisher_snapshot_uses_remembered_remote_registration_controls() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/wire", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3470,7 +3460,6 @@ fn publisher_snapshot_sees_admitted_local_interest_before_worker_commands() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     let subscription = node.subscribe("/topic", "T").unwrap();
@@ -3592,7 +3581,6 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_topics().unwrap().is_empty());
     assert!(node.subscribed_topics().unwrap().is_empty());
@@ -3720,7 +3708,6 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/one", "T").unwrap();
     drop(subscription);
@@ -3838,7 +3825,6 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.service_provider_types("invalid service"),
@@ -3933,7 +3919,6 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::XPUB).unwrap();
@@ -4036,7 +4021,6 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/topic", "T").unwrap();
     assert_eq!(node.unsubscribe("/topic"), Err(Error::QueueFull));
@@ -4089,7 +4073,6 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/typed").unwrap();
     let wrong = Vector3d {
@@ -4130,7 +4113,6 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/size").unwrap();
     assert_eq!(publisher.publish_typed(&right), Err(Error::InvalidFrame));
@@ -4606,7 +4588,6 @@ fn prepared_refresh_budget_rejects_without_enqueue_and_expired_work_stays_inert(
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/budget", "T").unwrap();
     worker.command(commands.recv().unwrap());
@@ -4870,7 +4851,6 @@ fn service_info_query_keeps_validation_timeout_backpressure_and_shutdown_errors(
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(node.known_service_info("bad name"), Err(Error::InvalidName));
     assert_eq!(node.known_service_info("/info"), Err(Error::Timeout));
@@ -5032,7 +5012,6 @@ fn publication_info_keeps_validation_queue_timeout_and_shutdown_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.known_topic_publishers("bad name"),
@@ -5342,7 +5321,6 @@ fn subscriber_metadata_query_keeps_name_queue_timeout_and_shutdown_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
         node.known_topic_subscribers("bad name"),
@@ -5581,7 +5559,6 @@ fn service_registry_node(worker: &Worker) -> Node {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
-        oneway_callbacks: Mutex::new(Vec::new()),
     }
 }
 fn service_registry_query(
@@ -6569,4 +6546,333 @@ fn inline_response_destructor_reentry_and_unwind_preserve_locks_and_admission() 
             .wait(Duration::from_secs(1))
             .unwrap();
     }
+}
+
+std::thread_local! {
+    static ONEWAY_SPAWN_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        std::cell::RefCell::new(None);
+}
+fn oneway_spawn_with_hook(task: CallbackTask) -> std::io::Result<JoinHandle<()>> {
+    let worker = spawn_callback(task)?;
+    let hook = ONEWAY_SPAWN_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+    Ok(worker)
+}
+#[test]
+fn oneway_callback_admission_rolls_back_spawn_queue_and_commit_retirement() {
+    let (worker, commands) = service_state(callback_config(2));
+    let node = service_registry_node(&worker);
+    assert!(matches!(
+        node.serve_oneway_with_spawner("/spawn", "in", |_| unreachable!(), callback_spawn_failure),
+        Err(Error::Native(_))
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert!(matches!(commands.try_recv(), Ok(Command::Serve(..))));
+    node.sender
+        .send(Command::Unsubscribe("full".into()))
+        .unwrap();
+    node.sender
+        .send(Command::Unsubscribe("full".into()))
+        .unwrap();
+    assert!(matches!(
+        node.serve_oneway_callback("/queue", "in", |_| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    drop(commands);
+    assert!(matches!(
+        node.serve_oneway_callback("/closed", "in", |_| unreachable!()),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    for retire in 0..3 {
+        let node = Arc::new(Node::new(callback_config(2)).unwrap());
+        let weak = Arc::downgrade(&node);
+        ONEWAY_SPAWN_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                let node = weak.upgrade().unwrap();
+                // The handoff can succeed before registration commits, but a
+                // parked dispatcher must never execute this failed registration.
+                node.begin_request("/race", "in", EMPTY_TYPE, vec![], Duration::from_secs(1))
+                    .unwrap()
+                    .wait(Duration::from_secs(1))
+                    .unwrap();
+                thread::sleep(Duration::from_millis(30));
+                match retire {
+                    0 => node.unadvertise_service("/race").unwrap(),
+                    1 => node.cancel(),
+                    _ => {
+                        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            let _guard = node.services.lock().unwrap();
+                            panic!("injected commit registry poison");
+                        }));
+                    }
+                }
+            }))
+        });
+        let calls = Arc::new(AtomicUsize::new(0));
+        let count = calls.clone();
+        let result = node.serve_oneway_with_spawner(
+            "/race",
+            "in",
+            move |_| {
+                count.fetch_add(1, Ordering::AcqRel);
+                Ok(())
+            },
+            oneway_spawn_with_hook,
+        );
+        if retire == 2 {
+            assert!(matches!(result, Err(Error::Native(_))));
+        } else {
+            assert!(matches!(result, Err(Error::Shutdown)));
+        }
+        assert_eq!(calls.load(Ordering::Acquire), 0);
+        assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+        assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    }
+}
+#[test]
+fn oneway_dispatcher_capacity_survives_lease_retirement_until_actual_exit() {
+    let node = Node::new(callback_config(1)).unwrap();
+    let (entered, entry) = mpsc::sync_channel(1);
+    let (resume, resumed) = mpsc::sync_channel(1);
+    let resumed = Mutex::new(resumed);
+    let service = node
+        .serve_oneway_callback("/busy", "in", move |_| {
+            entered.send(()).unwrap();
+            resumed
+                .lock()
+                .unwrap()
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap();
+            Ok(())
+        })
+        .unwrap();
+    let resume = CallbackUnblockOnDrop(resume);
+    assert!(matches!(
+        node.serve_oneway_callback("/busy", "in", |_| unreachable!()),
+        Err(Error::AlreadyAdvertised)
+    ));
+    callback_worker_service_ready(&node, "/busy");
+    assert_eq!(
+        node.begin_request("/busy", "in", EMPTY_TYPE, vec![], Duration::from_secs(2))
+            .unwrap()
+            .wait(Duration::from_secs(1)),
+        Ok((vec![], true))
+    );
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    node.unadvertise_service("/busy").unwrap();
+    assert!(node.advertised_services().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(
+        node.serve_oneway_callback("/busy", "in", |_| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 1);
+    resume.0.send(()).unwrap();
+    drop(service);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    let _replacement = node
+        .serve_oneway_callback("/busy", "in", |_| Ok(()))
+        .unwrap();
+    node.request_oneway("/busy", "in", vec![], Duration::from_secs(1))
+        .unwrap();
+}
+#[test]
+fn oneway_local_domains_payload_validation_and_nonpreemptible_timeout_are_explicit() {
+    let cfg = callback_config(4);
+    let mut small = cfg.clone();
+    small.max_message_bytes = 1;
+    let provider = Node::new(small).unwrap();
+    let caller = Node::new(cfg.clone()).unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = calls.clone();
+    let service = provider
+        .serve_oneway_callback("/bounded", "in", move |_| {
+            count.fetch_add(1, Ordering::AcqRel);
+            thread::sleep(Duration::from_millis(20));
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!(
+        caller.request_oneway("/bounded", "in", vec![1, 2], Duration::from_secs(1)),
+        Err(Error::InvalidFrame)
+    );
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    assert_eq!(
+        caller.request_oneway("/bounded", "in", vec![1], Duration::ZERO),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        caller.request_oneway("/bounded", "in", vec![1], Duration::MAX),
+        Err(Error::InvalidConfig)
+    );
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    // Timeout validates queued admission. It never preempts an inline function
+    // or changes successful completion into a post-execution timeout.
+    assert_eq!(
+        caller.request_oneway("/bounded", "in", vec![1], Duration::from_millis(1)),
+        Ok(())
+    );
+    assert_eq!(calls.load(Ordering::Acquire), 1);
+    for dimension in 0..5 {
+        let mut other = cfg.clone();
+        let topic = if dimension == 1 {
+            "bounded"
+        } else {
+            "/bounded"
+        };
+        match dimension {
+            0 => other.partition.push_str("other"),
+            1 => other.namespace = "other".into(),
+            2 => other.service_port = 15487,
+            3 => other.multicast = "239.255.0.8".parse().unwrap(),
+            _ => other.interface = "127.0.0.2".parse().unwrap(),
+        }
+        let other = Node::new(other).unwrap();
+        let qualified = other.remapped_topic(topic).unwrap();
+        assert!(
+            other
+                .local_callback(&qualified, "in", EMPTY_TYPE)
+                .unwrap()
+                .is_none()
+        );
+    }
+    let mut message_port = cfg;
+    message_port.message_port = 15486;
+    let other = Node::new(message_port).unwrap();
+    assert!(matches!(
+        other
+            .local_callback(&other.remapped_topic("/bounded").unwrap(), "in", EMPTY_TYPE)
+            .unwrap(),
+        Some(CallbackState::OneWay(_))
+    ));
+    provider.cancel();
+    assert!(
+        caller
+            .local_callback(
+                &caller.remapped_topic("/bounded").unwrap(),
+                "in",
+                EMPTY_TYPE
+            )
+            .unwrap()
+            .is_none()
+    );
+    drop(service);
+    caller.cancel();
+    assert_eq!(
+        caller.request_oneway("/bounded", "in", vec![], Duration::ZERO),
+        Err(Error::Shutdown)
+    );
+}
+#[test]
+fn oneway_inline_admission_covers_last_user_destructor_and_unwind() {
+    for panic_on_drop in [false, true] {
+        let cfg = callback_config(2);
+        let provider = Node::new(cfg.clone()).unwrap();
+        let mut cfg = cfg;
+        cfg.capacity = 1;
+        let caller = Arc::new(Node::new(cfg).unwrap());
+        let (entered, entry) = mpsc::sync_channel(1);
+        let (resume, resumed) = mpsc::sync_channel(1);
+        let resumed = Mutex::new(resumed);
+        let weak = Arc::downgrade(&caller);
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let drops = dropped.clone();
+        let user_drop = CallbackUserDrop(Box::new(move || {
+            let caller = weak.upgrade().unwrap();
+            callback_wait_until(|| caller.services.try_lock().is_ok());
+            callback_wait_until(|| local_service_workers().try_lock().is_ok());
+            assert!(matches!(
+                caller.request_oneway("/other", "in", vec![], Duration::from_secs(1)),
+                Err(Error::QueueFull)
+            ));
+            drops.fetch_add(1, Ordering::AcqRel);
+            if panic_on_drop {
+                panic!("one-way captured destructor panic");
+            }
+        }));
+        let service = provider
+            .serve_oneway_callback("/drop", "in", move |_| {
+                let _ = &user_drop;
+                entered.send(()).unwrap();
+                resumed
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(5))
+                    .unwrap();
+                Ok(())
+            })
+            .unwrap();
+        let resume = CallbackUnblockOnDrop(resume);
+        let _other = provider
+            .serve_oneway_callback("/other", "in", |_| Ok(()))
+            .unwrap();
+        let client = caller.clone();
+        let request = thread::spawn(move || {
+            client.request_oneway("/drop", "in", vec![], Duration::from_secs(1))
+        });
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        drop(service);
+        resume.0.send(()).unwrap();
+        let result = request.join();
+        if panic_on_drop {
+            let panic = result.expect_err("ordinary destructor panic must unwind");
+            assert_eq!(
+                panic.downcast_ref::<&str>(),
+                Some(&"one-way captured destructor panic")
+            );
+        } else {
+            assert_eq!(result.unwrap(), Ok(()));
+        }
+        assert_eq!(dropped.load(Ordering::Acquire), 1);
+        assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 0);
+        caller
+            .request_oneway("/other", "in", vec![], Duration::from_secs(1))
+            .unwrap();
+    }
+}
+
+#[test]
+fn oneway_dispatcher_can_drop_its_own_handle_without_early_permit_release() {
+    let node = Arc::new(Node::new(callback_config(1)).unwrap());
+    let holder = Arc::new(Mutex::new(None::<OneWayCallbackService>));
+    let own = holder.clone();
+    let weak = Arc::downgrade(&node);
+    let completed = Arc::new(AtomicBool::new(false));
+    let done = completed.clone();
+    let service = node
+        .serve_oneway_callback("/self", "in", move |_| {
+            let service = own.lock().unwrap().take();
+            drop(service);
+            let node = weak.upgrade().unwrap();
+            assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+            assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 1);
+            assert!(matches!(
+                node.serve_oneway_callback("/next", "in", |_| unreachable!()),
+                Err(Error::QueueFull)
+            ));
+            done.store(true, Ordering::Release);
+            Ok(())
+        })
+        .unwrap();
+    *holder.lock().unwrap() = Some(service);
+    callback_worker_service_ready(&node, "/self");
+    assert_eq!(
+        node.begin_request("/self", "in", EMPTY_TYPE, vec![], Duration::from_secs(1))
+            .unwrap()
+            .wait(Duration::from_secs(1)),
+        Ok((vec![], true))
+    );
+    callback_wait_until(|| completed.load(Ordering::Acquire));
+    callback_wait_until(|| node.sender.callback_threads.load(Ordering::Acquire) == 0);
+    assert!(holder.lock().unwrap().is_none());
+    let _replacement = node
+        .serve_oneway_callback("/next", "in", |_| Ok(()))
+        .unwrap();
 }

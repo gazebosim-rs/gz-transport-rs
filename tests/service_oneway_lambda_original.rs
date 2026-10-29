@@ -250,8 +250,12 @@ fn queued_callback_error_is_counted_and_following_request_runs() {
             }
         })
         .unwrap();
+    // Explicit queued handoff: this Empty result never acknowledges execution.
     client
-        .request_oneway(TOPIC, INT32, five(), Duration::from_secs(3))
+        .begin_request(TOPIC, INT32, EMPTY, five(), Duration::from_secs(3))
+        .unwrap()
+        .wait(Duration::from_secs(3))
+        .map(|_| ())
         .unwrap();
     for _ in 0..300 {
         if provider.statistics().routing_errors == 1 {
@@ -262,7 +266,10 @@ fn queued_callback_error_is_counted_and_following_request_runs() {
     assert_eq!(provider.statistics().routing_errors, 1);
     assert_eq!(calls.load(Ordering::Acquire), 1);
     client
-        .request_oneway(TOPIC, INT32, five(), Duration::from_secs(3))
+        .begin_request(TOPIC, INT32, EMPTY, five(), Duration::from_secs(3))
+        .unwrap()
+        .wait(Duration::from_secs(3))
+        .map(|_| ())
         .unwrap();
     for _ in 0..300 {
         if calls.load(Ordering::Acquire) == 2 {

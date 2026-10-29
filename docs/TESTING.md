@@ -532,8 +532,21 @@ the pinned native original 1/0 and exact raw-export Rust original 1/0, plus
 all seven focused Rust controls. Removing only the direct callback invocation
 fails the original at the post-request `executed` assertion. The reviewer
 approved the fixed same-Node observable original as `faithful_port`. C++
-callback API identity, process-global other-Node inline behavior, exact
-thread scheduling and native no-timeout API identity remain unclaimed.
+callback API identity, exact general scheduling and native no-timeout API
+identity remain unclaimed. A separate bounded repair now exercises same-domain
+cross-Node one-way completion with a freshly compiled native two-Node observer:
+Int32 data 5, caller thread, invalid name, wrong-type and withdrawal quiet
+intervals. Real native/Rust wire directions remain tested separately.
+
+The shared weak callback registry retains own callback/plain-queue priority and
+keeps worker metadata unchanged. Dedicated controls require thread permits
+through blocked execution after lease retirement, registration spawn/queue/commit
+rollback, request admission through user destruction, ordinary Drop unwind,
+self-drop, domain and payload validation, and no new inline execution deadline.
+The earlier queued-error supplement uses explicit `begin_request` with Empty
+and the unchanged wait/map fallback so its error/count/progress predicates still
+exercise queue handoff rather than inline completion. No native-original body
+or assertion changes, and this repair earns no new original-case credit.
 
 ## Wrong-type publication with local delivery
 

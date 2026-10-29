@@ -83,8 +83,9 @@ Two local service lambda originals now have direct variants through the
 accepted callback API, preserving their immediate response flags while retaining
 the earlier adapters. See the [selected lambda mappings](docs/NET-02-service-lambda.md).
 An owned [one-way callback service](docs/NET-02-oneway-callback.md) invokes a
-matching same-Node callback before raw `request_oneway` returns; queued
-other-Node requests use a separate callback dispatcher.
+matching callback on the same Node or another Node in the explicit local service
+domain before `request_oneway` returns. Existing own receivers retain priority;
+explicit queued and wire requests use a bounded owned dispatcher.
 `Config::add_topic_remap` installs bounded, exact-key substitutions before Node
 creation. Registration, subscriptions and requests apply one substitution;
 service inspection and explicit withdrawal use the advertised name, matching
