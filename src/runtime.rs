@@ -144,7 +144,7 @@ pub struct ServiceProviderInfo {
     pub request_type: String,
     pub response_type: String,
 }
-/// Owned metadata for one known message publication, with native effective options.
+/// Owned metadata in the native MessagePublisher shape, with effective options.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TopicPublisherInfo {
     pub topic: String,
@@ -158,6 +158,44 @@ pub struct TopicPublisherInfo {
     pub type_name: String,
     pub throttled: bool,
     pub msgs_per_sec: u64,
+}
+/// Subscriber metadata uses the same native fields as publication metadata.
+pub type TopicSubscriberInfo = TopicPublisherInfo;
+impl TopicPublisherInfo {
+    fn from_publisher(publisher: &WirePublisher) -> Option<Self> {
+        let Some(PubType::MsgPub(info)) = &publisher.pub_type else {
+            return None;
+        };
+        // Native ignores the raw rate when throttled is false, then derives
+        // Throttled from the effective rate, even for true/MAX.
+        let msgs_per_sec = if info.throttled {
+            info.msgs_per_sec
+        } else {
+            u64::MAX
+        };
+        Some(Self {
+            topic: publisher.topic.clone(),
+            address: publisher.address.clone(),
+            control_address: info.ctrl.clone(),
+            process_uuid: publisher.process_uuid.clone(),
+            node_uuid: publisher.node_uuid.clone(),
+            scope: publisher.scope(),
+            type_name: info.msg_type.clone(),
+            throttled: msgs_per_sec != u64::MAX,
+            msgs_per_sec,
+        })
+    }
+    fn same_subscriber(&self, other: &Self) -> bool {
+        // Native merges local handlers with remote storage by MessagePublisher
+        // equality, which deliberately ignores rate options.
+        self.topic == other.topic
+            && self.address == other.address
+            && self.control_address == other.control_address
+            && self.process_uuid == other.process_uuid
+            && self.node_uuid == other.node_uuid
+            && self.scope == other.scope
+            && self.type_name == other.type_name
+    }
 }
 /// Descriptor names from one bounded topic endpoint snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1573,6 +1611,17 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Snapshot owned metadata from this worker's live subscriptions and remote
+    /// wire records. Remote storage keeps the first record per topic/process/
+    /// address/node; legacy descriptor views remain type-aware. This query does
+    /// not refresh discovery or merge other Nodes' process-local registrations.
+    pub fn known_topic_subscribers(&self, topic: &str) -> Result<Vec<TopicSubscriberInfo>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::KnownTopicSubscribers(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// Resolve empty descriptor names from matching providers. Explicit names
     /// select providers; both explicit names return immediately without lookup.
     /// The provider wait is polled every 100ms on the caller, never the IO worker.
@@ -1695,6 +1744,7 @@ enum Command {
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     KnownServiceInfo(String, SyncSender<Vec<ServiceProviderInfo>>),
     KnownTopicPublishers(String, SyncSender<Vec<TopicPublisherInfo>>),
+    KnownTopicSubscribers(String, SyncSender<Vec<TopicSubscriberInfo>>),
     HasConnections(String, String, SyncSender<bool>),
     RefreshConnections(
         String,
@@ -1792,6 +1842,10 @@ struct SubscriberInterestKey {
     address: String,
     type_name: String,
 }
+struct SubscriberMetadata {
+    publisher: WirePublisher,
+    seen: Instant,
+}
 #[derive(Default)]
 struct TopicEndpointRecords {
     publishers: HashMap<PeerKey, String>,
@@ -1857,6 +1911,7 @@ struct Worker {
     peers: HashMap<PeerKey, (WirePublisher, Instant)>,
     remote_subscribers: HashMap<PeerKey, WirePublisher>,
     subscriber_interests: HashMap<SubscriberInterestKey, Instant>,
+    subscriber_metadata: HashMap<PeerKey, SubscriberMetadata>,
     connected: HashSet<String>,
     subscriptions_connected: HashSet<String>,
     response_connections: HashMap<String, Instant>,
@@ -2048,6 +2103,7 @@ impl Worker {
             peers: HashMap::new(),
             remote_subscribers: HashMap::new(),
             subscriber_interests: HashMap::new(),
+            subscriber_metadata: HashMap::new(),
             connected: HashSet::new(),
             subscriptions_connected: HashSet::new(),
             response_connections: HashMap::new(),
@@ -2376,30 +2432,31 @@ impl Worker {
         let mut records: Vec<_> = local
             .chain(remote)
             .filter(|publisher| publisher.topic == topic)
-            .filter_map(|publisher| {
-                let Some(PubType::MsgPub(info)) = &publisher.pub_type else {
-                    return None;
-                };
-                // Native ignores the raw rate when throttled is false, then
-                // derives Throttled from the effective rate, even for true/MAX.
-                let msgs_per_sec = if info.throttled {
-                    info.msgs_per_sec
-                } else {
-                    u64::MAX
-                };
-                Some(TopicPublisherInfo {
-                    topic: publisher.topic.clone(),
-                    address: publisher.address.clone(),
-                    control_address: info.ctrl.clone(),
-                    process_uuid: publisher.process_uuid.clone(),
-                    node_uuid: publisher.node_uuid.clone(),
-                    scope: publisher.scope(),
-                    type_name: info.msg_type.clone(),
-                    throttled: msgs_per_sec != u64::MAX,
-                    msgs_per_sec,
-                })
-            })
+            .filter_map(TopicPublisherInfo::from_publisher)
             .collect();
+        records.sort();
+        records
+    }
+    fn topic_subscriber_info(&self, topic: &str) -> Vec<TopicSubscriberInfo> {
+        let mut records: Vec<_> = self
+            .subscriber_metadata
+            .values()
+            .filter(|record| {
+                record.publisher.topic == topic && record.seen.elapsed() < Duration::from_secs(3)
+            })
+            .filter_map(|record| TopicSubscriberInfo::from_publisher(&record.publisher))
+            .collect();
+        for subscriber in &self.subscriptions {
+            if subscriber.active.load(Ordering::Acquire)
+                && subscriber.topic == topic
+                && let Some(local) = TopicSubscriberInfo::from_publisher(
+                    &self.subscriber_publisher(&subscriber.topic, &subscriber.type_name),
+                )
+                && !records.iter().any(|record| record.same_subscriber(&local))
+            {
+                records.push(local);
+            }
+        }
         records.sort();
         records
     }
@@ -2624,6 +2681,9 @@ impl Worker {
             }
             Command::KnownTopicPublishers(topic, reply) => {
                 let _ = reply.try_send(self.topic_publisher_info(&topic));
+            }
+            Command::KnownTopicSubscribers(topic, reply) => {
+                let _ = reply.try_send(self.topic_subscriber_info(&topic));
             }
             Command::HasConnections(topic, type_name, reply) => {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));
@@ -2961,6 +3021,8 @@ impl Worker {
             if channel == 0 {
                 self.subscriber_interests
                     .retain(|key, _| key.process != message.process_uuid);
+                self.subscriber_metadata
+                    .retain(|key, _| key.process != message.process_uuid);
             }
         }
         let local = matches!(source, IpAddr::V4(ip) if ip.is_loopback() || self.host_interfaces.contains(&ip));
@@ -2998,11 +3060,13 @@ impl Worker {
             }
             self.subscriber_interests
                 .retain(|key, _| key.process != process || key.node != node || key.topic != topic);
+            self.subscriber_metadata
+                .retain(|key, _| key.process != process || key.node != node || key.topic != topic);
             return;
         }
         match message.disc_contents {
             Some(DiscContents::Pub(p)) if channel == 0 && kind == Type::SubscribersRep => {
-                let Some(PubType::MsgPub(info)) = p.pub_type else {
+                let Some(PubType::MsgPub(info)) = &p.pub_type else {
                     return;
                 };
                 if p.process_uuid.is_empty()
@@ -3014,17 +3078,43 @@ impl Worker {
                 self.subscriber_interests
                     .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
                 let key = SubscriberInterestKey {
-                    process: p.process_uuid,
-                    node: p.node_uuid,
-                    topic: p.topic,
-                    address: p.address,
-                    type_name: info.msg_type,
+                    process: p.process_uuid.clone(),
+                    node: p.node_uuid.clone(),
+                    topic: p.topic.clone(),
+                    address: p.address.clone(),
+                    type_name: info.msg_type.clone(),
                 };
+                let mut dropped = false;
                 if let Some(stamp) = self.subscriber_interests.get_mut(&key) {
                     *stamp = Instant::now();
                 } else if self.subscriber_interests.len() < self.config.capacity {
                     self.subscriber_interests.insert(key, Instant::now());
                 } else {
+                    dropped = true;
+                }
+                self.subscriber_metadata
+                    .retain(|_, record| record.seen.elapsed() < Duration::from_secs(3));
+                let key = PeerKey {
+                    channel: 0,
+                    process: p.process_uuid.clone(),
+                    node: p.node_uuid.clone(),
+                    topic: p.topic.clone(),
+                    address: p.address.clone(),
+                };
+                if let Some(record) = self.subscriber_metadata.get_mut(&key) {
+                    record.seen = Instant::now();
+                } else if self.subscriber_metadata.len() < self.config.capacity {
+                    self.subscriber_metadata.insert(
+                        key,
+                        SubscriberMetadata {
+                            publisher: p,
+                            seen: Instant::now(),
+                        },
+                    );
+                } else {
+                    dropped = true;
+                }
+                if dropped {
                     self.sender
                         .counters
                         .queue_drops
@@ -3225,6 +3315,8 @@ impl Worker {
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
             self.subscriber_interests
                 .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
+            self.subscriber_metadata
+                .retain(|_, record| record.seen.elapsed() < Duration::from_secs(3));
             // Wake for commands while retaining the bounded socket poll interval.
             if let Ok(cmd) = rx.recv_timeout(Duration::from_millis(2)) {
                 self.command(cmd);

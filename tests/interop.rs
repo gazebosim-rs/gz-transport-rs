@@ -3443,3 +3443,83 @@ fn owned_topic_publishers_match_every_native_publication_field() {
         assert_eq!(actual, expected);
     }
 }
+
+#[test]
+fn owned_topic_subscribers_match_every_native_field_and_retirement() {
+    for (mode, value, count) in [
+        ("list-subscriber", "unused", 1),
+        ("list-generic-subscriber", "unused", 1),
+        ("list-rate-subscriber", "0", 1),
+        ("list-rate-subscriber", "7", 1),
+        ("list-subscriber", "unused", 2),
+        ("absent", "unused", 0),
+    ] {
+        let cfg = config();
+        let mut peers: Vec<_> = (0..count)
+            .map(|_| Peer::start(&cfg, mode, "/subscriber-info", value))
+            .collect();
+        let mut native = Peer::start(
+            &cfg,
+            "topic-subscriber-details",
+            "/subscriber-info",
+            "unused",
+        );
+        let node = Node::new(cfg).unwrap();
+        node.topic_info("/subscriber-info", Duration::from_secs(5))
+            .unwrap();
+        let actual = node.known_topic_subscribers("/subscriber-info").unwrap();
+        let mut header = String::new();
+        native.1.read_line(&mut header).unwrap();
+        assert_eq!(header, format!("1 {count}\n"));
+        let mut expected = Vec::new();
+        for _ in 0..count {
+            let fields: Vec<_> = (0..9)
+                .map(|_| {
+                    let mut line = String::new();
+                    assert!(native.1.read_line(&mut line).unwrap() > 0);
+                    line.strip_suffix('\n').unwrap().to_owned()
+                })
+                .collect();
+            assert!(matches!(fields[7].as_str(), "0" | "1"));
+            expected.push(gz_transport::TopicSubscriberInfo {
+                topic: fields[0].clone(),
+                address: fields[1].clone(),
+                control_address: fields[2].clone(),
+                process_uuid: fields[3].clone(),
+                node_uuid: fields[4].clone(),
+                scope: Scope::try_from(fields[5].parse::<i32>().unwrap()).unwrap(),
+                type_name: fields[6].clone(),
+                throttled: fields[7] == "1",
+                msgs_per_sec: fields[8].parse().unwrap(),
+            });
+        }
+        expected.sort();
+        assert_eq!(actual, expected, "{mode}/{value}");
+        assert_eq!(actual.len(), count);
+        for record in &actual {
+            assert!(!record.throttled);
+            assert_eq!(record.msgs_per_sec, u64::MAX);
+        }
+        if count == 2 {
+            assert_ne!(actual[0].process_uuid, actual[1].process_uuid);
+        }
+        native.success();
+        for peer in &mut peers {
+            peer.0.stdin.take().unwrap().write_all(b"QUIT\n").unwrap();
+            peer.success();
+        }
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !node
+            .known_topic_subscribers("/subscriber-info")
+            .unwrap()
+            .is_empty()
+        {
+            assert!(
+                Instant::now() < deadline,
+                "native subscriber remained visible"
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert_eq!(actual, expected);
+    }
+}

@@ -5054,3 +5054,313 @@ fn publication_info_keeps_validation_queue_timeout_and_shutdown_bounds() {
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 1);
 }
+
+fn subscriber_metadata_packet(worker: &Worker, topic: &str, node: &str) -> WirePublisher {
+    let mut p = worker.subscriber_publisher(topic, "gz.msgs.Int32");
+    p.process_uuid = "remote".into();
+    p.node_uuid = node.into();
+    p.address = "tcp://127.0.0.1:45000".into();
+    let Some(PubType::MsgPub(info)) = &mut p.pub_type else {
+        unreachable!()
+    };
+    info.ctrl = "ctrl-A".into();
+    info.throttled = true;
+    info.msgs_per_sec = 7;
+    p
+}
+fn subscriber_metadata_key(p: &WirePublisher) -> PeerKey {
+    PeerKey {
+        channel: 0,
+        process: p.process_uuid.clone(),
+        node: p.node_uuid.clone(),
+        topic: p.topic.clone(),
+        address: p.address.clone(),
+    }
+}
+fn receive_subscriber_metadata(worker: &mut Worker, p: WirePublisher) {
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "wire-sender",
+            Type::SubscribersRep,
+            Some(DiscContents::Pub(p)),
+        ),
+    );
+}
+
+#[test]
+fn subscriber_metadata_keeps_native_first_record_and_legacy_type_variants() {
+    let (mut worker, _) = state(16);
+    let topic = qualified_name(&worker.config.partition, "", "/metadata").unwrap();
+    let first = subscriber_metadata_packet(&worker, &topic, "node");
+    receive_subscriber_metadata(&mut worker, first.clone());
+    let held = worker.topic_subscriber_info(&topic);
+    assert_eq!(held.len(), 1);
+    assert_eq!(
+        held[0],
+        TopicSubscriberInfo {
+            topic: topic.clone(),
+            address: "tcp://127.0.0.1:45000".into(),
+            control_address: "ctrl-A".into(),
+            process_uuid: "remote".into(),
+            node_uuid: "node".into(),
+            scope: Scope::All,
+            type_name: "gz.msgs.Int32".into(),
+            throttled: true,
+            msgs_per_sec: 7
+        }
+    );
+    for kind in 0..4 {
+        let mut changed = first.clone();
+        if kind == 1 {
+            changed.scope = Scope::Host.into();
+        }
+        let Some(PubType::MsgPub(info)) = &mut changed.pub_type else {
+            unreachable!()
+        };
+        match kind {
+            0 => info.ctrl = "ctrl-B".into(),
+            2 => info.msg_type = "gz.msgs.StringMsg".into(),
+            3 => info.msgs_per_sec = 0,
+            _ => {}
+        };
+        receive_subscriber_metadata(&mut worker, changed);
+    }
+    assert_eq!(worker.subscriber_metadata.len(), 1);
+    assert_eq!(
+        worker.subscriber_metadata[&subscriber_metadata_key(&first)].publisher,
+        first
+    );
+    assert_eq!(worker.topic_subscriber_info(&topic), held);
+    assert_eq!(
+        worker.topic_endpoint_types(&topic).subscribers,
+        ["gz.msgs.Int32", "gz.msgs.StringMsg"]
+    );
+    let mut address = first.clone();
+    address.address = "tcp://127.0.0.1:45001".into();
+    receive_subscriber_metadata(&mut worker, address);
+    let mut node = first.clone();
+    node.node_uuid = "other-node".into();
+    receive_subscriber_metadata(&mut worker, node);
+    let mut process = first.clone();
+    process.process_uuid = "other-process".into();
+    receive_subscriber_metadata(&mut worker, process);
+    assert_eq!(worker.topic_subscriber_info(&topic).len(), 4);
+    assert_eq!(worker.topic_endpoint_types(&topic).subscribers.len(), 5);
+    let mut end = first.clone();
+    end.node_uuid = "missing".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "wire-sender",
+            Type::EndConnection,
+            Some(DiscContents::Pub(end.clone())),
+        ),
+    );
+    assert_eq!(worker.topic_subscriber_info(&topic).len(), 4);
+    end.node_uuid = "node".into();
+    let Some(PubType::MsgPub(info)) = &mut end.pub_type else {
+        unreachable!()
+    };
+    info.ctrl = "unrelated-control".into();
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "wire-sender",
+            Type::EndConnection,
+            Some(DiscContents::Pub(end)),
+        ),
+    );
+    assert_eq!(worker.topic_subscriber_info(&topic).len(), 2);
+    assert_eq!(worker.topic_endpoint_types(&topic).subscribers.len(), 2);
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
+    assert_eq!(worker.topic_subscriber_info(&topic).len(), 1);
+    worker.discovered(0, protocol::discovery("other-process", Type::Bye, None));
+    assert!(worker.topic_subscriber_info(&topic).is_empty());
+    assert_eq!(held[0].control_address, "ctrl-A");
+}
+
+#[test]
+fn subscriber_metadata_capacity_refresh_expiry_and_drop_counts_are_bounded() {
+    let (mut worker, _) = state(1);
+    let topic = qualified_name(&worker.config.partition, "", "/bounded").unwrap();
+    let first = subscriber_metadata_packet(&worker, &topic, "node");
+    let key = subscriber_metadata_key(&first);
+    receive_subscriber_metadata(&mut worker, first.clone());
+    worker.subscriber_metadata.get_mut(&key).unwrap().seen =
+        Instant::now() - Duration::from_secs(2);
+    let mut changed = first.clone();
+    let Some(PubType::MsgPub(info)) = &mut changed.pub_type else {
+        unreachable!()
+    };
+    info.msg_type = "gz.msgs.StringMsg".into();
+    info.msgs_per_sec = 0;
+    receive_subscriber_metadata(&mut worker, changed);
+    assert!(worker.subscriber_metadata[&key].seen.elapsed() < Duration::from_secs(1));
+    assert_eq!(worker.subscriber_metadata[&key].publisher, first);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    let mut other = first.clone();
+    other.node_uuid = "other".into();
+    receive_subscriber_metadata(&mut worker, other.clone());
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 2);
+    assert_eq!(worker.subscriber_interests.len(), 1);
+    assert_eq!(worker.subscriber_metadata.len(), 1);
+    // The two views have independently bounded admission, with one drop per packet.
+    worker.subscriber_metadata.get_mut(&key).unwrap().seen =
+        Instant::now() - Duration::from_secs(4);
+    assert!(worker.topic_subscriber_info(&topic).is_empty());
+    receive_subscriber_metadata(&mut worker, other.clone());
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 3);
+    assert_eq!(worker.topic_subscriber_info(&topic)[0].node_uuid, "other");
+    receive_subscriber_metadata(&mut worker, first);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 4);
+    assert_eq!(worker.topic_subscriber_info(&topic)[0].node_uuid, "other");
+    for stamp in worker.subscriber_interests.values_mut() {
+        *stamp = Instant::now() - Duration::from_secs(4);
+    }
+    for record in worker.subscriber_metadata.values_mut() {
+        record.seen = Instant::now() - Duration::from_secs(4);
+    }
+    other.node_uuid = "replacement".into();
+    receive_subscriber_metadata(&mut worker, other);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 4);
+    assert_eq!(worker.subscriber_interests.len(), 1);
+    assert_eq!(worker.subscriber_metadata.len(), 1);
+    assert_eq!(
+        worker.topic_subscriber_info(&topic)[0].node_uuid,
+        "replacement"
+    );
+}
+
+#[test]
+fn subscriber_metadata_local_normalization_and_native_merge_identity_are_distinct() {
+    let (mut worker, _) = state(16);
+    let topic = qualified_name(&worker.config.partition, "", "/local").unwrap();
+    let first = Arc::new(AtomicBool::new(true));
+    let duplicate = Arc::new(AtomicBool::new(true));
+    let integer = Arc::new(AtomicBool::new(true));
+    for (kind, active) in [
+        ("gz.msgs.StringMsg", first.clone()),
+        ("gz.msgs.StringMsg", duplicate.clone()),
+        ("gz.msgs.Int32", integer.clone()),
+    ] {
+        let mut options = SubscribeOptions::default();
+        options.set_msgs_per_sec(0);
+        worker.command(Command::Subscribe(
+            topic.clone(),
+            kind.into(),
+            mpsc::sync_channel(1).0,
+            active,
+            options,
+            None,
+        ));
+    }
+    let local = worker.topic_subscriber_info(&topic);
+    assert_eq!(local.len(), 2);
+    for info in &local {
+        assert!(!info.throttled);
+        assert_eq!(info.msgs_per_sec, u64::MAX);
+        assert!(info.control_address.is_empty());
+        assert_eq!(info.scope, Scope::All);
+    }
+    let original = local[0].clone();
+    let mut rate = original.clone();
+    rate.msgs_per_sec = 7;
+    rate.throttled = true;
+    assert!(original.same_subscriber(&rate));
+    for field in 0..7 {
+        let mut other = original.clone();
+        match field {
+            0 => other.topic.push_str("_other"),
+            1 => other.address.push_str("_other"),
+            2 => other.control_address.push_str("other"),
+            3 => other.process_uuid.push_str("_other"),
+            4 => other.node_uuid.push_str("_other"),
+            5 => other.scope = Scope::Host,
+            _ => other.type_name.push_str("_other"),
+        };
+        assert!(!original.same_subscriber(&other));
+    }
+    let mut remote = subscriber_metadata_packet(&worker, &topic, "remote-node");
+    remote.scope = Scope::Host.into();
+    receive_subscriber_metadata(&mut worker, remote.clone());
+    let records = worker.topic_subscriber_info(&topic);
+    assert_eq!(records.len(), 3);
+    let observed = records.iter().find(|r| r.process_uuid == "remote").unwrap();
+    assert_eq!(observed.control_address, "ctrl-A");
+    assert_eq!(observed.scope, Scope::Host);
+    assert!(observed.throttled);
+    assert_eq!(observed.msgs_per_sec, 7);
+    for (node, flag, rate) in [("false-rate", false, 7), ("true-max", true, u64::MAX)] {
+        let mut p = remote.clone();
+        p.node_uuid = node.into();
+        let Some(PubType::MsgPub(info)) = &mut p.pub_type else {
+            unreachable!()
+        };
+        info.throttled = flag;
+        info.msgs_per_sec = rate;
+        receive_subscriber_metadata(&mut worker, p);
+        let records = worker.topic_subscriber_info(&topic);
+        let normalized = records.iter().find(|r| r.node_uuid == node).unwrap();
+        assert!(!normalized.throttled);
+        assert_eq!(normalized.msgs_per_sec, u64::MAX);
+    }
+    first.store(false, Ordering::Release);
+    duplicate.store(false, Ordering::Release);
+    integer.store(false, Ordering::Release);
+    assert_eq!(worker.topic_subscriber_info(&topic).len(), 3);
+    let other = qualified_name(&worker.config.partition, "", "/other").unwrap();
+    assert!(worker.topic_subscriber_info(&other).is_empty());
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::KnownTopicSubscribers(topic.clone(), tx));
+    assert_eq!(rx.recv().unwrap().len(), 3);
+    let (tx, rx) = mpsc::sync_channel(1);
+    drop(rx);
+    worker.command(Command::KnownTopicSubscribers(topic, tx));
+}
+
+#[test]
+fn subscriber_metadata_query_keeps_name_queue_timeout_and_shutdown_bounds() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
+    };
+    assert_eq!(
+        node.known_topic_subscribers("bad name"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(node.known_topic_subscribers("/info"), Err(Error::Timeout));
+    assert_eq!(node.known_topic_subscribers("/info"), Err(Error::QueueFull));
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::KnownTopicSubscribers(_, _)
+    ));
+    let commands = thread::scope(|scope| {
+        let consumer = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(node.known_topic_subscribers("/info"), Err(Error::Shutdown));
+        consumer.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(node.known_topic_subscribers("/info"), Err(Error::Shutdown));
+    node.cancel();
+    assert_eq!(node.known_topic_subscribers("/info"), Err(Error::Shutdown));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 1);
+}

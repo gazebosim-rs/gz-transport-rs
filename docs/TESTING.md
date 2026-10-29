@@ -945,3 +945,12 @@ and fresh native every-field comparisons for six fixtures. Eight native option
 controls preserve effective flag/rate semantics without changing raw records.
 The tests join the normal full gate; prior assertions and ledger dispositions
 remain. These checks establish no global discovery or performance claim.
+
+## Owned subscriber metadata
+
+The [subscriber metadata contract](NET-01-owned-subscriber-info.md) preserves
+existing typed-view assertions beside a bounded native-keyed full-record cache.
+Eight new checks cover native storage identity/retirement, public and worker
+boundaries, overflow observability, local/remote normalization and six real
+native every-field fixtures. Prior typed identity and publication metadata
+checks remain unchanged. The normal source/native/coverage gate remains required.

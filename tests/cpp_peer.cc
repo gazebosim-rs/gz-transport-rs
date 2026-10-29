@@ -74,6 +74,38 @@ static std::optional<bool> wait_metadata(const std::shared_ptr<MetadataState> &s
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "subscriber-storage-identity") {
+    using namespace gz::transport;
+    AdvertiseMessageOptions options; options.SetMsgsPerSec(7);
+    MessagePublisher base(topic,"tcp://127.0.0.1:45000","ctrl-A","process","node","gz.msgs.Int32",options);
+    for (const auto &kind:std::vector<std::string>{"identical","ctrl","scope","type","rate","address","node","process","topic"}) {
+      auto changed=base;
+      if (kind=="ctrl") changed.SetCtrl("ctrl-B");
+      if (kind=="scope") { auto opts=changed.Options();opts.SetScope(Scope_t::HOST);changed.SetOptions(opts); }
+      if (kind=="type") changed.SetMsgTypeName("gz.msgs.StringMsg");
+      if (kind=="rate") { auto opts=changed.Options();opts.SetMsgsPerSec(0);changed.SetOptions(opts); }
+      if (kind=="address") changed.SetAddr("tcp://127.0.0.1:45001");
+      if (kind=="node") changed.SetNUuid("other-node");
+      if (kind=="process") changed.SetPUuid("other-process");
+      if (kind=="topic") changed.SetTopic(topic+"_other");
+      TopicStorage<MessagePublisher> storage;
+      const bool first=storage.AddPublisher(base), next=storage.AddPublisher(changed);
+      std::map<std::string,std::vector<MessagePublisher>> groups;storage.Publishers(topic,groups);
+      const auto &kept=groups.begin()->second.front();
+      std::cout<<kind<<' '<<(base==changed)<<' '<<first<<' '<<next<<' '<<Count(storage,topic)
+               <<' '<<kept.Ctrl()<<' '<<static_cast<int>(kept.Options().Scope())
+               <<' '<<kept.MsgTypeName()<<' '<<kept.Options().MsgsPerSec()<<'\n';
+    }
+    TopicStorage<MessagePublisher> storage;storage.AddPublisher(base);
+    auto address=base;address.SetAddr("tcp://127.0.0.1:45001");storage.AddPublisher(address);
+    auto node=base;node.SetNUuid("other-node");storage.AddPublisher(node);
+    auto process=base;process.SetPUuid("other-process");storage.AddPublisher(process);
+    std::cout<<"retirement "<<Count(storage,topic)<<' '
+             <<storage.DelPublisherByNode(topic,"process","missing")<<' '<<Count(storage,topic)<<' '
+             <<storage.DelPublisherByNode(topic,"process","node")<<' '<<Count(storage,topic)<<' ';
+    storage.DelPublishersByProc("process");std::cout<<Count(storage,topic)<<std::endl;
+    return 0;
+  }
   if (mode == "publisher-option-reference") {
     gz::msgs::Discovery discovery;
     auto *options=discovery.mutable_pub()->mutable_msg_pub();
@@ -186,12 +218,13 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
-  if (mode == "topic-publisher-details") {
+  if (mode == "topic-publisher-details" || mode == "topic-subscriber-details") {
     std::cout << "READY" << std::endl;
     std::vector<gz::transport::MessagePublisher> publishers,subscribers;
     const bool found=node.TopicInfo(topic,publishers,subscribers);
-    std::cout << found << ' ' << publishers.size() << '\n';
-    for (const auto &publisher:publishers) {
+    const auto &records=mode=="topic-subscriber-details"?subscribers:publishers;
+    std::cout << found << ' ' << records.size() << '\n';
+    for (const auto &publisher:records) {
       std::cout << publisher.Topic() << '\n' << publisher.Addr() << '\n'
                 << publisher.Ctrl() << '\n' << publisher.PUuid() << '\n'
                 << publisher.NUuid() << '\n'
@@ -488,6 +521,19 @@ int main(int argc, char **argv) {
     std::cout << "READY" << std::endl;
     std::unique_lock<std::mutex> lock(state->mutex);
     if (!state->cv.wait_for(lock,std::chrono::seconds(8),[&]{return state->received;})) return 5;
+  } else if (mode == "list-rate-subscriber") {
+    std::function<void(const gz::msgs::StringMsg&)> callback=[](const auto &) {};
+    gz::transport::SubscribeOptions options;options.SetMsgsPerSec(std::stoull(value));
+    if (!node.Subscribe(topic,callback,options)) return 125;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 126;
+  } else if (mode == "list-generic-subscriber") {
+    gz::transport::RawCallback callback=[](const char *,const size_t,const gz::transport::MessageInfo &) {};
+    if (!node.SubscribeRaw(topic,callback)) return 127;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 128;
   } else if (mode == "list-subscriber") {
     std::function<void(const gz::msgs::StringMsg&)> callback = [](const auto &) {};
     if (!node.Subscribe(topic, callback)) return 88;

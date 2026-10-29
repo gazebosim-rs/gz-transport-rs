@@ -33,6 +33,11 @@ Rust Node collapse to one entry, as native `TopicInfoHelper` collapses equal
 remote node identities can produce duplicate type names. The vectors omit
 native address/control/options and process-global shared-node metadata.
 
+The separate [owned subscriber snapshot](NET-01-owned-subscriber-info.md) retains
+full native wire records and native remote keep-first coalescing. This descriptor
+view keeps its existing type-aware identity and assertions; remote type variants
+can therefore have different cardinality between the two explicit views.
+
 ## Selected subscriber-only original
 
 `original_topic_info_subscriber_only_ready` keeps the native Int32 subscription
