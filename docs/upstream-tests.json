@@ -4431,11 +4431,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallAsyncLambda",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
+        "original_service_call_async_lambda_direct",
         "original_service_call_async_lambda"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; superseding callback-order audit receipt docs/reviews/service-lambda-disposition-correction.json corrects prior faithful_port credit to partial; original native2/0, raw Rust2/0 and closure-removal mutant remain positive for payload/result/once only. Original source review docs/reviews/service-lambda.json retained historically.",
+      "review": "Independent /root reviewed exact native source, direct API boundary and preserved old bodies, then passed fresh four old/new Rust tests and unchanged pinned native originals 2/0. Both callbacks count entries before assertions; the immediate executed flag precedes any completion wait. The one-second Rust operation bound versus untimed native bodies is explicit. Only this selected case gains faithful credit conditional on normal strict staged qualification and exact hosted CI. Historical adapter-only disposition correction remains valid; no production change or broader scheduling, identity, remote timing or deadline equivalence claim.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4444,20 +4445,21 @@
         }
       ],
       "reference_features": [],
-      "contract": "Pinned /foo provider lambda receives Int32 data5 and returns Int32 data5. Rust response closure observes actual Int32 data5 and true result once before the test adapter returns. Native local Node::Request invokes the provider and response callbacks inline before the actual API returns; Rust Node::request returns before the adapter invokes its closure. That immediate post-Node-request flag predicate remains unported. C++ callback registration, exact scheduling/thread identity, remote asynchronous behavior and native no-timeout semantics are also unclaimed.",
-      "configuration": "Pinned Linux x86_64 ZeroMQ native local originals and owned Rust request/dispatch adaptation; remote callback paths and other backends pending.",
-      "evidence": "docs/NET-02-service-lambda.md; docs/reviews/service-lambda.json; mandatory pinned native NodeTest lambda originals; exact staged source gate; superseding docs/reviews/service-lambda-disposition-correction.json"
+      "contract": "One Node successfully registers /foo with a provider callback, receives Int32 data 5 and returns Int32 data 5 with true result. A successful actual request_callback call invokes the response closure inline; its parsed data 5 and true result checks precede executed, which is asserted immediately after actual API return without adapter, readiness or completion wait. Pre-assert service and response entry counters each equal one; completion is checked afterward. All prior adapter bodies and assertions remain. The one-second Rust operation bound is an explicit capability translation of these untimed native fixtures; no general native timeout, scheduling, global identity or remote immediate-completion equivalence is claimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ local originals and owned bounded callback APIs; one Node and exact local match. Prior queued adapters remain; other backends and broader behavior pending.",
+      "evidence": "docs/NET-02-service-lambda.md; docs/NET-02-response-callbacks.md; independent /root fresh source/native replay; mandatory unchanged pinned native lambda originals; normal strict staged gate and exact hosted CI required. Historical docs/reviews/service-lambda.json and service-lambda-disposition-correction.json remain unchanged."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutInputAsyncLambda",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ServiceCallWithoutInputAsyncLambda",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
+        "original_service_call_without_input_async_lambda_direct",
         "original_service_call_without_input_async_lambda"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-26 UTC; superseding callback-order audit receipt docs/reviews/service-lambda-disposition-correction.json corrects prior faithful_port credit to partial; original native2/0, raw Rust2/0 and closure-removal mutant remain positive for payload/result/once only. Original source review docs/reviews/service-lambda.json retained historically.",
+      "review": "Independent /root reviewed exact native source, direct API boundary and preserved old bodies, then passed fresh four old/new Rust tests and unchanged pinned native originals 2/0. Both callbacks count entries before assertions; the immediate executed flag precedes any completion wait. The one-second Rust operation bound versus untimed native bodies is explicit. Only this selected case gains faithful credit conditional on normal strict staged qualification and exact hosted CI. Historical adapter-only disposition correction remains valid; no production change or broader scheduling, identity, remote timing or deadline equivalence claim.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4466,9 +4468,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Pinned /foo provider lambda receives canonical Empty input and returns Int32 data5. Rust response closure observes actual Int32 data5 and true result once before the test adapter returns. Native local Node::Request invokes the provider and response callbacks inline before the actual API returns; Rust Node::request returns before the adapter invokes its closure. That immediate post-Node-request flag predicate remains unported. C++ callback registration, exact scheduling/thread identity, remote asynchronous behavior and native no-timeout semantics are also unclaimed.",
-      "configuration": "Pinned Linux x86_64 ZeroMQ native local originals and owned Rust request/dispatch adaptation; remote callback paths and other backends pending.",
-      "evidence": "docs/NET-02-service-lambda.md; docs/reviews/service-lambda.json; mandatory pinned native NodeTest lambda originals; exact staged source gate; superseding docs/reviews/service-lambda-disposition-correction.json"
+      "contract": "One Node successfully registers /foo with a provider callback, takes canonical Empty input and returns Int32 data 5 with true result. A successful actual request_callback call invokes the response closure inline; its parsed data 5 and true result checks precede executed, which is asserted immediately after actual API return without adapter, readiness or completion wait. Pre-assert service and response entry counters each equal one; completion is checked afterward. All prior adapter bodies and assertions remain. The one-second Rust operation bound is an explicit capability translation of these untimed native fixtures; no general native timeout, scheduling, global identity or remote immediate-completion equivalence is claimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ local originals and owned bounded callback APIs; one Node and exact local match. Prior queued adapters remain; other backends and broader behavior pending.",
+      "evidence": "docs/NET-02-service-lambda.md; docs/NET-02-response-callbacks.md; independent /root fresh source/native replay; mandatory unchanged pinned native lambda originals; normal strict staged gate and exact hosted CI required. Historical docs/reviews/service-lambda.json and service-lambda-disposition-correction.json remain unchanged."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.ServiceCallWithoutOutputAsyncLambda",

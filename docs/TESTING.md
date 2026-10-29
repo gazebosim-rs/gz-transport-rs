@@ -498,9 +498,20 @@ production lines and 3739/3902 regions; no production line changed. A
 [superseding disposition review](reviews/service-lambda-disposition-correction.json)
 found that native invokes the response callback before `Node::Request` returns,
 while Rust invokes it after `Node::request` returns and before the test helper
-returns. Both originals are partial. Native callback registration, the actual
-post-request timing predicate, exact scheduling/thread identity, remote
-asynchronous behavior and native no-timeout semantics remain unported.
+returns. That correction remains valid for the retained adapter variants.
+
+New direct variants in `service_lambda_original.rs` use `serve_callback` and
+`request_callback` on one Node. They preserve successful registration and
+request admission, Int32 data 5 and true result, and check `executed` immediately
+after the actual request call. No adapter, readiness query or completion wait
+precedes that assertion. Both callbacks count entries before parsing/assertions
+and must run exactly once. Completion is checked afterward, so a caught panic
+cannot disappear. The original bodies are untimed; the Rust API's one-second
+bound is an explicit capability translation. Independent `/root` review passed
+fresh four old/new Rust tests and native originals 2/0, with all old bodies
+unchanged. Only these two cases gain faithful credit after strict local and hosted gates;
+global identity, remote immediate completion, indefinite-timeout equivalence
+and broader scheduling remain unclaimed.
 
 ## One-way local callback return boundary
 

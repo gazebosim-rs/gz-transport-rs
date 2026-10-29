@@ -19,7 +19,14 @@
 // Node_TEST.cc ServiceCallAsyncLambda and ServiceCallWithoutInputAsyncLambda.
 use gz_msgs::{int32::Int32, prost::Message};
 use gz_transport::{Config, Node};
-use std::{thread, time::Duration};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+    },
+    thread,
+    time::Duration,
+};
 
 const TOPIC: &str = "/foo";
 const INT32: &str = "gz.msgs.Int32";
@@ -111,4 +118,78 @@ fn original_service_call_async_lambda() {
 #[test]
 fn original_service_call_without_input_async_lambda() {
     original_case(false);
+}
+
+// Direct variants preserve the native Request return boundary. Keep the older
+// queued adapters above as separate retained observations.
+fn direct_original_case(with_input: bool) {
+    let node = node();
+    let request_type = if with_input { INT32 } else { EMPTY };
+    let service_entries = Arc::new(AtomicUsize::new(0));
+    let provider_entries = service_entries.clone();
+    let _service = node
+        .serve_callback(TOPIC, request_type, INT32, move |bytes| {
+            // Native EXPECT_EQ is nonfatal; count before parsing so catching a Rust
+            // assertion panic cannot hide entry into the user function.
+            provider_entries.fetch_add(1, Ordering::AcqRel);
+            let value = if with_input {
+                let request = Int32::decode(bytes).unwrap();
+                assert_eq!(request.data, DATA);
+                request.data
+            } else {
+                assert!(bytes.is_empty());
+                DATA
+            };
+            Ok((
+                Int32 {
+                    data: value,
+                    ..Default::default()
+                }
+                .encode_to_vec(),
+                true,
+            ))
+        })
+        .unwrap();
+    let executed = Arc::new(AtomicBool::new(false));
+    let response_entries = Arc::new(AtomicUsize::new(0));
+    let reply_executed = executed.clone();
+    let reply_entries = response_entries.clone();
+    let data = if with_input {
+        Int32 {
+            data: DATA,
+            ..Default::default()
+        }
+        .encode_to_vec()
+    } else {
+        Vec::new()
+    };
+    let request = node
+        .request_callback(
+            TOPIC,
+            request_type,
+            INT32,
+            data,
+            RUST_WAIT,
+            move |bytes, result| {
+                reply_entries.fetch_add(1, Ordering::AcqRel);
+                let reply = Int32::decode(bytes.as_slice()).unwrap();
+                assert_eq!(reply.data, DATA);
+                assert!(result);
+                reply_executed.store(true, Ordering::Release);
+            },
+        )
+        .unwrap();
+    // No adapter, readiness query or completion wait precedes the original flag.
+    assert!(executed.load(Ordering::Acquire));
+    assert_eq!(service_entries.load(Ordering::Acquire), 1);
+    assert_eq!(response_entries.load(Ordering::Acquire), 1);
+    assert_eq!(request.wait(RUST_WAIT), Ok(()));
+}
+#[test]
+fn original_service_call_async_lambda_direct() {
+    direct_original_case(true);
+}
+#[test]
+fn original_service_call_without_input_async_lambda_direct() {
+    direct_original_case(false);
 }

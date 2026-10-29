@@ -79,9 +79,9 @@ An owned dispatch adaptation covers three native member-service cases,
 including request before local service registration. New direct callback
 variants preserve the two local immediate response checks; the earlier queued
 variants remain. See the [selected member-service mappings](docs/NET-02-class-member-service.md).
-Two local service lambda originals retain their fixed provider and response
-observations through an [owned request adapter](docs/NET-02-service-lambda.md).
-Their callback timing at the actual `Node::request` return remains partial.
+Two local service lambda originals now have direct variants through the
+accepted callback API, preserving their immediate response flags while retaining
+the earlier adapters. See the [selected lambda mappings](docs/NET-02-service-lambda.md).
 An owned [one-way callback service](docs/NET-02-oneway-callback.md) invokes a
 matching same-Node callback before raw `request_oneway` returns; queued
 other-Node requests use a separate callback dispatcher.
