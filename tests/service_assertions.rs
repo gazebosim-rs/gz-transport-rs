@@ -320,8 +320,8 @@ fn discovered_resolve_service_types_ambiguous() {
     let second = Node::new(config).unwrap();
     let _one = first.serve("/foo", INT32, INT32).unwrap();
     let _two = second.serve("/foo", INT32, "gz.msgs.StringMsg").unwrap();
-    // Native Nodes share discovery immediately; independent Rust workers must
-    // first observe both real advertisements. This setup mapping is explicit.
+    // Retain the earlier discovered-signature setup as a worker-view regression.
+    // The separate direct original now checks admitted local resolver visibility.
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         if first.service_type_signatures("/foo").unwrap().len() == 2 {

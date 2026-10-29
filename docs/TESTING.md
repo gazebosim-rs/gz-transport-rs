@@ -965,3 +965,13 @@ cover failed-connect capacity recovery, full-capacity withdrawal/replacement in
 one batch, independently bounded routes, drop counts, shared addresses, multiple
 topics and unsubscribe/shutdown release. Old freshness, channel and withdrawal assertions
 remain unchanged; no ledger promotion or broad lifetime completion is implied.
+
+## Immediate admitted local service resolution
+
+The [local resolver contract](NET-01-local-service-resolution.md) retains the old
+barrier-based ambiguity fixture and adds the direct original with zero timeout.
+Four public/native tests and four private controls check immediate selection,
+lifetime/rollback, stale copied peer masking, bounded retained owners, actual
+worker expiry and domain isolation. Private Node construction shares the admitted
+vector with its worker identity; all prior assertions remain. Normal production
+coverage and real native gates remain mandatory before promotion/publication.

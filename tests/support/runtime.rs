@@ -406,7 +406,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
@@ -536,7 +536,7 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_services().unwrap().is_empty());
@@ -588,7 +588,7 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let results = thread::scope(|scope| {
@@ -645,7 +645,7 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -762,7 +762,7 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let service = node.serve("/race", "req", "rep").unwrap();
@@ -826,11 +826,14 @@ impl TestDiscovery for Worker {
 }
 
 fn state(capacity: usize) -> (Worker, Receiver<Command>) {
-    let config = Config {
+    service_state(Config {
         capacity,
         partition: Uuid::new_v4().to_string(),
         ..Default::default()
-    };
+    })
+}
+fn service_state(config: Config) -> (Worker, Receiver<Command>) {
+    let capacity = config.capacity;
     let (tx, rx) = mpsc::sync_channel(capacity);
     let (response_tx, response_rx) = mpsc::sync_channel(capacity.min(64));
     let sender = Sender {
@@ -2890,7 +2893,7 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
@@ -2967,7 +2970,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("alias", "type").unwrap();
@@ -3009,7 +3012,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         config: long,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(matches!(
@@ -3314,7 +3317,7 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
@@ -3358,7 +3361,7 @@ fn publisher_snapshot_uses_remembered_remote_registration_controls() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/wire", "T").unwrap();
@@ -3464,7 +3467,7 @@ fn publisher_snapshot_sees_admitted_local_interest_before_worker_commands() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
@@ -3586,7 +3589,7 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
         config,
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert!(node.advertised_topics().unwrap().is_empty());
@@ -3714,7 +3717,7 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/one", "T").unwrap();
@@ -3832,7 +3835,7 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
@@ -3927,7 +3930,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let context = zmq::Context::new();
@@ -4030,7 +4033,7 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let subscription = node.subscribe("/topic", "T").unwrap();
@@ -4083,7 +4086,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/typed").unwrap();
@@ -4124,7 +4127,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/size").unwrap();
@@ -4600,7 +4603,7 @@ fn prepared_refresh_budget_rejects_without_enqueue_and_expired_work_stays_inert(
         config: worker.config.clone(),
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     let publisher = node.advertise("/budget", "T").unwrap();
@@ -4864,7 +4867,7 @@ fn service_info_query_keeps_validation_timeout_backpressure_and_shutdown_errors(
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(node.known_service_info("bad name"), Err(Error::InvalidName));
@@ -5026,7 +5029,7 @@ fn publication_info_keeps_validation_queue_timeout_and_shutdown_bounds() {
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
@@ -5336,7 +5339,7 @@ fn subscriber_metadata_query_keeps_name_queue_timeout_and_shutdown_bounds() {
         },
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
-        services: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
         oneway_callbacks: Mutex::new(Vec::new()),
     };
     assert_eq!(
@@ -5561,4 +5564,230 @@ fn failed_connection_does_not_retain_permanent_route_capacity() {
     );
     assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
     assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+}
+
+fn service_registry_node(worker: &Worker) -> Node {
+    Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
+        oneway_callbacks: Mutex::new(Vec::new()),
+    }
+}
+fn service_registry_query(
+    node: &Node,
+    worker: &mut Worker,
+    commands: &Receiver<Command>,
+    topic: &str,
+) -> Result<ServiceTypeResolution, Error> {
+    thread::scope(|scope| {
+        let query = scope.spawn(|| node.resolve_service_types(topic, "", "", Duration::ZERO));
+        worker.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+        query.join().unwrap()
+    })
+}
+fn service_registry_packet(source: &Worker, topic: &str) -> WirePublisher {
+    let mut publisher = source.wire_publisher(
+        topic.into(),
+        PubType::SrvPub(ServicePublisher {
+            request_type: "wire-old".into(),
+            response_type: "wire-old".into(),
+            ..Default::default()
+        }),
+    );
+    publisher.address = source.service_address.clone();
+    publisher
+}
+#[test]
+fn local_service_resolution_masks_stale_copies_without_changing_worker_views() {
+    let (mut source, source_commands) = state(2);
+    let node = service_registry_node(&source);
+    let (mut observer, commands) = service_state(source.config.clone());
+    let query_node = service_registry_node(&observer);
+    let service = node.serve("/cached", "declared", "declared").unwrap();
+    source.command(source_commands.recv().unwrap());
+    let topic = node.topic("/cached").unwrap();
+    let publisher = service_registry_packet(&source, &topic);
+    observer.discovered(
+        1,
+        protocol::advertisement(&source.process, publisher.clone()),
+    );
+    assert_eq!(observer.local_service_owners.len(), 1);
+    assert_eq!(
+        observer.service_signatures(&topic)[0].request_type,
+        "wire-old"
+    );
+    assert_eq!(
+        service_registry_query(&query_node, &mut observer, &commands, "/cached"),
+        Ok(ServiceTypeResolution::Resolved(ServiceTypes {
+            request_type: "declared".into(),
+            response_type: "declared".into()
+        }))
+    );
+    let active = service._lease.active.clone();
+    drop(service);
+    assert!(!active.load(Ordering::Acquire));
+    assert_eq!(
+        service_registry_query(&query_node, &mut observer, &commands, "/cached"),
+        Ok(ServiceTypeResolution::NoProviders)
+    );
+    // The old public worker projection is deliberately still its wire snapshot.
+    assert_eq!(
+        observer.service_signatures(&topic)[0].request_type,
+        "wire-old"
+    );
+    drop(node);
+    drop(source);
+    drop(source_commands);
+    let held = observer.local_service_owners[&publisher.process_uuid].clone();
+    assert!(held.get().unwrap().stopped.upgrade().is_none());
+    // Even a retained active flag cannot override expired owner stop ownership.
+    held.get()
+        .unwrap()
+        .services
+        .lock()
+        .unwrap()
+        .push(LocalService {
+            topic: topic.clone(),
+            types: ServiceTypes {
+                request_type: "not-live".into(),
+                response_type: "not-live".into(),
+            },
+            active: Arc::downgrade(&active),
+        });
+    active.store(true, Ordering::Release);
+    assert_eq!(
+        service_registry_query(&query_node, &mut observer, &commands, "/cached"),
+        Ok(ServiceTypeResolution::NoProviders)
+    );
+    let weak = Arc::downgrade(&held);
+    drop(held);
+    observer.discovered(
+        1,
+        protocol::discovery(&publisher.process_uuid, Type::Bye, None),
+    );
+    assert!(observer.local_service_owners.is_empty());
+    assert!(weak.upgrade().is_none());
+}
+#[test]
+fn local_service_owner_retention_follows_admitted_peer_capacity_and_withdrawal() {
+    let (source, _) = state(2);
+    let (other, _) = service_state(source.config.clone());
+    let mut cfg = source.config.clone();
+    cfg.capacity = 1;
+    let (mut observer, _) = service_state(cfg);
+    let first_topic = qualified_name(&source.config.partition, "", "/first").unwrap();
+    let second_topic = qualified_name(&source.config.partition, "", "/second").unwrap();
+    let first = service_registry_packet(&source, &first_topic);
+    let second = service_registry_packet(&other, &second_topic);
+    observer.discovered(1, protocol::advertisement(&source.process, first.clone()));
+    observer.discovered(1, protocol::advertisement(&other.process, second.clone()));
+    assert_eq!(observer.peers.len(), 1);
+    assert_eq!(observer.local_service_owners.len(), 1);
+    assert!(!observer.local_service_owners.contains_key(&other.process));
+    observer.discovered(0, protocol::discovery(&source.process, Type::Bye, None));
+    assert_eq!(observer.local_service_owners.len(), 1);
+    observer.discovered(
+        1,
+        protocol::discovery(
+            &source.process,
+            Type::Unadvertise,
+            Some(DiscContents::Pub(first)),
+        ),
+    );
+    assert!(observer.local_service_owners.is_empty());
+    observer.discovered(1, protocol::advertisement(&other.process, second));
+    assert_eq!(observer.local_service_owners.len(), 1);
+    observer.peers.clear();
+    observer.retain_local_service_owners();
+    assert!(observer.local_service_owners.is_empty());
+}
+#[test]
+fn local_service_registry_admission_rollback_keeps_types_and_leases_authoritative() {
+    let (worker, commands) = state(1);
+    let node = service_registry_node(&worker);
+    let (tx, _) = mpsc::sync_channel(1);
+    node.sender.send(Command::KnownServices(tx)).unwrap();
+    assert!(matches!(
+        node.serve("/rejected", "bad", "bad"),
+        Err(Error::QueueFull)
+    ));
+    assert!(node.services.lock().unwrap().is_empty());
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    drop(commands.recv().unwrap());
+    let service = node.serve("/accepted", "original", "original").unwrap();
+    assert!(matches!(
+        node.serve("/accepted", "different", "different"),
+        Err(Error::AlreadyAdvertised)
+    ));
+    assert!(matches!(
+        node.serve("/overflow", "different", "different"),
+        Err(Error::QueueFull)
+    ));
+    let services = node.services.lock().unwrap();
+    assert_eq!(services.len(), 1);
+    assert_eq!(services[0].types.request_type, "original");
+    drop(services);
+    drop(service);
+    assert!(
+        !node.services.lock().unwrap()[0]
+            .active
+            .upgrade()
+            .is_some_and(|active| active.load(Ordering::Acquire))
+    );
+    let index = Mutex::new(vec![Arc::downgrade(&worker.sender.identity)]);
+    assert_eq!(service_workers(&index).unwrap().len(), 1);
+    let dead = Arc::new(OnceLock::<WorkerIdentity>::new());
+    index.lock().unwrap().push(Arc::downgrade(&dead));
+    drop(dead);
+    assert_eq!(service_workers(&index).unwrap().len(), 1);
+    assert_eq!(index.lock().unwrap().len(), 1);
+    thread::scope(|scope| {
+        assert!(
+            scope
+                .spawn(|| {
+                    let _guard = index.lock().unwrap();
+                    panic!("isolated owner index poison");
+                })
+                .join()
+                .is_err()
+        );
+    });
+    assert!(matches!(service_workers(&index), Err(Error::Native(_))));
+}
+
+#[test]
+fn local_service_owner_expires_with_its_last_admitted_peer() {
+    let (source, _) = state(1);
+    let (mut observer, commands) = service_state(source.config.clone());
+    let topic = qualified_name(&source.config.partition, "", "/expired").unwrap();
+    let publisher = service_registry_packet(&source, &topic);
+    observer.discovered(1, protocol::advertisement(&source.process, publisher));
+    let weak = Arc::downgrade(&observer.local_service_owners[&source.process]);
+    for (_, stamp) in observer.peers.values_mut() {
+        *stamp = Instant::now() - Duration::from_secs(4);
+    }
+    drop(source);
+    let node = service_registry_node(&observer);
+    let stop = observer.sender.stop.clone();
+    let worker = thread::spawn(move || observer.run(commands, stop));
+    *node.lifetime.worker.lock().unwrap() = Some(worker);
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while weak.upgrade().is_some() {
+        assert!(
+            Instant::now() < deadline,
+            "expired peer retained owner identity"
+        );
+        thread::sleep(Duration::from_millis(1));
+    }
+    // Node owns stop-and-join even if the assertion above unwinds.
+    drop(node);
 }

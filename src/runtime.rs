@@ -219,12 +219,33 @@ struct Sender {
     slots: Arc<AtomicUsize>,
     capacity: usize,
     counters: Arc<Counters>,
-    identity: Arc<OnceLock<WorkerIdentity>>,
+    identity: WorkerOwner,
+}
+type WorkerOwner = Arc<OnceLock<WorkerIdentity>>;
+type WeakWorkerOwner = Weak<OnceLock<WorkerIdentity>>;
+struct LocalService {
+    topic: String,
+    types: ServiceTypes,
+    active: Weak<AtomicBool>,
 }
 struct WorkerIdentity {
     process: String,
     node: String,
     address: String,
+    service_domain: MessageDomain,
+    services: Arc<Mutex<Vec<LocalService>>>,
+    stopped: Weak<AtomicBool>,
+}
+static LOCAL_SERVICE_WORKERS: OnceLock<Mutex<Vec<WeakWorkerOwner>>> = OnceLock::new();
+fn local_service_workers() -> &'static Mutex<Vec<WeakWorkerOwner>> {
+    LOCAL_SERVICE_WORKERS.get_or_init(|| Mutex::new(Vec::new()))
+}
+fn service_workers(index: &Mutex<Vec<WeakWorkerOwner>>) -> Result<Vec<WorkerOwner>, Error> {
+    let mut workers = index
+        .lock()
+        .map_err(|_| Error::Native("process-local service owners poisoned".into()))?;
+    workers.retain(|worker| worker.strong_count() != 0);
+    Ok(workers.iter().filter_map(Weak::upgrade).collect())
 }
 impl Sender {
     fn send(&self, cmd: Command) -> Result<(), Error> {
@@ -762,6 +783,12 @@ struct MessageDomain {
     port: u16,
 }
 impl MessageDomain {
+    fn from_service_config(config: &Config) -> Self {
+        Self {
+            port: config.service_port,
+            ..Self::from_config(config)
+        }
+    }
     fn from_config(config: &Config) -> Self {
         let partition = config.partition.trim_matches('/');
         Self {
@@ -884,7 +911,7 @@ pub struct Node {
     config: Config,
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
     subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
-    services: Mutex<Vec<(String, Weak<AtomicBool>)>>,
+    services: Arc<Mutex<Vec<LocalService>>>,
     oneway_callbacks: Mutex<Vec<LocalOneWayCallback>>,
 }
 impl Node {
@@ -914,6 +941,12 @@ impl Node {
             owner_dead.clone(),
             response_rx,
         )?;
+        let services = sender
+            .identity
+            .get()
+            .expect("Worker::new initialized identity")
+            .services
+            .clone();
         let stop = sender.stop.clone();
         let state_stop = sender.stop.clone();
         let worker = thread::Builder::new()
@@ -930,7 +963,7 @@ impl Node {
             config,
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
-            services: Mutex::new(Vec::new()),
+            services,
             oneway_callbacks: Mutex::new(Vec::new()),
         })
     }
@@ -1339,8 +1372,13 @@ impl Node {
             .services
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
-        services.retain(|(_, active)| active.upgrade().is_some_and(|a| a.load(Ordering::Acquire)));
-        if services.iter().any(|(name, _)| name == &topic) {
+        services.retain(|service| {
+            service
+                .active
+                .upgrade()
+                .is_some_and(|a| a.load(Ordering::Acquire))
+        });
+        if services.iter().any(|service| service.topic == topic) {
             return Err(Error::AlreadyAdvertised);
         }
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
@@ -1352,7 +1390,14 @@ impl Node {
             tx,
             lease.active.clone(),
         ))?;
-        services.push((topic, Arc::downgrade(&lease.active)));
+        services.push(LocalService {
+            topic,
+            types: ServiceTypes {
+                request_type: request_type.into(),
+                response_type: response_type.into(),
+            },
+            active: Arc::downgrade(&lease.active),
+        });
         Ok(Service {
             rx,
             _lease: lease,
@@ -1426,7 +1471,11 @@ impl Node {
             .services
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
-        Ok(active_topics(services.iter().map(|(t, a)| (t, a))))
+        Ok(active_topics(
+            services
+                .iter()
+                .map(|service| (&service.topic, &service.active)),
+        ))
     }
     /// Sorted service paths advertised locally or by discovered service peers.
     /// This worker snapshot does not wait for remote discovery.
@@ -1468,9 +1517,9 @@ impl Node {
             .services
             .lock()
             .map_err(|_| Error::Native("service registry poisoned".into()))?;
-        services.retain(|(name, active)| {
-            if name == &topic {
-                if let Some(active) = active.upgrade() {
+        services.retain(|service| {
+            if service.topic == topic {
+                if let Some(active) = service.active.upgrade() {
                     release(&active, &self.sender.slots);
                 }
                 false
@@ -1622,8 +1671,62 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    fn service_resolution(
+        &self,
+        topic: &str,
+        request: &str,
+        response: &str,
+    ) -> Result<ServiceResolution, Error> {
+        let qualified = self.topic(topic)?;
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::ResolveServiceSignatures(qualified.clone(), tx))?;
+        let mut records = rx
+            .recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)?;
+        let owners = service_workers(local_service_workers())?;
+        let domain = MessageDomain::from_service_config(&self.config);
+        let mut result = ServiceResolution::default();
+        for owner in owners {
+            let identity = owner.get().expect("registered worker identity");
+            if identity.service_domain != domain {
+                continue;
+            }
+            // Local admitted state is authoritative even after lease retirement;
+            // a delayed multicast copy must not resurrect that local provider.
+            records
+                .providers
+                .retain(|(key, _)| key.process != identity.process);
+            if identity
+                .stopped
+                .upgrade()
+                .is_none_or(|stopped| stopped.load(Ordering::Acquire))
+            {
+                continue;
+            }
+            let mut services = identity
+                .services
+                .lock()
+                .map_err(|_| Error::Native("service registry poisoned".into()))?;
+            services.retain(|service| {
+                service
+                    .active
+                    .upgrade()
+                    .is_some_and(|active| active.load(Ordering::Acquire))
+            });
+            for service in services.iter().filter(|service| service.topic == qualified) {
+                result.observe(&service.types, request, response);
+            }
+        }
+        for (_, types) in records.providers {
+            result.observe(&types, request, response);
+        }
+        Ok(result)
+    }
     /// Resolve empty descriptor names from matching providers. Explicit names
     /// select providers; both explicit names return immediately without lookup.
+    /// Live admitted services in the same local service domain participate before
+    /// their multicast copies arrive; public worker-only inspection is unchanged.
     /// The provider wait is polled every 100ms on the caller, never the IO worker.
     /// Each snapshot additionally has the bounded `Config::reply_timeout` for
     /// worker coordination. Invalid names and runtime failures return `Error`.
@@ -1647,24 +1750,20 @@ impl Node {
             .checked_add(timeout)
             .ok_or(Error::InvalidConfig)?;
         loop {
-            let signatures = self.service_type_signatures(topic)?;
-            let mut compatible = signatures.iter().filter(|types| {
-                (request_type.is_empty() || types.request_type == request_type)
-                    && (response_type.is_empty() || types.response_type == response_type)
-            });
-            if let Some(first) = compatible.next() {
-                return Ok(if compatible.next().is_some() {
+            let observed = self.service_resolution(topic, request_type, response_type)?;
+            if let Some(types) = observed.first {
+                return Ok(if observed.ambiguous {
                     AmbiguousTypes
                 } else {
-                    Resolved(first.clone())
+                    Resolved(types)
                 });
             }
             let now = Instant::now();
             if now >= deadline {
-                return Ok(if signatures.is_empty() {
-                    NoProviders
-                } else {
+                return Ok(if observed.any_provider {
                     IncompatibleTypes
+                } else {
+                    NoProviders
                 });
             }
             thread::sleep((deadline - now).min(Duration::from_millis(100)));
@@ -1695,13 +1794,13 @@ impl Drop for Node {
                 release(&active, &self.sender.slots);
             }
         }
-        for (_, active) in self
+        for service in self
             .services
-            .get_mut()
+            .lock()
             .unwrap_or_else(|e| e.into_inner())
             .drain(..)
         {
-            if let Some(active) = active.upgrade() {
+            if let Some(active) = service.active.upgrade() {
                 release(&active, &self.sender.slots);
             }
         }
@@ -1741,6 +1840,7 @@ enum Command {
     KnownServices(SyncSender<Vec<String>>),
     ReadyServiceList(ServiceListQuery),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
+    ResolveServiceSignatures(String, SyncSender<ServiceResolutionRecords>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     KnownServiceInfo(String, SyncSender<Vec<ServiceProviderInfo>>),
     KnownTopicPublishers(String, SyncSender<Vec<TopicPublisherInfo>>),
@@ -1763,6 +1863,32 @@ struct TopicInfoQuery {
     topic: String,
     deadline: Instant,
     reply: SyncSender<Result<TopicEndpointRecords, Error>>,
+}
+#[derive(Default)]
+struct ServiceResolution {
+    any_provider: bool,
+    first: Option<ServiceTypes>,
+    ambiguous: bool,
+}
+impl ServiceResolution {
+    fn observe(&mut self, types: &ServiceTypes, request: &str, response: &str) {
+        self.any_provider = true;
+        if !(request.is_empty() || request == types.request_type)
+            || !(response.is_empty() || response == types.response_type)
+        {
+            return;
+        }
+        if let Some(first) = &self.first {
+            self.ambiguous |= first != types;
+        } else {
+            self.first = Some(types.clone());
+        }
+    }
+}
+struct ServiceResolutionRecords {
+    providers: Vec<(PeerKey, ServiceTypes)>,
+    // Keep source identities alive until the caller masks copied wire records.
+    _owners: Vec<WorkerOwner>,
 }
 struct ServiceListQuery {
     deadline: Instant,
@@ -1909,6 +2035,7 @@ struct Worker {
     subscriptions: Vec<SubscriberState>,
     services: Vec<ServiceState>,
     peers: HashMap<PeerKey, (WirePublisher, Instant)>,
+    local_service_owners: HashMap<String, WorkerOwner>,
     remote_subscribers: HashMap<PeerKey, WirePublisher>,
     subscriber_interests: HashMap<SubscriberInterestKey, Instant>,
     subscriber_metadata: HashMap<PeerKey, SubscriberMetadata>,
@@ -2071,8 +2198,18 @@ impl Worker {
                 process: process.clone(),
                 node: node.clone(),
                 address: address.clone(),
+                service_domain: MessageDomain::from_service_config(&config),
+                services: Arc::new(Mutex::new(Vec::new())),
+                stopped: Arc::downgrade(&sender.stop),
             })
             .map_err(|_| Error::Native("worker identity already initialized".into()))?;
+        {
+            let mut workers = local_service_workers()
+                .lock()
+                .map_err(|_| Error::Native("process-local service owners poisoned".into()))?;
+            workers.retain(|worker| worker.strong_count() != 0);
+            workers.push(Arc::downgrade(&sender.identity));
+        }
         Ok(Self {
             config,
             host_interfaces,
@@ -2102,6 +2239,7 @@ impl Worker {
             subscriptions: Vec::new(),
             services: Vec::new(),
             peers: HashMap::new(),
+            local_service_owners: HashMap::new(),
             remote_subscribers: HashMap::new(),
             subscriber_interests: HashMap::new(),
             subscriber_metadata: HashMap::new(),
@@ -2670,6 +2808,31 @@ impl Worker {
                     ),
                 );
             }
+            Command::ResolveServiceSignatures(topic, reply) => {
+                self.subscribe_message(1, &topic);
+                let providers = self
+                    .service_provider_records(&topic)
+                    .map(|(publisher, types)| {
+                        (
+                            PeerKey {
+                                channel: 1,
+                                process: publisher.process_uuid.clone(),
+                                node: publisher.node_uuid.clone(),
+                                topic: publisher.topic.clone(),
+                                address: publisher.address.clone(),
+                            },
+                            ServiceTypes {
+                                request_type: types.request_type.clone(),
+                                response_type: types.response_type.clone(),
+                            },
+                        )
+                    })
+                    .collect();
+                let _ = reply.try_send(ServiceResolutionRecords {
+                    providers,
+                    _owners: self.local_service_owners.values().cloned().collect(),
+                });
+            }
             Command::ServiceSignatures(topic, reply) => {
                 self.subscribe_message(1, &topic);
                 let _ = reply.try_send(self.service_signatures(&topic));
@@ -3020,6 +3183,7 @@ impl Worker {
             self.peers.retain(|key, (p, _)| {
                 key.channel != channel || p.process_uuid != message.process_uuid
             });
+            self.retain_local_service_owners();
             self.publication_routes
                 .retain(|key| key.channel != channel || key.process != message.process_uuid);
             if channel == 0 {
@@ -3159,7 +3323,13 @@ impl Worker {
                     if channel == 0 && matches!(p.pub_type, Some(PubType::MsgPub(_))) {
                         self.register_subscriber(&p);
                     }
+                    let service_process = (channel == 1
+                        && matches!(&p.pub_type, Some(PubType::SrvPub(_))))
+                    .then(|| p.process_uuid.clone());
                     self.peers.insert(key, (p, Instant::now()));
+                    if let Some(process) = service_process {
+                        self.cache_local_service_owner(&process);
+                    }
                 }
             }
             Some(DiscContents::Pub(p)) if kind == Type::Unadvertise => {
@@ -3169,6 +3339,7 @@ impl Worker {
                         || key.node != p.node_uuid
                         || key.topic != p.topic
                 });
+                self.retain_local_service_owners();
                 self.publication_routes.retain(|key| {
                     key.channel != channel
                         || key.process != p.process_uuid
@@ -3209,6 +3380,37 @@ impl Worker {
                 }
             }
             _ => {}
+        }
+    }
+    fn retain_local_service_owners(&mut self) {
+        self.local_service_owners.retain(|process, _| {
+            self.peers.iter().any(|(key, (publisher, _))| {
+                key.channel == 1
+                    && key.process == *process
+                    && matches!(&publisher.pub_type, Some(PubType::SrvPub(_)))
+            })
+        });
+    }
+    fn cache_local_service_owner(&mut self, process: &str) {
+        self.retain_local_service_owners();
+        match service_workers(local_service_workers()) {
+            Ok(owners) => {
+                if let Some(owner) = owners.into_iter().find(|owner| {
+                    owner.get().is_some_and(|identity| {
+                        identity.process == process
+                            && identity.service_domain
+                                == MessageDomain::from_service_config(&self.config)
+                    })
+                }) {
+                    self.local_service_owners.insert(process.into(), owner);
+                }
+            }
+            Err(_) => {
+                self.sender
+                    .counters
+                    .routing_errors
+                    .fetch_add(1, Ordering::Relaxed);
+            }
         }
     }
     fn register_subscriber(&mut self, publisher: &WirePublisher) {
@@ -3344,8 +3546,12 @@ impl Worker {
             }
             self.progress_topic_info_queries(Instant::now());
             self.progress_service_list_queries(Instant::now());
+            let old_peer_count = self.peers.len();
             self.peers
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
+            if self.peers.len() != old_peer_count {
+                self.retain_local_service_owners();
+            }
             self.subscriber_interests
                 .retain(|_, stamp| stamp.elapsed() < Duration::from_secs(3));
             self.subscriber_metadata

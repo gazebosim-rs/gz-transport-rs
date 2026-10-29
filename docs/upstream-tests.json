@@ -4693,11 +4693,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.ResolveServiceTypesAmbiguous",
       "baseline": "passed",
-      "disposition": "partial_port",
+      "disposition": "faithful_port",
       "replacement": [
+        "original_resolve_service_types_ambiguous_immediate",
         "discovered_resolve_service_types_ambiguous"
       ],
-      "review": "/root/sdformat; every ambiguity/selection value assertion retained and independently replayed, but the added real-discovery readiness barrier changes the original immediate process-global multi-Node precondition. Reviewed partial only; immediate visibility remains pending. Receipt docs/reviews/service-types.json.",
+      "review": "Independent /root compared exact Node_TEST.cc 2100\u20132141 and reviewed ownership/domain/admission/lease/stop/stale-copy masking. Fresh independent source, target and native peer passed 114 library tests, 18 unchanged service assertions and four new public/native tests. Direct two-provider zero-timeout original preserves ambiguity, explicit StringMsg selection with Int32 request and incompatible Vector3d with empty request; prior barrier variant retained. Qualification remains subject to normal strict staged gate and exact hosted CI.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4706,9 +4707,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Two actual Nodes advertise Int32/Int32 and Int32/StringMsg. Added readiness barrier observes both discovered signatures before original ambiguity, explicit StringMsg response selection and incompatible Vector3d response assertions. Native process-global immediate same-process discovery is not implemented; this asynchronous setup mapping requires independent review.",
+      "contract": "Two actual Nodes admit Int32/Int32 and Int32/StringMsg services. Immediate zero-timeout resolver preserves every original ambiguity, explicit response selection and incompatible response predicate through typed result values, without polling for expected data or a readiness barrier. The prior discovered-signature variant remains unchanged. Resolver-only local type visibility does not merge worker metadata views or claim complete process-global identity; the late-first-packet gap remains explicit.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-01-service-types.md; artifacts/service-types-native.xml (three exact native originals passed); mandatory gate includes these originals"
+      "evidence": "docs/NET-01-local-service-resolution.md; three unchanged pinned native resolver originals passed, including this exact case; mandatory normal gate retains them"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SigIntTermination",

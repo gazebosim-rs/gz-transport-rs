@@ -52,8 +52,10 @@ including equal-signature providers; see [service inspection](docs/NET-01-servic
 socket and descriptor fields; see [owned service metadata](docs/NET-01-owned-service-info.md).
 `service_type_signatures()` snapshots known canonical service type pairs;
 `resolve_service_types()` selects providers and waits for missing names with
-explicit absence, incompatibility and ambiguity outcomes. These APIs use each
-Node's worker and asynchronous discovery; see the [bounded contract](docs/NET-01-service-types.md).
+explicit absence, incompatibility and ambiguity outcomes. Inspection remains a
+worker snapshot; the resolver also uses admitted local declarations immediately.
+See the [bounded inspection contract](docs/NET-01-service-types.md) and
+[local resolver contract](docs/NET-01-local-service-resolution.md).
 `begin_request()` admits a response request and returns a one-shot
 `PendingResponse`; `request()` retains its existing bounded wait through that
 handle. The [wrong-request contract](docs/NET-02-service-wrong-request.md) checks

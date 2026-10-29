@@ -30,9 +30,10 @@ worker never blocks waiting for providers and stores no unbounded query list.
 The ports retain NodeTest.ResolveServiceTypes, ResolveServiceTypesWaitsForProvider
 and the observed ambiguity/selection assertions. The original absent-provider
 bound remains at least 300ms; the delayed provider uses the original 300ms delay
-and must resolve before 5000ms. Native process-global immediate multi-node state
-is not implemented: any ambiguity setup must use actual discovered signatures,
-with that asynchronous setup mapping independently reviewed or left partial.
+and must resolve before 5000ms. The later [local resolver slice](NET-01-local-service-resolution.md)
+also observes admitted same-domain service declarations immediately. Public
+worker-only snapshots remain asynchronous, and the prior barrier variant stays
+as a separate regression. Full native process-global identity remains open.
 
 Supplemental cases cover invalid names, both-explicit bypass, cancelled and
 saturated commands, coordination timeout/invalid duration, expired or withdrawn
@@ -58,8 +59,10 @@ caller drops its reply receiver; the worker's nonblocking reply cannot stall.
 Cancellation while polling is observed at the next snapshot (at most one 100ms
 poll interval plus worker scheduling). Discovery lifetime remains 3000ms.
 
-The slice preserves the original local and delayed-provider assertions.
-For the ambiguity case, the Rust test additionally waits for two actual signature
+The original inspection slice preserves the local and delayed-provider assertions.
+Its historical ambiguity mapping is described below; the new direct resolver
+case and its independent review are tracked in the linked local resolver contract.
+For that earlier ambiguity case, the Rust test additionally waits for two actual signature
 advertisements, then retains every original ambiguity and selection assertion.
 This intentionally exposes asynchronous per-Node discovery rather than claiming
 native process-global immediate visibility. Independent review accepts this as a

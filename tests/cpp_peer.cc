@@ -218,6 +218,26 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "resolve-local-immediate") {
+    using Resolution=gz::transport::Node::ServiceTypeResolution;
+    std::string request,response;
+    // Warm native ServiceInfo initialization before exercising immediacy.
+    if (node.ResolveServiceTypes(topic+"_absent",request,response,0)!=Resolution::kNoProviders) return 154;
+    gz::transport::Node second;
+    std::function<bool(const gz::msgs::Int32&,gz::msgs::Int32&)> echo=[](const auto&,auto&){return true;};
+    std::function<bool(const gz::msgs::Int32&,gz::msgs::StringMsg&)> mixed=[](const auto&,auto&){return true;};
+    if (!node.Advertise(topic,echo) || !second.Advertise(topic,mixed)) return 155;
+    if (node.ResolveServiceTypes(topic,request,response,0)!=Resolution::kAmbiguousTypes) return 156;
+    request.clear();response="gz.msgs.StringMsg";
+    if (node.ResolveServiceTypes(topic,request,response,0)!=Resolution::kResolved || request!="gz.msgs.Int32") return 157;
+    request.clear();response="gz.msgs.Vector3d";
+    if (node.ResolveServiceTypes(topic,request,response,0)!=Resolution::kIncompatibleTypes || !request.empty()) return 158;
+    if (!second.UnadvertiseSrv(topic)) return 159;
+    request.clear();response.clear();
+    if (node.ResolveServiceTypes(topic,request,response,0)!=Resolution::kResolved || request!="gz.msgs.Int32" || response!="gz.msgs.Int32") return 160;
+    std::cout << "ambiguity selection incompatible withdrawal" << std::endl;
+    return 0;
+  }
   if (mode == "silence-wire-observer") {
     auto output=std::make_shared<std::mutex>();
     std::function<void(const gz::msgs::StringMsg&)> callback=[output](const auto &message) {
