@@ -25,6 +25,9 @@ Native local `Node::Request` invokes its provider and response callbacks
 inline. Rust `Node::request` returns before the adapter invokes the response
 closure. The request payload, response data/result and one invocation remain
 covered, but the immediate native post-request callback predicate is unported.
-Public callback registration, exact scheduling/thread identity, remote
-asynchronous callback behavior and broader service parity are also unclaimed.
+These retained adapters do not exercise the separate
+[owned response callback API](NET-02-response-callbacks.md). Their original-case
+credit remains partial until a direct mapping is reviewed. Exact native
+scheduling/thread identity, global discovery, remote immediate callback timing
+and broader service parity remain unclaimed.
 The historical lost-output status 101 remains unclassified.

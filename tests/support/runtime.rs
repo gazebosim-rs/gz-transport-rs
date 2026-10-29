@@ -841,6 +841,8 @@ fn service_state(config: Config) -> (Worker, Receiver<Command>) {
         response_tx,
         stop: Arc::new(AtomicBool::new(false)),
         slots: Arc::new(AtomicUsize::new(0)),
+        callback_threads: Arc::new(AtomicUsize::new(0)),
+        callback_requests: Arc::new(AtomicUsize::new(0)),
         capacity,
         counters: Arc::new(Counters::default()),
         identity: Arc::new(OnceLock::new()),
@@ -5662,6 +5664,7 @@ fn local_service_resolution_masks_stale_copies_without_changing_worker_views() {
                 response_type: "not-live".into(),
             },
             active: Arc::downgrade(&active),
+            callback: None,
         });
     active.store(true, Ordering::Release);
     assert_eq!(
@@ -5790,4 +5793,568 @@ fn local_service_owner_expires_with_its_last_admitted_peer() {
     }
     // Node owns stop-and-join even if the assertion above unwinds.
     drop(node);
+}
+
+fn callback_config(capacity: usize) -> Config {
+    Config {
+        partition: format!("private-callback-{}", Uuid::new_v4()),
+        capacity,
+        ..Config::default()
+    }
+}
+fn callback_spawn_failure(_: CallbackTask) -> std::io::Result<JoinHandle<()>> {
+    Err(std::io::Error::other("injected callback spawn failure"))
+}
+fn callback_wait_until(mut predicate: impl FnMut() -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !predicate() {
+        assert!(Instant::now() < deadline, "callback worker did not finish");
+        thread::sleep(Duration::from_millis(2));
+    }
+}
+#[test]
+fn response_callbacks_validate_admission_and_rollback_spawn_without_user_code() {
+    let (worker, commands) = service_state(callback_config(2));
+    let node = service_registry_node(&worker);
+    let timeout = Duration::from_secs(1);
+    for (topic, input, output, data, bound, expected) in [
+        ("Bad Srv", "in", "out", vec![], timeout, Error::InvalidName),
+        ("/test", "", "out", vec![], timeout, Error::InvalidFrame),
+        ("/test", "in", "", vec![], timeout, Error::InvalidFrame),
+        (
+            "/test",
+            "in",
+            EMPTY_TYPE,
+            vec![],
+            timeout,
+            Error::Unsupported("response callback for gz.msgs.Empty"),
+        ),
+        ("/test", "in", "out", vec![], Duration::ZERO, Error::Timeout),
+        (
+            "/test",
+            "in",
+            "out",
+            vec![],
+            Duration::MAX,
+            Error::InvalidConfig,
+        ),
+        (
+            "/test",
+            "in",
+            "out",
+            vec![0; node.config.max_message_bytes + 1],
+            timeout,
+            Error::InvalidFrame,
+        ),
+    ] {
+        let result = node.request_callback_with_spawner(
+            topic,
+            input,
+            output,
+            data,
+            bound,
+            |_, _| panic!("invalid request invoked user code"),
+            callback_spawn_failure,
+        );
+        assert!(matches!(result, Err(error) if error == expected));
+    }
+    assert!(commands.try_recv().is_err());
+    for (topic, input, output, expected) in [
+        ("Bad Srv", "in", "out", Error::InvalidName),
+        ("/test", "", "out", Error::InvalidFrame),
+        (
+            "/test",
+            "in",
+            EMPTY_TYPE,
+            Error::Unsupported("response callback for gz.msgs.Empty"),
+        ),
+    ] {
+        assert!(
+            matches!(node.serve_callback(topic,input,output, |_| unreachable!()), Err(error) if error == expected)
+        );
+    }
+    assert!(matches!(
+        node.serve_callback_with_spawner(
+            "/test",
+            "in",
+            "out",
+            |_| unreachable!(),
+            callback_spawn_failure
+        ),
+        Err(Error::Native(_))
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(node.advertised_services().unwrap(), Vec::<String>::new());
+    assert!(matches!(commands.try_recv(), Ok(Command::Serve(..))));
+    assert!(matches!(
+        node.request_callback_with_spawner(
+            "/test",
+            "in",
+            "out",
+            vec![],
+            timeout,
+            |_, _| unreachable!(),
+            callback_spawn_failure
+        ),
+        Err(Error::Native(_))
+    ));
+    assert!(commands.try_recv().is_err()); // Failed spawn precedes request admission.
+    assert_eq!(node.sender.callback_requests.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    // A full command queue rolls back both the dispatcher and registration.
+    node.sender
+        .send(Command::Unsubscribe("filler".into()))
+        .unwrap();
+    node.sender
+        .send(Command::Unsubscribe("filler".into()))
+        .unwrap();
+    assert!(matches!(
+        node.serve_callback("/test", "in", "out", |_| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(
+        node.request_callback("/test", "in", "out", vec![], timeout, |_, _| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.callback_requests.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    drop(commands);
+    assert!(matches!(
+        node.request_callback("/test", "in", "out", vec![], timeout, |_, _| unreachable!()),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    node.cancel();
+    assert!(matches!(
+        node.serve_callback("/test", "in", "out", |_| unreachable!()),
+        Err(Error::Shutdown)
+    ));
+    assert!(matches!(
+        node.request_callback("/test", "in", "out", vec![], timeout, |_, _| unreachable!()),
+        Err(Error::Shutdown)
+    ));
+}
+#[test]
+fn response_callbacks_inline_need_no_thread_and_obey_independent_request_capacity() {
+    let cfg = callback_config(1);
+    let provider = Node::new(cfg.clone()).unwrap();
+    let caller = Node::new(cfg.clone()).unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = calls.clone();
+    let _service = provider
+        .serve_callback("/test", "in", "out", move |data| {
+            count.fetch_add(1, Ordering::Relaxed);
+            Ok((data.to_vec(), true))
+        })
+        .unwrap();
+    let permit = caller
+        .sender
+        .callback_permit(&caller.sender.callback_requests)
+        .unwrap();
+    assert!(matches!(
+        caller.request_callback(
+            "/test",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(1),
+            |_, _| unreachable!()
+        ),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    drop(permit);
+    let request = caller
+        .request_callback_with_spawner(
+            "/test",
+            "in",
+            "out",
+            vec![1],
+            Duration::from_secs(1),
+            |data, ok| {
+                assert_eq!(data, [1]);
+                assert!(ok);
+            },
+            callback_spawn_failure,
+        )
+        .unwrap();
+    assert!(request.worker.is_none());
+    assert_eq!(request.wait(Duration::from_secs(1)), Ok(()));
+    assert_eq!(calls.load(Ordering::Acquire), 1);
+    assert_eq!(caller.sender.callback_threads.load(Ordering::Acquire), 0);
+    for dimension in 0..5 {
+        let mut other = cfg.clone();
+        match dimension {
+            0 => other.partition.push_str("other"),
+            1 => other.namespace = "other".into(),
+            2 => other.service_port = 15487,
+            3 => other.multicast = "239.255.0.8".parse().unwrap(),
+            _ => other.interface = "127.0.0.2".parse().unwrap(),
+        }
+        let other = Node::new(other).unwrap();
+        assert!(matches!(
+            other.request_callback_with_spawner(
+                "test",
+                "in",
+                "out",
+                vec![],
+                Duration::from_secs(1),
+                |_, _| unreachable!(),
+                callback_spawn_failure
+            ),
+            Err(Error::Native(_))
+        ));
+    }
+    assert_eq!(calls.load(Ordering::Acquire), 1);
+    assert!(matches!(
+        provider.serve_callback("/second", "in", "out", |_| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(provider.sender.counters.snapshot().queue_drops, 1);
+}
+#[test]
+fn response_callbacks_preserve_errors_panics_deadlines_and_lease_ownership() {
+    let node = Node::new(callback_config(8)).unwrap();
+    let timeout = Duration::from_secs(1);
+    let service = node
+        .serve_callback("/test", "in", "out", |_| panic!("service panic"))
+        .unwrap();
+    let request = node
+        .request_callback("/test", "in", "out", vec![], timeout, |_, _| unreachable!())
+        .unwrap();
+    assert!(
+        matches!(request.wait(timeout),Err(Error::Native(message)) if message=="service callback panicked")
+    );
+    assert_eq!(node.advertised_services().unwrap(), ["/test"]);
+    drop(service);
+    let _service = node
+        .serve_callback("/test", "in", "out", |_| Ok((vec![1], false)))
+        .unwrap();
+    let request = node
+        .request_callback("/test", "in", "out", vec![], timeout, |data, ok| {
+            assert_eq!(data, [1]);
+            assert!(!ok);
+            panic!("response panic");
+        })
+        .unwrap();
+    assert!(
+        matches!(request.wait(timeout),Err(Error::Native(message)) if message=="response callback panicked")
+    );
+    assert_eq!(node.advertised_services().unwrap(), ["/test"]);
+    let _slow = node
+        .serve_callback("/slow", "in", "out", |_| {
+            thread::sleep(Duration::from_millis(40));
+            Ok((vec![], true))
+        })
+        .unwrap();
+    let request = node
+        .request_callback(
+            "/slow",
+            "in",
+            "out",
+            vec![],
+            Duration::from_millis(10),
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    assert_eq!(request.wait(timeout), Err(Error::Timeout));
+    let pending = node
+        .begin_request("/slow", "in", "out", vec![], timeout)
+        .unwrap();
+    assert_eq!(pending.wait(timeout), Ok((vec![], true)));
+    let service = node
+        .serve_callback("/error", "in", "out", |_| Err(Error::InvalidFrame))
+        .unwrap();
+    assert_eq!(
+        node.request("/error", "in", "out", vec![], timeout),
+        Ok((vec![], false))
+    );
+    service.cancel();
+    assert!(
+        !node
+            .advertised_services()
+            .unwrap()
+            .contains(&"/error".into())
+    );
+    drop(service);
+    let request = node
+        .request_callback(
+            "/absent",
+            "in",
+            "out",
+            vec![],
+            Duration::from_millis(30),
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    assert_eq!(request.wait(timeout), Err(Error::Timeout));
+    let request = node
+        .request_callback(
+            "/absent",
+            "in",
+            "out",
+            vec![],
+            timeout,
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    request.cancel();
+    assert_eq!(request.wait(timeout), Err(Error::Shutdown));
+    let request = node
+        .request_callback(
+            "/absent",
+            "in",
+            "out",
+            vec![],
+            timeout,
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    node.cancel();
+    assert_eq!(request.wait(timeout), Err(Error::Shutdown));
+}
+
+struct CallbackUnblockOnDrop(SyncSender<()>);
+impl Drop for CallbackUnblockOnDrop {
+    fn drop(&mut self) {
+        let _ = self.0.try_send(());
+    }
+}
+// A capacity-one command queue must drain Serve before the next operation.
+// This private setup barrier does not wait for discovery or expected peer data.
+fn callback_worker_service_ready(node: &Node, topic: &str) {
+    let deadline = Instant::now() + Duration::from_secs(1);
+    let (tx, rx) = mpsc::sync_channel(1);
+    loop {
+        match node.sender.send(Command::KnownServices(tx.clone())) {
+            Ok(()) => break,
+            Err(Error::QueueFull) => {
+                assert!(Instant::now() < deadline);
+                thread::sleep(Duration::from_millis(2));
+            }
+            Err(error) => panic!("callback setup failed: {error}"),
+        }
+    }
+    assert!(
+        rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .unwrap()
+            .contains(&topic.to_string())
+    );
+}
+#[test]
+fn response_callbacks_hold_thread_and_request_permits_until_real_user_exit() {
+    let cfg = callback_config(1);
+    let provider = Node::new(cfg.clone()).unwrap();
+    let caller = Node::new(cfg).unwrap();
+    let (entered, entry) = mpsc::sync_channel(1);
+    let (resume, resumed) = mpsc::sync_channel(1);
+    let resumed = Mutex::new(resumed);
+    let service = provider
+        .serve_callback("/busy", "in", "out", move |_| {
+            entered.send(()).unwrap();
+            resumed.lock().unwrap().recv().unwrap();
+            Ok((vec![], true))
+        })
+        .unwrap();
+    let resume = CallbackUnblockOnDrop(resume);
+    // Use the worker's local queue: this tests permit lifetime, not cold
+    // cross-worker discovery. The ordinary API never selects the inline path.
+    callback_worker_service_ready(&provider, "/busy");
+    let pending = provider
+        .begin_request("/busy", "in", "out", vec![], Duration::from_secs(2))
+        .unwrap();
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    service.cancel();
+    assert_eq!(provider.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(provider.sender.callback_threads.load(Ordering::Acquire), 1);
+    assert!(matches!(
+        provider.serve_callback("/next", "in", "out", |_| unreachable!()),
+        Err(Error::QueueFull)
+    ));
+    resume.0.send(()).unwrap();
+    assert_eq!(pending.wait(Duration::from_secs(1)), Ok((vec![], true)));
+    drop(service);
+    assert_eq!(provider.sender.callback_threads.load(Ordering::Acquire), 0);
+
+    // A response closure can continue after cancellation; neither permit is
+    // returned until that closure really exits.
+    let queued = caller.serve("/queued", "in", "out").unwrap();
+    callback_worker_service_ready(&caller, "/queued");
+    let (entered, entry) = mpsc::sync_channel(1);
+    let (resume, resumed) = mpsc::sync_channel(1);
+    let request = caller
+        .request_callback(
+            "/queued",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(2),
+            move |_, _| {
+                entered.send(()).unwrap();
+                resumed.recv().unwrap();
+            },
+        )
+        .unwrap();
+    let resume = CallbackUnblockOnDrop(resume);
+    queued
+        .recv_timeout(Duration::from_secs(1))
+        .unwrap()
+        .respond(vec![], true)
+        .unwrap();
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    request.cancel();
+    assert_eq!(caller.sender.callback_threads.load(Ordering::Acquire), 1);
+    assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 1);
+    assert!(matches!(
+        caller.request_callback(
+            "/absent",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(1),
+            |_, _| unreachable!()
+        ),
+        Err(Error::QueueFull)
+    ));
+    resume.0.send(()).unwrap();
+    assert_eq!(request.wait(Duration::from_secs(1)), Ok(()));
+    drop(request);
+    assert_eq!(caller.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(caller.sender.callback_requests.load(Ordering::Acquire), 0);
+}
+#[test]
+fn response_callbacks_are_reentrant_and_can_drop_their_own_service_and_request() {
+    let node = Arc::new(Node::new(callback_config(8)).unwrap());
+    let timeout = Duration::from_secs(1);
+    let nested = node.clone();
+    let _inner = node
+        .serve_callback("/inner", "in", "out", |data| Ok((data.to_vec(), true)))
+        .unwrap();
+    let holder = Arc::new(Mutex::new(None::<CallbackService>));
+    let destroy = holder.clone();
+    let service = node
+        .serve_callback("/outer", "in", "out", move |_| {
+            drop(destroy.lock().unwrap().take());
+            assert_eq!(nested.advertised_services().unwrap(), ["/inner"]);
+            let request = nested
+                .request_callback(
+                    "/inner",
+                    "in",
+                    "out",
+                    vec![3],
+                    Duration::from_secs(1),
+                    |data, ok| {
+                        assert_eq!(data, [3]);
+                        assert!(ok);
+                    },
+                )
+                .unwrap();
+            request.wait(Duration::from_secs(1))?;
+            Ok((vec![4], true))
+        })
+        .unwrap();
+    *holder.lock().unwrap() = Some(service);
+    // This runs on the dispatcher and drops that dispatcher handle itself.
+    assert_eq!(
+        node.request("/outer", "in", "out", vec![], timeout),
+        Ok((vec![4], true))
+    );
+    callback_wait_until(|| node.sender.callback_threads.load(Ordering::Acquire) == 1);
+    // Self-drop of an inline service also holds no registry lock.
+    let destroy = holder.clone();
+    let service = node
+        .serve_callback("/inline", "in", "out", move |_| {
+            drop(destroy.lock().unwrap().take());
+            Ok((vec![], true))
+        })
+        .unwrap();
+    *holder.lock().unwrap() = Some(service);
+    let request = node
+        .request_callback("/inline", "in", "out", vec![], timeout, |_, _| {})
+        .unwrap();
+    request.wait(timeout).unwrap();
+    assert!(holder.lock().unwrap().is_none());
+    let queued = node.serve("/queued", "in", "out").unwrap();
+    let requests = Arc::new(Mutex::new(None::<CallbackRequest>));
+    let own = requests.clone();
+    let (ready, read) = mpsc::sync_channel(1);
+    let request = node
+        .request_callback("/queued", "in", "out", vec![], timeout, move |_, _| {
+            read.recv().unwrap();
+            drop(own.lock().unwrap().take());
+        })
+        .unwrap();
+    *requests.lock().unwrap() = Some(request);
+    queued
+        .recv_timeout(timeout)
+        .unwrap()
+        .respond(vec![], true)
+        .unwrap();
+    ready.send(()).unwrap();
+    callback_wait_until(|| requests.lock().unwrap().is_none());
+    callback_wait_until(|| node.sender.callback_requests.load(Ordering::Acquire) == 0);
+}
+#[test]
+fn response_callbacks_enforce_provider_and_caller_payload_bounds_before_response_code() {
+    let cfg = callback_config(4);
+    let mut small = cfg.clone();
+    small.max_message_bytes = 1;
+    let provider = Node::new(small.clone()).unwrap();
+    let caller = Node::new(cfg.clone()).unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = calls.clone();
+    let _service = provider
+        .serve_callback("/small", "in", "out", move |_| {
+            count.fetch_add(1, Ordering::Relaxed);
+            Ok((vec![1, 2], true))
+        })
+        .unwrap();
+    assert!(matches!(
+        caller.request_callback(
+            "/small",
+            "in",
+            "out",
+            vec![1, 2],
+            Duration::from_secs(1),
+            |_, _| unreachable!()
+        ),
+        Err(Error::InvalidFrame)
+    ));
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    let request = caller
+        .request_callback(
+            "/small",
+            "in",
+            "out",
+            vec![1],
+            Duration::from_secs(1),
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    assert_eq!(
+        request.wait(Duration::from_secs(1)),
+        Err(Error::InvalidFrame)
+    );
+    assert_eq!(calls.load(Ordering::Acquire), 1);
+    let provider = Node::new(cfg).unwrap();
+    let _service = provider
+        .serve_callback("/large", "in", "out", |_| Ok((vec![1, 2], true)))
+        .unwrap();
+    let caller = Node::new(small).unwrap();
+    let request = caller
+        .request_callback(
+            "/large",
+            "in",
+            "out",
+            vec![],
+            Duration::from_secs(1),
+            |_, _| unreachable!(),
+        )
+        .unwrap();
+    assert_eq!(
+        request.wait(Duration::from_secs(1)),
+        Err(Error::InvalidFrame)
+    );
 }

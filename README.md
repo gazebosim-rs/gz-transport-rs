@@ -71,9 +71,14 @@ The same contract covers an inputless request expecting a mismatched response
 from a live native fixed Int32 provider.
 The [remote mixed-response cases](docs/NET-02-remote-service-wrong-types.md#mixed-wrong-and-good-remote-responses)
 then require good replies while the wrong-response observer remains live.
+`serve_callback()` and `request_callback()` add bounded owned response callbacks.
+Exact live local matches complete inline; remote and queued replies use owned
+dispatchers. See the [callback lifetime and admission contract](docs/NET-02-response-callbacks.md).
+
 An owned dispatch adaptation covers three native member-service cases,
-including request before local service registration, with
-[explicit callback timing limits](docs/NET-02-class-member-service.md).
+including request before local service registration. New direct callback
+variants preserve the two local immediate response checks; the earlier queued
+variants remain. See the [selected member-service mappings](docs/NET-02-class-member-service.md).
 Two local service lambda originals retain their fixed provider and response
 observations through an [owned request adapter](docs/NET-02-service-lambda.md).
 Their callback timing at the actual `Node::request` return remains partial.

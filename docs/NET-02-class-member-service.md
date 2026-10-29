@@ -9,7 +9,7 @@ checks the parsed reply. Their wrong-type synchronous requests return false;
 wrong-type asynchronous requests are admitted, then leave the service method
 uninvoked through the original 300 ms quiet interval.
 
-The Rust tests use owned `Client` methods and a joined service receive thread.
+The retained earlier Rust variants use owned `Client` methods and a joined service receive thread.
 An Int32 or Empty request reaches the matching method, which responds with
 Int32 data 5. `Result::Err(InvalidName)` maps invalid registration;
 `Error::Timeout` maps the wrong-type synchronous false result. A successful
@@ -30,14 +30,20 @@ native cases. Removing the provider response-type check makes the original
 wrong-type assertion fail. The exact staged source gate passed with 17/17
 changed production lines covered.
 
-**Both ledger rows remain partial.** Native C++ immediately checks its member
-response flag after asynchronous `Node::Request` returns; Rust waits up to the
-500 ms duration used by the original synchronous calls for the owned waiter
-before checking it. This does not
-establish native immediate callback visibility, callback registration API,
-object-pointer identity or scheduling. Other NET-02 behavior and the earlier
-lost-output status 101 remain separate; that historical failure is
-unclassified.
+The new direct variants use `serve_callback` and `request_callback` with an
+owned Client and its Node. They preserve the original immediate response flag
+check after asynchronous request return, with no readiness or completion wait
+before that assertion. Synchronous and raw results, Int32 data 5, invalid name,
+wrong-type synchronous timeouts, asynchronous admission and the original 300 ms
+quiet interval remain. The old waiter variants and all their assertions remain.
+See the [bounded callback contract](NET-02-response-callbacks.md) for admission,
+selection, cancellation, panic, reentrancy and thread lifetime rules.
+
+Only these two selected local original cases gain faithful-port credit after
+independent source/native replay and normal strict qualification. The new
+callbacks do not establish C++ object-pointer identity, a global metadata merge,
+remote immediate completion or general callback scheduling equivalence. Other
+NET-02 scope and the earlier unclassified lost-output status 101 remain separate.
 
 ## Request before local advertisement
 

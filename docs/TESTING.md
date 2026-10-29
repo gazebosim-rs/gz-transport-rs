@@ -454,11 +454,19 @@ completion and error path through `begin_request().wait()`.
 The [independent review](reviews/class-member-service.json) approved the
 source and assertions after native 2/0, private Rust 3/0, library 82/0 and a
 response-type-guard mutant that fails the wrong-type assertion. The exact
-staged source gate passed with 17/17 changed production lines covered. Both
-ledger cases remain partial: native member callback registration and
-immediate-after-Request flag visibility are not reproduced by the bounded
-Rust waiter. C++ object-pointer identity and scheduling are unclaimed. The
-historical lost-output status 101 remains unclassified.
+staged source gate passed with 17/17 changed production lines covered. Those older waiter variants remain unchanged.
+New direct variants in
+`service_callbacks.rs` use a Client-owned Node and the bounded callback APIs,
+checking the response flag immediately after request return. They preserve all
+original predicates and the native wrong-type assertion order. Private controls
+cover admission and spawn rollback, bounded request/thread permit lifetime,
+nonpreemptible user code, panic/error outcomes, cancellation, deadlines,
+reentrancy, self-drop and payload bounds. Public supplements keep local domain
+selection and exactly-once behavior explicit, and exchange real C++ requests and
+replies with a fresh native peer. See the [callback contract](NET-02-response-callbacks.md).
+Only these two selected original cases gain faithful-port credit; C++ object
+identity, global discovery and broader scheduling remain open. The historical
+lost-output status 101 remains unclassified.
 
 The pinned `NodeTest.ClassMemberRequestServiceBeforeAdvertise` original is
 also mandatory. It passes natively 1/0. The owned Rust test submits Int32

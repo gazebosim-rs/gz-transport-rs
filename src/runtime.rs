@@ -217,6 +217,8 @@ struct Sender {
     response_tx: SyncSender<Command>,
     stop: Arc<AtomicBool>,
     slots: Arc<AtomicUsize>,
+    callback_threads: Arc<AtomicUsize>,
+    callback_requests: Arc<AtomicUsize>,
     capacity: usize,
     counters: Arc<Counters>,
     identity: WorkerOwner,
@@ -227,6 +229,7 @@ struct LocalService {
     topic: String,
     types: ServiceTypes,
     active: Weak<AtomicBool>,
+    callback: Option<Weak<ResponseCallbackState>>,
 }
 struct WorkerIdentity {
     process: String,
@@ -248,6 +251,20 @@ fn service_workers(index: &Mutex<Vec<WeakWorkerOwner>>) -> Result<Vec<WorkerOwne
     Ok(workers.iter().filter_map(Weak::upgrade).collect())
 }
 impl Sender {
+    fn callback_permit(&self, count: &Arc<AtomicUsize>) -> Result<CallbackPermit, Error> {
+        if self.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        count
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < self.capacity).then_some(n + 1)
+            })
+            .map_err(|_| {
+                self.counters.queue_drops.fetch_add(1, Ordering::Relaxed);
+                Error::QueueFull
+            })?;
+        Ok(CallbackPermit(count.clone()))
+    }
     fn send(&self, cmd: Command) -> Result<(), Error> {
         if self.stop.load(Ordering::Acquire) {
             return Err(Error::Shutdown);
@@ -709,6 +726,137 @@ impl Drop for OneWayCallbackService {
         }
     }
 }
+// Callback dispatch has its own bounds: withdrawing a service releases its
+// registration slot, but cannot release a thread still executing user code.
+struct CallbackPermit(Arc<AtomicUsize>);
+impl Drop for CallbackPermit {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+type CallbackTask = Box<dyn FnOnce() + Send>;
+type CallbackSpawner = fn(CallbackTask) -> std::io::Result<JoinHandle<()>>;
+fn spawn_callback(task: CallbackTask) -> std::io::Result<JoinHandle<()>> {
+    thread::Builder::new()
+        .name("gz-transport-callback".into())
+        .spawn(task)
+}
+type ResponseCallback = dyn Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync;
+struct ResponseCallbackState {
+    callback: Box<ResponseCallback>,
+    active: Arc<AtomicBool>,
+    owner_dead: Arc<AtomicBool>,
+    sender: Sender,
+    max: usize,
+    ready: AtomicBool,
+}
+impl ResponseCallbackState {
+    fn live(&self) -> bool {
+        self.active.load(Ordering::Acquire)
+            && !self.owner_dead.load(Ordering::Acquire)
+            && !self.sender.stop.load(Ordering::Acquire)
+    }
+    fn invoke(&self, data: &[u8]) -> Result<(Vec<u8>, bool), Error> {
+        if !self.live() {
+            return Err(Error::Shutdown);
+        }
+        if data.len() > self.max {
+            return Err(Error::InvalidFrame);
+        }
+        let result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (self.callback)(data)))
+                .unwrap_or_else(|_| Err(Error::Native("service callback panicked".into())))?;
+        if result.0.len() > self.max {
+            return Err(Error::InvalidFrame);
+        }
+        Ok(result)
+    }
+}
+/// A response callback registration and its owned queued dispatcher.
+/// Cancellation retires the lease. Drop joins the dispatcher unless called on
+/// that dispatcher. An inline invocation already selected may finish afterward.
+pub struct CallbackService {
+    state: Arc<ResponseCallbackState>,
+    worker: Option<JoinHandle<()>>,
+}
+impl CallbackService {
+    pub fn cancel(&self) {
+        release(&self.state.active, &self.state.sender.slots);
+    }
+}
+impl Drop for CallbackService {
+    fn drop(&mut self) {
+        self.cancel();
+        join_callback(self.worker.take());
+    }
+}
+fn join_callback(worker: Option<JoinHandle<()>>) {
+    if let Some(worker) = worker
+        && worker.thread().id() != thread::current().id()
+    {
+        let _ = worker.join();
+    }
+}
+/// One callback request completion. Local exact matches complete inline;
+/// queued/remote replies use an owned dispatcher. Cancel suppresses a callback
+/// not yet selected. Drop cancels and joins, except on its own dispatcher.
+/// User code already running is not preempted.
+pub struct CallbackRequest {
+    rx: Receiver<Result<(), Error>>,
+    cancelled: Arc<AtomicBool>,
+    worker: Option<JoinHandle<()>>,
+}
+impl CallbackRequest {
+    /// Observe completion once. This bound does not cancel an admitted request.
+    pub fn wait(&self, timeout: Duration) -> Result<(), Error> {
+        self.rx.recv_timeout(timeout).map_err(receive_error)?
+    }
+    pub fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
+    }
+}
+impl Drop for CallbackRequest {
+    fn drop(&mut self) {
+        self.cancel();
+        join_callback(self.worker.take());
+    }
+}
+fn callback_types(request: &str, response: &str) -> Result<(), Error> {
+    if request.is_empty() || response.is_empty() {
+        return Err(Error::InvalidFrame);
+    }
+    if response == EMPTY_TYPE {
+        return Err(Error::Unsupported("response callback for gz.msgs.Empty"));
+    }
+    Ok(())
+}
+fn callback_progress(
+    sender: &Sender,
+    cancelled: &AtomicBool,
+    deadline: Instant,
+) -> Result<Duration, Error> {
+    if sender.stop.load(Ordering::Acquire) || cancelled.load(Ordering::Acquire) {
+        return Err(Error::Shutdown);
+    }
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(Error::Timeout);
+    }
+    Ok(remaining.min(Duration::from_millis(20)))
+}
+fn run_response_callback<F>(callback: F, response: (Vec<u8>, bool), max: usize) -> Result<(), Error>
+where
+    F: FnOnce(Vec<u8>, bool),
+{
+    if response.0.len() > max {
+        return Err(Error::InvalidFrame);
+    }
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        callback(response.0, response.1)
+    }))
+    .map_err(|_| Error::Native("response callback panicked".into()))
+}
+
 impl Service {
     pub fn recv_timeout(&self, timeout: Duration) -> Result<Request, Error> {
         if self.owner_dead.load(Ordering::Acquire) {
@@ -930,6 +1078,8 @@ impl Node {
             response_tx,
             stop: Arc::new(AtomicBool::new(false)),
             slots: Arc::new(AtomicUsize::new(0)),
+            callback_threads: Arc::new(AtomicUsize::new(0)),
+            callback_requests: Arc::new(AtomicUsize::new(0)),
             capacity: config.capacity,
             counters: Arc::new(Counters::default()),
             identity: Arc::new(OnceLock::new()),
@@ -1397,6 +1547,7 @@ impl Node {
                 response_type: response_type.into(),
             },
             active: Arc::downgrade(&lease.active),
+            callback: None,
         });
         Ok(Service {
             rx,
@@ -1462,6 +1613,274 @@ impl Node {
             worker: Some(worker),
         })
     }
+    /// Register a response service callback. Exact local `request_callback`
+    /// calls execute on the requesting thread; queued/wire calls execute on an
+    /// owned bounded dispatcher. User code runs without transport registry locks.
+    /// Empty responses use the separate one-way API. Panics become errors.
+    pub fn serve_callback<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        callback: F,
+    ) -> Result<CallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync + 'static,
+    {
+        self.serve_callback_with_spawner(
+            topic,
+            request_type,
+            response_type,
+            callback,
+            spawn_callback,
+        )
+    }
+    fn serve_callback_with_spawner<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        callback: F,
+        spawn: CallbackSpawner,
+    ) -> Result<CallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync + 'static,
+    {
+        self.remapped_topic(topic)?;
+        callback_types(request_type, response_type)?;
+        let permit = self.sender.callback_permit(&self.sender.callback_threads)?;
+        let service = self.serve(topic, request_type, response_type)?;
+        let state = Arc::new(ResponseCallbackState {
+            callback: Box::new(callback),
+            active: service._lease.active.clone(),
+            owner_dead: self.owner_dead.clone(),
+            sender: self.sender.clone(),
+            max: self.config.max_message_bytes,
+            ready: AtomicBool::new(false),
+        });
+        let dispatch = state.clone();
+        let worker = spawn(Box::new(move || {
+            let _permit = permit;
+            // Do not invoke user code until local registry admission commits.
+            while dispatch.live() && !dispatch.ready.load(Ordering::Acquire) {
+                thread::park_timeout(Duration::from_millis(20));
+            }
+            while dispatch.live() {
+                match service.recv_timeout(Duration::from_millis(20)) {
+                    Ok(request) => {
+                        let result = dispatch.invoke(&request.data);
+                        let reply = match result {
+                            Ok(reply) => reply,
+                            Err(_) => {
+                                dispatch
+                                    .sender
+                                    .counters
+                                    .routing_errors
+                                    .fetch_add(1, Ordering::Relaxed);
+                                (Vec::new(), false)
+                            }
+                        };
+                        if request.respond(reply.0, reply.1).is_err() {
+                            dispatch
+                                .sender
+                                .counters
+                                .routing_errors
+                                .fetch_add(1, Ordering::Relaxed);
+                        }
+                    }
+                    Err(Error::Timeout) => {}
+                    Err(_) => break,
+                }
+            }
+            drop(service);
+            drop(dispatch);
+        }))?;
+        let handle = CallbackService {
+            state,
+            worker: Some(worker),
+        };
+        {
+            let mut services = self
+                .services
+                .lock()
+                .map_err(|_| Error::Native("service registry poisoned".into()))?;
+            let active = Arc::downgrade(&handle.state.active);
+            let entry = services
+                .iter_mut()
+                .find(|entry| entry.active.ptr_eq(&active))
+                .ok_or(Error::Shutdown)?;
+            if !handle.state.live() {
+                return Err(Error::Shutdown);
+            }
+            entry.callback = Some(Arc::downgrade(&handle.state));
+        }
+        handle.state.ready.store(true, Ordering::Release);
+        handle.worker.as_ref().unwrap().thread().unpark();
+        Ok(handle)
+    }
+    fn local_response_callback(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+    ) -> Result<Option<Arc<ResponseCallbackState>>, Error> {
+        let domain = &self.identity()?.service_domain;
+        for owner in service_workers(local_service_workers())? {
+            let Some(owner) = owner.get() else { continue };
+            if &owner.service_domain != domain {
+                continue;
+            }
+            // Only weak references cross the lock boundary. Upgrading or
+            // dropping the last callback may run a user-owned destructor.
+            let callback = {
+                let services = owner
+                    .services
+                    .lock()
+                    .map_err(|_| Error::Native("service registry poisoned".into()))?;
+                services
+                    .iter()
+                    .find(|entry| {
+                        entry.topic == topic
+                            && entry.types.request_type == request_type
+                            && entry.types.response_type == response_type
+                    })
+                    .and_then(|entry| entry.callback.clone())
+            };
+            if let Some(callback) = callback.and_then(|callback| callback.upgrade())
+                && callback.live()
+                && callback.ready.load(Ordering::Acquire)
+            {
+                return Ok(Some(callback));
+            }
+        }
+        Ok(None)
+    }
+    /// Admit a response callback. A live exact local callback runs both user
+    /// functions before return, once, without enqueueing a duplicate request.
+    /// Other providers use the ordinary bounded queue and an owned dispatcher.
+    /// Validation and admission precede user code. Timeouts/cancellation cannot
+    /// preempt a user function already selected; completion reports its outcome.
+    pub fn request_callback<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        data: impl Into<Vec<u8>>,
+        timeout: Duration,
+        callback: F,
+    ) -> Result<CallbackRequest, Error>
+    where
+        F: FnOnce(Vec<u8>, bool) + Send + 'static,
+    {
+        self.request_callback_with_spawner(
+            topic,
+            request_type,
+            response_type,
+            data.into(),
+            timeout,
+            callback,
+            spawn_callback,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn request_callback_with_spawner<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        data: Vec<u8>,
+        timeout: Duration,
+        callback: F,
+        spawn: CallbackSpawner,
+    ) -> Result<CallbackRequest, Error>
+    where
+        F: FnOnce(Vec<u8>, bool) + Send + 'static,
+    {
+        let topic_name = self.remapped_topic(topic)?;
+        callback_types(request_type, response_type)?;
+        if data.len() > self.config.max_message_bytes {
+            return Err(Error::InvalidFrame);
+        }
+        let deadline = Instant::now()
+            .checked_add(timeout)
+            .ok_or(Error::InvalidConfig)?;
+        let cancelled = Arc::new(AtomicBool::new(false));
+        callback_progress(&self.sender, &cancelled, deadline)?;
+        let permit = self
+            .sender
+            .callback_permit(&self.sender.callback_requests)?;
+        let (done, rx) = mpsc::sync_channel(1);
+        if let Some(service) =
+            self.local_response_callback(&topic_name, request_type, response_type)?
+        {
+            // Selection is final: a retirement or user error after this point
+            // completes this request and never retries through the worker.
+            callback_progress(&self.sender, &cancelled, deadline)?;
+            if data.len() > service.max {
+                return Err(Error::InvalidFrame);
+            }
+            let result = service.invoke(&data).and_then(|response| {
+                callback_progress(&self.sender, &cancelled, deadline)?;
+                run_response_callback(callback, response, self.config.max_message_bytes)
+            });
+            let _ = done.try_send(result);
+            drop(permit);
+            return Ok(CallbackRequest {
+                rx,
+                cancelled,
+                worker: None,
+            });
+        }
+        let thread_permit = self.sender.callback_permit(&self.sender.callback_threads)?;
+        let (work, incoming) = mpsc::sync_channel::<PendingResponse>(1);
+        let stop = cancelled.clone();
+        let sender = self.sender.clone();
+        let max = self.config.max_message_bytes;
+        // Spawn before transport admission, so a failed spawn cannot orphan an
+        // admitted request. Inline completion never creates this thread.
+        let worker = spawn(Box::new(move || {
+            let _permit = permit;
+            let _thread_permit = thread_permit;
+            let result = (|| {
+                let pending = loop {
+                    let poll = callback_progress(&sender, &stop, deadline)?;
+                    match incoming.recv_timeout(poll) {
+                        Ok(pending) => break pending,
+                        Err(mpsc::RecvTimeoutError::Timeout) => {}
+                        Err(error) => return Err(receive_error(error)),
+                    }
+                };
+                let response = loop {
+                    let poll = callback_progress(&sender, &stop, deadline)?;
+                    match pending.rx.recv_timeout(poll) {
+                        Ok(response) => break response?,
+                        Err(mpsc::RecvTimeoutError::Timeout) => {}
+                        Err(error) => return Err(receive_error(error)),
+                    }
+                };
+                callback_progress(&sender, &stop, deadline)?;
+                run_response_callback(callback, response, max)
+            })();
+            let _ = done.try_send(result);
+        }))?;
+        let handle = CallbackRequest {
+            rx,
+            cancelled,
+            worker: Some(worker),
+        };
+        let pending = self.begin_request(
+            topic,
+            request_type,
+            response_type,
+            data,
+            deadline.saturating_duration_since(Instant::now()),
+        )?;
+        // A dispatcher can expire before handoff. The request remains admitted
+        // and expires normally; the handle reports timeout, without a callback.
+        let _ = work.try_send(pending);
+        Ok(handle)
+    }
+
     /// This Node's live service topics, without partition prefixes, sorted uniquely.
     pub fn advertised_services(&self) -> Result<Vec<String>, Error> {
         if self.sender.stop.load(Ordering::Acquire) {
