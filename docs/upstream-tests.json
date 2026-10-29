@@ -5017,11 +5017,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicListRemap",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
-        "original_topic_list_remap"
+        "original_topic_list_remap",
+        "original_topic_list_remap_discovered"
       ],
-      "review": "docs/reviews/topic-list-remap.json",
+      "review": "2026-10-29: independent integration reviewer compared pinned native Node_TEST.cc:2635 and replayed all three focused Rust checks. Exact typed Int32 registration, /foo to /bar, size one and index-zero predicates through known_topics approved. The separate lifecycle supplement earns no case credit; no production or gate changes.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5030,9 +5031,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Native /foo to /bar single-hop remap and publisher advertisement map to Config::add_topic_remap and Node::advertise; both original TopicList size1 and indexed /bar assertions retained through advertised_topics. No global discovery list or cross-process claim.",
+      "contract": "One Node maps /foo to /bar and retains a live typed Int32 publisher. The known_topics discovered query preserves the original TopicList size1 and indexed /bar assertions without added sleeps or polling. The older advertised_topics test remains unchanged. Lifecycle supplements add no original-case credit; no remote convergence, general latency or complete registry semantics claim.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-topic-list-remap.md; native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-topic-list-remap.md; unchanged native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicListSubscriberOnly",

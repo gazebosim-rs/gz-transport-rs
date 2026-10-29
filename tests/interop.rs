@@ -230,6 +230,48 @@ fn original_topic_list_remap() {
     assert_eq!(topics[0], "/bar");
 }
 
+// Preserve the same original predicates through the discovered topic query.
+#[test]
+fn original_topic_list_remap_discovered() {
+    let mut config = config();
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let _publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+
+    let topics = node.known_topics().unwrap();
+    assert_eq!(topics.len(), 1);
+    assert_eq!(topics[0], "/bar");
+}
+
+#[test]
+fn discovered_topic_list_remap_preserves_live_subscribers() {
+    let mut config = config();
+    config.add_topic_remap("/foo", "/bar").unwrap();
+    let node = Node::new(config).unwrap();
+    let publisher = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    let subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    assert_eq!(node.known_topics().unwrap(), ["/bar"]);
+    assert_eq!(node.known_publisher_topics().unwrap(), ["/bar"]);
+    assert!(node.known_services().unwrap().is_empty());
+
+    drop(publisher);
+    assert!(node.known_publisher_topics().unwrap().is_empty());
+    assert_eq!(node.known_topics().unwrap(), ["/bar"]);
+    drop(subscription);
+    assert!(node.known_topics().unwrap().is_empty());
+
+    let replacement = node
+        .advertise_typed::<gz_msgs::int32::Int32>("/foo")
+        .unwrap();
+    assert_eq!(node.known_topics().unwrap(), ["/bar"]);
+    drop(replacement);
+    assert!(node.known_topics().unwrap().is_empty());
+}
+
 // Node_TEST.cc:NodeTest.TopicList (2014 OSRF/Apache-2.0). The native
 // original creates two Nodes in one process and bounds only the second call.
 #[test]

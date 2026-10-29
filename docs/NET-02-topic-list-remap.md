@@ -1,20 +1,31 @@
-# Remapped local topic listing assertion
+# Remapped discovered topic listing
 
-The reviewed partial port retains the complete selected
-`NodeTest.TopicListRemap` assertion body. The pinned native test maps `/foo`
-to `/bar`, advertises a publisher at `/foo`, then asserts the topic list has
-one entry and index zero is `/bar`. Rust uses the existing single-hop
-`Config::add_topic_remap`, `Node::advertise`, and `Node::advertised_topics` paths
-with those exact names and both list assertions. The live `Publisher` handle is
-kept until after inspection.
+`original_topic_list_remap_discovered` preserves the complete assertion body of
+upstream `NodeTest.TopicListRemap`: one Node maps `/foo` to `/bar`, advertises an
+Int32 publisher at `/foo`, queries the topic list, and requires exactly one
+entry with index zero equal to `/bar`.
 
-The unchanged native original passes 1/0 from upstream SHA
-`41913b9dfc3dbce33ac5464ddcb427cc82450f26`, and the full gate now runs
-it with the previously required Node originals. This selected one-node
-observation does not qualify global discovery listing or cross-process
-behavior. No production rule, dependency, API, or wire format changes.
+The port calls `known_topics()`, the bounded discovered-topic query. It keeps
+the publisher alive and adds no sleep or discovery polling. The earlier
+`original_topic_list_remap` local `advertised_topics()` test remains unchanged;
+its [partial review](reviews/topic-list-remap.json) remains historical evidence.
 
-Independent [review](reviews/topic-list-remap.json) approved this selected
-one-node assertion mapping as partial. The ledger remains partial because the
-Rust local list does not establish native global discovery behavior. Broader
-NET-02 topic contracts remain open.
+A separate supplement keeps a matching subscription alive after dropping the
+publisher. The discovered topic remains `/bar`, while the publisher-only list
+is empty. Dropping the subscription removes the topic; recreating and dropping
+the remapped publisher updates it again. Service names remain separate. These
+lifecycle checks receive no additional original-case credit.
+
+Independent source comparison and replay approved the selected one-Node mapping
+as a faithful port. This does not establish remote convergence, general query
+latency, complete global-registry semantics or wider NET-02 behavior. No
+production, protocol, dependency or gate-policy changes are involved.
+
+Run the focused checks with:
+
+```sh
+cargo test --locked --test interop topic_list_remap
+```
+
+Every mandatory gate also runs the unchanged native `NodeTest.TopicListRemap`
+original from the pinned C++ reference.

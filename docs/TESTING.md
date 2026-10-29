@@ -181,12 +181,12 @@ the [service-list contract](NET-02-discovered-service-remap.md). The selected
 one-Node original is a faithful port; global convergence and general latency
 remain unqualified.
 
-The reviewed partial remapped topic-list assertion port additionally requires the
-unchanged native NodeTest.TopicListRemap original in every gate. The exact
-one-entry `/bar` result is retained through local publisher inspection; see the
-[topic-list contract](NET-02-topic-list-remap.md) and
-[review receipt](reviews/topic-list-remap.json). Global discovery remains
-unqualified.
+The remapped topic-list ports require the unchanged native NodeTest.TopicListRemap
+original in every gate. The discovered query retains its exact one-entry,
+index-zero `/bar` result, while the older local-inspection test remains unchanged.
+A separate supplement preserves subscriber-only visibility after publisher drop;
+see the [topic-list contract](NET-02-topic-list-remap.md). The selected one-Node
+original is a faithful port; remote convergence and general latency remain open.
 
 The bounded known-list APIs additionally require the unchanged native
 NodeTest.TopicList and NodeTest.ServiceList originals as contextual controls.
