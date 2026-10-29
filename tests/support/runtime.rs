@@ -4889,3 +4889,168 @@ fn service_info_query_keeps_validation_timeout_backpressure_and_shutdown_errors(
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 1);
 }
+
+#[test]
+fn publication_info_normalizes_native_options_without_changing_wire_records() {
+    let (mut worker, _) = state(16);
+    let topic = qualified_name(&worker.config.partition, "", "/options").unwrap();
+    let peer = std::env::var("GZ_CPP_PEER")
+        .unwrap_or_else(|_| format!("{}/artifacts/cpp-peer", env!("CARGO_MANIFEST_DIR")));
+    let mut expected = Vec::new();
+    for (index, (flag, rate)) in [false, true]
+        .into_iter()
+        .flat_map(|flag| {
+            [0, 1, 7, u64::MAX]
+                .into_iter()
+                .map(move |rate| (flag, rate))
+        })
+        .enumerate()
+    {
+        let output = std::process::Command::new(&peer)
+            .args([
+                "publisher-option-reference",
+                if flag { "1" } else { "0" },
+                &rate.to_string(),
+            ])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert!(output.stderr.is_empty());
+        let native = String::from_utf8(output.stdout).unwrap();
+        let fields: Vec<_> = native.split_whitespace().collect();
+        assert_eq!(fields.len(), 2);
+        let effective = fields[1].parse::<u64>().unwrap();
+        assert!(matches!(fields[0], "0" | "1"));
+        let scope = if index % 2 == 0 {
+            Scope::All
+        } else {
+            Scope::Host
+        };
+        let publisher = WirePublisher {
+            topic: topic.clone(),
+            address: format!("tcp://127.0.0.1:{}", 45000 + index),
+            process_uuid: "remote".into(),
+            node_uuid: format!("node-{index}"),
+            scope: scope.into(),
+            pub_type: Some(PubType::MsgPub(MessagePublisher {
+                ctrl: format!("tcp://127.0.0.1:{}", 46000 + index),
+                msg_type: "kind".into(),
+                throttled: flag,
+                msgs_per_sec: rate,
+            })),
+        };
+        worker.discovered(0, protocol::advertisement("remote", publisher.clone()));
+        expected.push(TopicPublisherInfo {
+            topic: topic.clone(),
+            address: publisher.address,
+            control_address: format!("tcp://127.0.0.1:{}", 46000 + index),
+            process_uuid: "remote".into(),
+            node_uuid: format!("node-{index}"),
+            scope,
+            type_name: "kind".into(),
+            throttled: fields[0] == "1",
+            msgs_per_sec: effective,
+        });
+    }
+    let raw = worker.peers.clone();
+    let inactive =
+        worker.wire_publisher(topic.clone(), PubType::MsgPub(MessagePublisher::default()));
+    worker.advertisements.push((
+        inactive,
+        Arc::new(AtomicBool::new(false)),
+        Arc::new(AtomicU8::new(0)),
+    ));
+    expected.sort();
+    assert_eq!(worker.topic_publisher_info(&topic), expected);
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::KnownTopicPublishers(topic.clone(), tx));
+    assert_eq!(rx.recv().unwrap(), expected);
+    let (tx, rx) = mpsc::sync_channel(1);
+    drop(rx);
+    worker.command(Command::KnownTopicPublishers(topic.clone(), tx));
+    assert!(worker.peers == raw);
+    // Filtering follows the same channel/kind/topic/expiry boundary as existing snapshots.
+    for (index, channel, other, age, service) in [
+        (8, 1, false, 0, false),
+        (9, 0, true, 0, false),
+        (10, 0, false, 4, false),
+        (11, 0, false, 0, true),
+    ] {
+        let publisher = WirePublisher {
+            topic: if other {
+                qualified_name("foreign", "", "/options").unwrap()
+            } else {
+                topic.clone()
+            },
+            address: format!("tcp://127.0.0.1:{}", 45000 + index),
+            process_uuid: "filtered".into(),
+            node_uuid: format!("node-{index}"),
+            scope: Scope::All.into(),
+            pub_type: Some(if service {
+                PubType::SrvPub(ServicePublisher::default())
+            } else {
+                PubType::MsgPub(MessagePublisher::default())
+            }),
+        };
+        worker.peers.insert(
+            PeerKey {
+                channel,
+                process: publisher.process_uuid.clone(),
+                node: publisher.node_uuid.clone(),
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+            },
+            (publisher, Instant::now() - Duration::from_secs(age)),
+        );
+    }
+    assert_eq!(worker.topic_publisher_info(&topic), expected);
+    worker.discovered(0, protocol::discovery("remote", Type::Bye, None));
+    assert!(worker.topic_publisher_info(&topic).is_empty());
+    assert_eq!(expected.len(), 8);
+}
+
+#[test]
+fn publication_info_keeps_validation_queue_timeout_and_shutdown_bounds() {
+    let (worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: Config {
+            reply_timeout: Duration::from_millis(5),
+            ..worker.config.clone()
+        },
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: Mutex::new(Vec::new()),
+        oneway_callbacks: Mutex::new(Vec::new()),
+    };
+    assert_eq!(
+        node.known_topic_publishers("bad name"),
+        Err(Error::InvalidName)
+    );
+    assert_eq!(node.known_topic_publishers("/info"), Err(Error::Timeout));
+    assert_eq!(node.known_topic_publishers("/info"), Err(Error::QueueFull));
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::KnownTopicPublishers(_, _)
+    ));
+    let commands = thread::scope(|scope| {
+        let consumer = scope.spawn(move || {
+            drop(commands.recv().unwrap());
+            commands
+        });
+        assert_eq!(node.known_topic_publishers("/info"), Err(Error::Shutdown));
+        consumer.join().unwrap()
+    });
+    drop(commands);
+    assert_eq!(node.known_topic_publishers("/info"), Err(Error::Shutdown));
+    node.cancel();
+    assert_eq!(node.known_topic_publishers("/info"), Err(Error::Shutdown));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.statistics().queue_drops, 1);
+}

@@ -13,6 +13,7 @@ pub use runtime::{
     AdvertiseOptions, Message, MessageInfo, Node, OneWayCallbackService, PendingResponse,
     Publisher, ReceivedMessage, Request, Service, ServiceProviderInfo, ServiceTypeResolution,
     ServiceTypes, Statistics, SubscribeOptions, Subscription, TopicEndpointTypes,
+    TopicPublisherInfo,
 };
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.

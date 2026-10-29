@@ -936,3 +936,12 @@ every-field comparisons for six service fixtures. Equal signatures retain
 provider multiplicity; retired metadata remains owned without keeping a
 registration live. The ordinary full gate runs these tests; no original case
 gains additional credit or a general discovery/latency claim.
+
+## Owned message-publication metadata
+
+The [publication metadata snapshot](NET-01-owned-publication-info.md) has six
+focused tests covering public lifecycle/domain boundaries, worker filters/errors
+and fresh native every-field comparisons for six fixtures. Eight native option
+controls preserve effective flag/rate semantics without changing raw records.
+The tests join the normal full gate; prior assertions and ledger dispositions
+remain. These checks establish no global discovery or performance claim.

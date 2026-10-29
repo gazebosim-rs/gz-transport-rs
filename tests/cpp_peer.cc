@@ -74,6 +74,17 @@ static std::optional<bool> wait_metadata(const std::shared_ptr<MetadataState> &s
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "publisher-option-reference") {
+    gz::msgs::Discovery discovery;
+    auto *options=discovery.mutable_pub()->mutable_msg_pub();
+    options->set_throttled(topic=="1");
+    options->set_msgs_per_sec(std::stoull(value));
+    gz::transport::MessagePublisher publisher;
+    publisher.SetFromDiscovery(discovery);
+    std::cout << publisher.Options().Throttled() << ' '
+              << publisher.Options().MsgsPerSec() << std::endl;
+    return 0;
+  }
   if (mode == "publication-clock") {
     timespec before{},after{};
     if (clock_gettime(CLOCK_MONOTONIC,&before)!=0) return 118;
@@ -175,6 +186,37 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "topic-publisher-details") {
+    std::cout << "READY" << std::endl;
+    std::vector<gz::transport::MessagePublisher> publishers,subscribers;
+    const bool found=node.TopicInfo(topic,publishers,subscribers);
+    std::cout << found << ' ' << publishers.size() << '\n';
+    for (const auto &publisher:publishers) {
+      std::cout << publisher.Topic() << '\n' << publisher.Addr() << '\n'
+                << publisher.Ctrl() << '\n' << publisher.PUuid() << '\n'
+                << publisher.NUuid() << '\n'
+                << static_cast<int>(publisher.Options().Scope()) << '\n'
+                << publisher.MsgTypeName() << '\n'
+                << publisher.Options().Throttled() << '\n'
+                << publisher.Options().MsgsPerSec() << '\n';
+    }
+    std::cout << std::flush;
+    return 0;
+  }
+  if (mode == "list-option-publisher") {
+    gz::transport::AdvertiseMessageOptions options;
+    const auto split=value.find(':');
+    if (split==std::string::npos) return 121;
+    if (value.substr(0,split)=="host") options.SetScope(gz::transport::Scope_t::HOST);
+    else if (value.substr(0,split)!="all") return 122;
+    options.SetMsgsPerSec(std::stoull(value.substr(split+1)));
+    auto publisher=node.Advertise<gz::msgs::StringMsg>(topic,options);
+    if (!publisher) return 123;
+    std::cout << "READY" << std::endl;
+    std::string command;
+    if (!std::getline(std::cin,command) || command!="QUIT") return 124;
+    return 0;
+  }
   if (mode == "service-info-details") {
     std::cout << "READY" << std::endl;
     std::vector<gz::transport::ServicePublisher> providers;

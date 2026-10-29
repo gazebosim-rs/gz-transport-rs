@@ -144,6 +144,21 @@ pub struct ServiceProviderInfo {
     pub request_type: String,
     pub response_type: String,
 }
+/// Owned metadata for one known message publication, with native effective options.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TopicPublisherInfo {
+    pub topic: String,
+    pub address: String,
+    /// Advertised control field, which may be empty.
+    pub control_address: String,
+    /// Advertised process identity; Rust generates this per worker.
+    pub process_uuid: String,
+    pub node_uuid: String,
+    pub scope: Scope,
+    pub type_name: String,
+    pub throttled: bool,
+    pub msgs_per_sec: u64,
+}
 /// Descriptor names from one bounded topic endpoint snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopicEndpointTypes {
@@ -1547,6 +1562,17 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Snapshot owned publication metadata for an original topic, without waiting
+    /// for discovery startup. Other Nodes are visible only after this worker has
+    /// discovered their advertisements. Subscriber metadata is not included.
+    /// Effective rate options follow native MessagePublisher interpretation.
+    pub fn known_topic_publishers(&self, topic: &str) -> Result<Vec<TopicPublisherInfo>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::KnownTopicPublishers(self.topic(topic)?, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// Resolve empty descriptor names from matching providers. Explicit names
     /// select providers; both explicit names return immediately without lookup.
     /// The provider wait is polled every 100ms on the caller, never the IO worker.
@@ -1668,6 +1694,7 @@ enum Command {
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     KnownServiceInfo(String, SyncSender<Vec<ServiceProviderInfo>>),
+    KnownTopicPublishers(String, SyncSender<Vec<TopicPublisherInfo>>),
     HasConnections(String, String, SyncSender<bool>),
     RefreshConnections(
         String,
@@ -2336,6 +2363,46 @@ impl Worker {
         records.sort();
         records
     }
+    fn topic_publisher_info(&self, topic: &str) -> Vec<TopicPublisherInfo> {
+        let local = self
+            .advertisements
+            .iter()
+            .filter_map(|(publisher, active, _)| {
+                active.load(Ordering::Acquire).then_some(publisher)
+            });
+        let remote = self.peers.iter().filter_map(|(key, (publisher, stamp))| {
+            (key.channel == 0 && stamp.elapsed() < Duration::from_secs(3)).then_some(publisher)
+        });
+        let mut records: Vec<_> = local
+            .chain(remote)
+            .filter(|publisher| publisher.topic == topic)
+            .filter_map(|publisher| {
+                let Some(PubType::MsgPub(info)) = &publisher.pub_type else {
+                    return None;
+                };
+                // Native ignores the raw rate when throttled is false, then
+                // derives Throttled from the effective rate, even for true/MAX.
+                let msgs_per_sec = if info.throttled {
+                    info.msgs_per_sec
+                } else {
+                    u64::MAX
+                };
+                Some(TopicPublisherInfo {
+                    topic: publisher.topic.clone(),
+                    address: publisher.address.clone(),
+                    control_address: info.ctrl.clone(),
+                    process_uuid: publisher.process_uuid.clone(),
+                    node_uuid: publisher.node_uuid.clone(),
+                    scope: publisher.scope(),
+                    type_name: info.msg_type.clone(),
+                    throttled: msgs_per_sec != u64::MAX,
+                    msgs_per_sec,
+                })
+            })
+            .collect();
+        records.sort();
+        records
+    }
     fn has_remote_subscribers(&self, topic: &str, type_name: &str) -> bool {
         self.remote_subscribers.values().any(|p| {
             p.topic == topic
@@ -2554,6 +2621,9 @@ impl Worker {
             }
             Command::KnownServiceInfo(topic, reply) => {
                 let _ = reply.try_send(self.service_provider_info(&topic));
+            }
+            Command::KnownTopicPublishers(topic, reply) => {
+                let _ = reply.try_send(self.topic_publisher_info(&topic));
             }
             Command::HasConnections(topic, type_name, reply) => {
                 let _ = reply.try_send(self.has_subscribers(&topic, &type_name));

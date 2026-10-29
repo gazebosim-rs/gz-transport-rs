@@ -31,6 +31,8 @@ eventually discovered remote subscriber-only interests; see the
 `known_topic_info()` returns known publisher and subscriber descriptor names for
 one original topic path, with immediate same-process endpoint identity;
 see the [bounded topic information contract](docs/NET-02-topic-info.md).
+`known_topic_publishers()` snapshots owned publication addresses, identities,
+control metadata and effective options; see [owned publication metadata](docs/NET-01-owned-publication-info.md).
 The `topic_info(topic, timeout)` startup query and prepare-phase
 `Publisher::refresh_connection_snapshot(timeout)` have a separate
 [bounded readiness contract](docs/NET-02-ready-topic-info.md). Callers provide an

@@ -3360,3 +3360,86 @@ fn owned_service_info_matches_every_native_provider_field() {
         assert_eq!(actual, expected);
     }
 }
+
+#[test]
+fn owned_topic_publishers_match_every_native_publication_field() {
+    for (mode, value, count) in [
+        ("list-vector3d-publisher", "unused", 1),
+        ("list-option-publisher", "all:18446744073709551615", 1),
+        ("list-option-publisher", "host:7", 1),
+        ("list-option-publisher", "all:0", 1),
+        ("list-option-publisher", "all:7", 2),
+        ("absent", "unused", 0),
+    ] {
+        let cfg = config();
+        let mut providers: Vec<_> = (0..count)
+            .map(|_| Peer::start(&cfg, mode, "/publication-info", value))
+            .collect();
+        let mut native = Peer::start(
+            &cfg,
+            "topic-publisher-details",
+            "/publication-info",
+            "unused",
+        );
+        let node = Node::new(cfg).unwrap();
+        node.topic_info("/publication-info", Duration::from_secs(5))
+            .unwrap();
+        let actual = node.known_topic_publishers("/publication-info").unwrap();
+        let mut header = String::new();
+        native.1.read_line(&mut header).unwrap();
+        assert_eq!(header, format!("1 {count}\n"));
+        let mut expected = Vec::new();
+        for _ in 0..count {
+            let fields: Vec<_> = (0..9)
+                .map(|_| {
+                    let mut line = String::new();
+                    assert!(native.1.read_line(&mut line).unwrap() > 0);
+                    line.strip_suffix('\n').unwrap().to_owned()
+                })
+                .collect();
+            expected.push(gz_transport::TopicPublisherInfo {
+                topic: fields[0].clone(),
+                address: fields[1].clone(),
+                control_address: fields[2].clone(),
+                process_uuid: fields[3].clone(),
+                node_uuid: fields[4].clone(),
+                scope: Scope::try_from(fields[5].parse::<i32>().unwrap()).unwrap(),
+                type_name: fields[6].clone(),
+                throttled: fields[7] == "1",
+                msgs_per_sec: fields[8].parse().unwrap(),
+            });
+        }
+        expected.sort();
+        assert_eq!(actual, expected, "{mode}/{value}");
+        assert_eq!(actual.len(), count);
+        assert_eq!(
+            node.known_topic_publishers("/publication-info").unwrap(),
+            actual
+        );
+        if count == 2 {
+            assert_ne!(actual[0].process_uuid, actual[1].process_uuid);
+            assert_eq!(actual[0].type_name, actual[1].type_name);
+        }
+        native.success();
+        for provider in &mut providers {
+            provider
+                .0
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(b"QUIT\n")
+                .unwrap();
+            provider.success();
+        }
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !node
+            .known_topic_publishers("/publication-info")
+            .unwrap()
+            .is_empty()
+        {
+            assert!(Instant::now() < deadline, "native publisher stayed visible");
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert_eq!(actual, expected);
+    }
+}
