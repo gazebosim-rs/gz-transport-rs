@@ -5364,3 +5364,201 @@ fn subscriber_metadata_query_keeps_name_queue_timeout_and_shutdown_bounds() {
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(node.statistics().queue_drops, 1);
 }
+
+fn route_subscription(worker: &mut Worker, topic: &str) -> Arc<AtomicBool> {
+    let active = Arc::new(AtomicBool::new(true));
+    let (tx, _) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        topic.into(),
+        "kind".into(),
+        tx,
+        active.clone(),
+        SubscribeOptions::default(),
+        None,
+    ));
+    active
+}
+fn route_publication(worker: &Worker, topic: &str, address: &str) -> WirePublisher {
+    let mut publisher = worker.wire_publisher(
+        topic.into(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "kind".into(),
+            ..Default::default()
+        }),
+    );
+    publisher.process_uuid = "route-process".into();
+    publisher.address = address.into();
+    publisher
+}
+#[test]
+fn publication_routes_outlive_silence_with_separate_capacity_and_drop_accounting() {
+    let (mut worker, _) = state(1);
+    let active = route_subscription(&mut worker, "/route");
+    let first = route_publication(&worker, "/route", "tcp://127.0.0.1:45010");
+    worker.discovered(0, protocol::advertisement("route-process", first.clone()));
+    assert_eq!(worker.publication_routes.len(), 1);
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    worker.peers.clear(); // The worker's silence sweep removes discovery records.
+    worker.cleanup();
+    assert_eq!(worker.publication_routes.len(), 1);
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    let mut other = first.clone();
+    other.address = "tcp://127.0.0.1:45011".into();
+    worker.discovered(0, protocol::advertisement("route-process", other.clone()));
+    assert_eq!(worker.peers.len(), 1);
+    assert_eq!(worker.publication_routes.len(), 1);
+    assert!(!worker.subscriptions_connected.contains(&other.address));
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    // An ignored duplicate advertisement does not retry or charge a second drop.
+    worker.discovered(0, protocol::advertisement("route-process", other.clone()));
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    active.store(false, Ordering::Release);
+    worker.cleanup();
+    assert!(worker.publication_routes.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+    let _replacement = route_subscription(&mut worker, "/route");
+    assert_eq!(worker.publication_routes.len(), 1);
+    assert!(worker.subscriptions_connected.contains(&other.address));
+    // This is the same final subscription retirement performed by Worker::run.
+    worker.subscriptions.clear();
+    worker.cleanup();
+    assert!(worker.publication_routes.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+}
+#[test]
+fn publication_routes_share_addresses_and_preserve_explicit_channel_withdrawals() {
+    let (mut worker, _) = state(4);
+    let first_active = route_subscription(&mut worker, "/first");
+    let second_active = route_subscription(&mut worker, "/second");
+    let first = route_publication(&worker, "/first", "tcp://127.0.0.1:45012");
+    let second = route_publication(&worker, "/second", &first.address);
+    for publisher in [&first, &second] {
+        worker.discovered(
+            0,
+            protocol::advertisement("route-process", publisher.clone()),
+        );
+    }
+    assert_eq!(worker.publication_routes.len(), 2);
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    worker.peers.clear();
+    worker.cleanup();
+    worker.discovered(1, protocol::discovery("route-process", Type::Bye, None));
+    worker.discovered(
+        1,
+        protocol::discovery(
+            "route-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(first.clone())),
+        ),
+    );
+    worker.cleanup();
+    assert_eq!(worker.publication_routes.len(), 2);
+    first_active.store(false, Ordering::Release);
+    worker.cleanup();
+    assert_eq!(worker.publication_routes.len(), 1);
+    assert_eq!(worker.subscriptions_connected.len(), 1);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "route-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(first.clone())),
+        ),
+    );
+    worker.cleanup();
+    assert_eq!(worker.publication_routes.len(), 1);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "route-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(second.clone())),
+        ),
+    );
+    worker.cleanup();
+    assert!(worker.publication_routes.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+    worker.discovered(0, protocol::advertisement("route-process", second));
+    worker.discovered(0, protocol::discovery("route-process", Type::Bye, None));
+    worker.cleanup();
+    assert!(worker.publication_routes.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+    assert!(second_active.load(Ordering::Acquire));
+}
+
+// Regression supplied by the independent source reviewer.
+#[test]
+fn withdrawal_and_replacement_in_one_batch_keeps_new_route_connected() {
+    let (mut worker, _) = state(2);
+    let _active = route_subscription(&mut worker, "/route");
+    let first = route_publication(&worker, "/route", "tcp://127.0.0.1:45020");
+    let mut other = route_publication(&worker, "/route", "tcp://127.0.0.1:45021");
+    other.node_uuid = "other-node".into();
+    for publication in [&first, &other] {
+        worker.discovered(
+            0,
+            protocol::advertisement("route-process", publication.clone()),
+        );
+    }
+    assert_eq!(worker.subscriptions_connected.len(), 2);
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "route-process",
+            Type::Unadvertise,
+            Some(DiscContents::Pub(first.clone())),
+        ),
+    );
+    let mut replacement = first;
+    replacement.address = "tcp://127.0.0.1:45022".into();
+    worker.discovered(
+        0,
+        protocol::advertisement("route-process", replacement.clone()),
+    );
+    worker.cleanup();
+    assert!(
+        worker
+            .subscriptions_connected
+            .contains(&replacement.address),
+        "admitted replacement route has no physical connection"
+    );
+}
+
+// Regression supplied by the independent source reviewer.
+#[test]
+fn failed_connection_does_not_retain_permanent_route_capacity() {
+    let (mut worker, _) = state(1);
+    let _active = route_subscription(&mut worker, "/route");
+    let controls = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    controls
+        .set_read_timeout(Some(Duration::from_millis(30)))
+        .unwrap();
+    worker.config.multicast = Ipv4Addr::LOCALHOST;
+    worker.config.message_port = controls.local_addr().unwrap().port();
+    let invalid = route_publication(&worker, "/route", "not-an-endpoint");
+    worker.discovered(0, protocol::advertisement("route-process", invalid.clone()));
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
+    assert!(worker.publication_routes.is_empty());
+    assert!(worker.subscriptions_connected.is_empty());
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+    let mut buffer = vec![0; protocol::MAX_DATAGRAM];
+    assert!(
+        controls.recv(&mut buffer).is_err(),
+        "failed connect announced registration"
+    );
+    worker.peers.clear();
+    worker.cleanup();
+    let valid = route_publication(&worker, "/route", "tcp://127.0.0.1:45023");
+    worker.discovered(0, protocol::advertisement("route-process", valid.clone()));
+    assert!(
+        worker.subscriptions_connected.contains(&valid.address),
+        "failed connect permanently consumed route capacity"
+    );
+    let count = controls.recv(&mut buffer).unwrap();
+    assert_eq!(
+        protocol::decode(&buffer[..count]).unwrap().r#type,
+        Type::NewConnection as i32
+    );
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 0);
+}

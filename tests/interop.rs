@@ -3523,3 +3523,244 @@ fn owned_topic_subscribers_match_every_native_field_and_retirement() {
         assert_eq!(actual, expected);
     }
 }
+
+// Supplemental native lifetime comparison; no retained original gains credit.
+#[test]
+fn physical_publication_routes_survive_discovery_silence_with_native_delivery() {
+    use gz_msgs::discovery::{
+        Discovery,
+        discovery::{
+            DiscContents, Publisher, Type,
+            publisher::{MessagePublisher, PubType},
+        },
+    };
+    let cfg = config();
+    let mut peer = Peer::start(&cfg, "silence-wire-observer", "/wire-lifetime", "unused");
+    let mut node = Node::new(cfg.clone()).unwrap();
+    let subscription = node.subscribe("/wire-lifetime", TYPE).unwrap();
+    let context = zmq::Context::new();
+    let wire = context.socket(zmq::PUB).unwrap();
+    wire.bind("tcp://127.0.0.1:*").unwrap();
+    let address = wire.get_last_endpoint().unwrap().unwrap();
+    let topic = gz_transport::qualified_name(&cfg.partition, "", "/wire-lifetime").unwrap();
+    let process = uuid::Uuid::new_v4().to_string();
+    let publisher = Publisher {
+        topic: topic.clone(),
+        address: address.clone(),
+        process_uuid: process.clone(),
+        node_uuid: "wire-node".into(),
+        scope: Scope::All.into(),
+        pub_type: Some(PubType::MsgPub(MessagePublisher {
+            msg_type: TYPE.into(),
+            ..Default::default()
+        })),
+    };
+    let socket = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::DGRAM,
+        Some(socket2::Protocol::UDP),
+    )
+    .unwrap();
+    socket
+        .bind(&std::net::SocketAddrV4::new(cfg.interface, 0).into())
+        .unwrap();
+    socket.set_multicast_if_v4(&cfg.interface).unwrap();
+    socket.set_multicast_loop_v4(true).unwrap();
+    let udp: std::net::UdpSocket = socket.into();
+    let discovery = |kind| {
+        let body = Discovery {
+            version: 10,
+            process_uuid: process.clone(),
+            r#type: kind as i32,
+            disc_contents: matches!(
+                kind,
+                Type::Advertise | Type::Unadvertise | Type::EndConnection
+            )
+            .then(|| DiscContents::Pub(publisher.clone())),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        let mut frame = (body.len() as u16).to_ne_bytes().to_vec();
+        frame.extend(body);
+        assert_eq!(
+            udp.send_to(&frame, (cfg.multicast, cfg.message_port))
+                .unwrap(),
+            frame.len()
+        );
+    };
+    let send = |stage: &str| {
+        wire.send_multipart(
+            [
+                topic.as_bytes(),
+                address.as_bytes(),
+                data(stage).as_slice(),
+                TYPE.as_bytes(),
+            ],
+            0,
+        )
+        .unwrap();
+    };
+    thread::scope(|scope| {
+        let (tx, rx) = std::sync::mpsc::sync_channel(64);
+        let stdout = &mut peer.1;
+        scope.spawn(move || {
+            for line in stdout.lines() {
+                if tx.send(line.unwrap()).is_err() {
+                    break;
+                }
+            }
+        });
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let stdin = peer.0.stdin.as_mut().unwrap();
+            let native_line = |expected: &str| {
+                let deadline = Instant::now() + Duration::from_secs(2);
+                loop {
+                    let line = rx
+                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                        .unwrap();
+                    if line == expected {
+                        break;
+                    }
+                    assert!(line.starts_with("DATA "), "unexpected native reply: {line}");
+                }
+            };
+            let rust_data = |subscription: &gz_transport::Subscription, expected: &str| {
+                let deadline = Instant::now() + Duration::from_secs(2);
+                loop {
+                    let message = subscription
+                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                        .unwrap();
+                    assert_eq!(message.topic, topic);
+                    assert_eq!(message.type_name, TYPE);
+                    if message.data == data(expected) {
+                        break;
+                    }
+                }
+            };
+            let deadline = Instant::now() + Duration::from_secs(5);
+            let (mut native_ready, mut rust_ready) = (false, false);
+            while !(native_ready && rust_ready) {
+                discovery(Type::Advertise);
+                send("initial");
+                if subscription.recv_timeout(Duration::from_millis(10)).is_ok() {
+                    rust_ready = true;
+                }
+                for line in rx.try_iter() {
+                    assert_eq!(line, "DATA initial");
+                    native_ready = true;
+                }
+                assert!(
+                    Instant::now() < deadline,
+                    "initial native/Rust wire delivery"
+                );
+                thread::sleep(Duration::from_millis(10));
+            }
+            for _ in 0..20 {
+                discovery(Type::Heartbeat);
+                thread::sleep(Duration::from_millis(200));
+            }
+            assert_eq!(
+                node.known_topic_publishers("/wire-lifetime").unwrap().len(),
+                1
+            );
+            writeln!(stdin, "INFO").unwrap();
+            native_line("INFO 1 1");
+            send("heartbeat");
+            rust_data(&subscription, "heartbeat");
+            native_line("DATA heartbeat");
+            // No ADVERTISE, SUBSCRIBERS_REP or HEARTBEAT refresh in this interval.
+            thread::sleep(Duration::from_millis(3500));
+            assert!(
+                node.known_topic_publishers("/wire-lifetime")
+                    .unwrap()
+                    .is_empty()
+            );
+            writeln!(stdin, "INFO").unwrap();
+            native_line("INFO 1 0");
+            send("silence");
+            rust_data(&subscription, "silence");
+            native_line("DATA silence");
+            // END keeps the existing publisher-link behavior on both implementations.
+            discovery(Type::EndConnection);
+            thread::sleep(Duration::from_millis(100));
+            send("end");
+            rust_data(&subscription, "end");
+            native_line("DATA end");
+            // Explicit withdrawal parity is deliberately outside this silence repair:
+            // native retains the physical link; the accepted Rust policy releases it.
+            for kind in [Type::Unadvertise, Type::Bye] {
+                discovery(kind);
+                thread::sleep(Duration::from_millis(100));
+                send("withdrawn");
+                native_line("DATA withdrawn");
+                let deadline = Instant::now() + Duration::from_millis(200);
+                loop {
+                    match subscription
+                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                    {
+                        Ok(message) => assert_eq!(message.data, data("restored")),
+                        Err(Error::Timeout) => break,
+                        result => panic!("unexpected withdrawal receive: {result:?}"),
+                    }
+                }
+                discovery(Type::Advertise);
+                let deadline = Instant::now() + Duration::from_secs(2);
+                loop {
+                    send("restored");
+                    if let Ok(message) = subscription.recv_timeout(Duration::from_millis(10)) {
+                        assert_eq!(message.data, data("restored"));
+                        break;
+                    }
+                    assert!(
+                        Instant::now() < deadline,
+                        "readvertisement did not reconnect"
+                    );
+                }
+                native_line("DATA restored");
+            }
+            node.unsubscribe("/wire-lifetime").unwrap();
+            writeln!(stdin, "UNSUB").unwrap();
+            native_line("UNSUB 1");
+            thread::sleep(Duration::from_millis(100));
+            // Drain earlier restored observations before the negative delivery check.
+            for line in rx.try_iter() {
+                assert_eq!(line, "DATA restored");
+            }
+            send("inactive");
+            assert_eq!(
+                subscription.recv_timeout(Duration::from_millis(200)),
+                Err(Error::Shutdown)
+            );
+            assert!(matches!(
+                rx.recv_timeout(Duration::from_millis(200)),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            ));
+            let replacement = node.subscribe("/wire-lifetime", TYPE).unwrap();
+            discovery(Type::Advertise);
+            let deadline = Instant::now() + Duration::from_secs(2);
+            loop {
+                send("shutdown");
+                if replacement.recv_timeout(Duration::from_millis(10)).is_ok() {
+                    break;
+                }
+                assert!(Instant::now() < deadline);
+            }
+            node.shutdown();
+            assert_eq!(
+                replacement.recv_timeout(Duration::from_millis(200)),
+                Err(Error::Shutdown)
+            );
+            assert_eq!(
+                node.known_topic_publishers("/wire-lifetime"),
+                Err(Error::Shutdown)
+            );
+            writeln!(stdin, "QUIT").unwrap();
+        }));
+        if let Err(error) = result {
+            let _ = peer.0.kill();
+            let _ = peer.0.wait();
+            std::panic::resume_unwind(error);
+        }
+    });
+    peer.success();
+}

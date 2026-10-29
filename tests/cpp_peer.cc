@@ -218,6 +218,32 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "silence-wire-observer") {
+    auto output=std::make_shared<std::mutex>();
+    std::function<void(const gz::msgs::StringMsg&)> callback=[output](const auto &message) {
+      std::lock_guard<std::mutex> guard(*output);
+      std::cout << "DATA " << message.data() << std::endl;
+    };
+    if (!node.Subscribe(topic,callback)) return 150;
+    std::vector<gz::transport::MessagePublisher> publishers,subscribers;
+    // Complete native discovery startup before the controller starts its clock.
+    if (!node.TopicInfo(topic,publishers,subscribers)) return 151;
+    std::cout << "READY" << std::endl;
+    for (std::string command;std::getline(std::cin,command);) {
+      if (command=="QUIT") return 0;
+      if (command=="UNSUB") {
+        const bool removed=node.Unsubscribe(topic);
+        std::lock_guard<std::mutex> guard(*output);
+        std::cout << "UNSUB " << removed << std::endl;
+      } else if (command=="INFO") {
+        publishers.clear();subscribers.clear();
+        const bool found=node.TopicInfo(topic,publishers,subscribers);
+        std::lock_guard<std::mutex> guard(*output);
+        std::cout << "INFO " << found << ' ' << publishers.size() << std::endl;
+      } else { return 152; }
+    }
+    return 153;
+  }
   if (mode == "topic-publisher-details" || mode == "topic-subscriber-details") {
     std::cout << "READY" << std::endl;
     std::vector<gz::transport::MessagePublisher> publishers,subscribers;

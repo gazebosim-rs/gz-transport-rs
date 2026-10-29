@@ -18,9 +18,11 @@ matching discovery channel. The existing global capacity bound remains unchanged
 Discovery.hh1233–1250 refreshes process activity for each received packet before
 its opcode dispatch. Rust now refreshes known-process peers only on that packet's
 channel, including subscriber-list requests. BYE removes only that channel's
-process entries. Pub/sub connection admission and retention use message-channel
-peers; RPC connection admission and retention use service-channel peers. Metadata
-received on the opposite channel cannot establish or preserve the wrong endpoint.
+process entries. Pub/sub connection admission uses message-channel peers;
+[physical routes now survive discovery silence](NET-01-publication-route-lifetime.md)
+within their own bound, preserving explicit withdrawal cleanup. RPC connection
+admission and retention use service-channel peers. Metadata received on the
+opposite channel cannot establish or preserve the wrong endpoint.
 Unknown opcodes refresh activity as native dispatch does, then are ignored;
 they cannot become default ADVERTISE entries. No new unbounded activity map is
 introduced.

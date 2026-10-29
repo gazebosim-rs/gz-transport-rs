@@ -1914,6 +1914,7 @@ struct Worker {
     subscriber_metadata: HashMap<PeerKey, SubscriberMetadata>,
     connected: HashSet<String>,
     subscriptions_connected: HashSet<String>,
+    publication_routes: HashSet<PeerKey>,
     response_connections: HashMap<String, Instant>,
     pending: HashMap<String, Pending>,
     replies: Vec<(Instant, Vec<Vec<u8>>)>,
@@ -2106,6 +2107,7 @@ impl Worker {
             subscriber_metadata: HashMap::new(),
             connected: HashSet::new(),
             subscriptions_connected: HashSet::new(),
+            publication_routes: HashSet::new(),
             response_connections: HashMap::new(),
             pending: HashMap::new(),
             replies: Vec::new(),
@@ -3018,6 +3020,8 @@ impl Worker {
             self.peers.retain(|key, (p, _)| {
                 key.channel != channel || p.process_uuid != message.process_uuid
             });
+            self.publication_routes
+                .retain(|key| key.channel != channel || key.process != message.process_uuid);
             if channel == 0 {
                 self.subscriber_interests
                     .retain(|key, _| key.process != message.process_uuid);
@@ -3165,6 +3169,12 @@ impl Worker {
                         || key.node != p.node_uuid
                         || key.topic != p.topic
                 });
+                self.publication_routes.retain(|key| {
+                    key.channel != channel
+                        || key.process != p.process_uuid
+                        || key.node != p.node_uuid
+                        || key.topic != p.topic
+                });
                 if channel == 0 && !p.topic.is_empty() && !p.node_uuid.is_empty() {
                     self.remote_subscribers.retain(|key, _| {
                         key.process != p.process_uuid
@@ -3210,15 +3220,38 @@ impl Worker {
                 && s.topic == publisher.topic
                 && (s.type_name.is_empty() || s.type_name == message.msg_type)
         }) {
-            if self.subscriptions_connected.len() < self.config.capacity
-                && self
-                    .subscriptions_connected
-                    .insert(publisher.address.clone())
+            // A withdrawal and replacement can arrive in the same UDP batch.
+            self.cleanup_publication_routes();
+            let key = PeerKey {
+                channel: 0,
+                process: publisher.process_uuid.clone(),
+                node: publisher.node_uuid.clone(),
+                topic: publisher.topic.clone(),
+                address: publisher.address.clone(),
+            };
+            if !self.publication_routes.contains(&key)
+                && self.publication_routes.len() >= self.config.capacity
             {
                 self.sender
                     .counters
-                    .sent(self.subscriber.connect(&publisher.address));
+                    .queue_drops
+                    .fetch_add(1, Ordering::Relaxed);
+                return;
             }
+            if !self.subscriptions_connected.contains(&publisher.address) {
+                if !self
+                    .sender
+                    .counters
+                    .sent(self.subscriber.connect(&publisher.address))
+                {
+                    return;
+                }
+                self.subscriptions_connected
+                    .insert(publisher.address.clone());
+            }
+            // The route bound also bounds distinct socket addresses. Failed
+            // connects consume neither capacity nor a registration announcement.
+            self.publication_routes.insert(key);
             let mut registered = publisher.clone();
             registered.process_uuid = self.process.clone();
             registered.node_uuid = self.node.clone();
@@ -3568,21 +3601,30 @@ impl Worker {
             }
             keep
         });
-        self.subscriptions_connected.retain(|address| {
-            let keep = self.peers.iter().any(|(key, (p, _))| {
-                key.channel == 0
-                    && &p.address == address
-                    && self.subscriptions.iter().any(|s| s.topic == p.topic)
-            });
-            if !keep {
-                let _ = self.subscriber.disconnect(address);
-            }
-            keep
-        });
+        self.cleanup_publication_routes();
         self.response_connections.retain(|address, stamp| {
             let keep = stamp.elapsed() < self.config.reply_timeout.max(Duration::from_secs(3));
             if !keep {
                 let _ = self.router.disconnect(address);
+            }
+            keep
+        });
+    }
+    fn cleanup_publication_routes(&mut self) {
+        // Discovery silence retires metadata, not a still-used physical link.
+        // Explicit withdrawals above and local unsubscription release routes.
+        self.publication_routes.retain(|key| {
+            self.subscriptions.iter().any(|subscription| {
+                subscription.active.load(Ordering::Acquire) && subscription.topic == key.topic
+            })
+        });
+        self.subscriptions_connected.retain(|address| {
+            let keep = self
+                .publication_routes
+                .iter()
+                .any(|key| &key.address == address);
+            if !keep {
+                let _ = self.subscriber.disconnect(address);
             }
             keep
         });

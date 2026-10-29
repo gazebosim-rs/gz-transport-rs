@@ -35,6 +35,10 @@ see the [bounded topic information contract](docs/NET-02-topic-info.md).
 control metadata and effective options; see [owned publication metadata](docs/NET-01-owned-publication-info.md).
 `known_topic_subscribers()` preserves native remote keep-first records alongside
 the existing type-aware views; see [owned subscriber metadata](docs/NET-01-owned-subscriber-info.md).
+Admitted physical publication links survive discovery silence within a separate
+bounded route table; snapshot freshness stays unchanged. See the
+[route lifetime contract](docs/NET-01-publication-route-lifetime.md), including
+the retained explicit withdrawal parity gap.
 The `topic_info(topic, timeout)` startup query and prepare-phase
 `Publisher::refresh_connection_snapshot(timeout)` have a separate
 [bounded readiness contract](docs/NET-02-ready-topic-info.md). Callers provide an

@@ -954,3 +954,14 @@ Eight new checks cover native storage identity/retirement, public and worker
 boundaries, overflow observability, local/remote normalization and six real
 native every-field fixtures. Prior typed identity and publication metadata
 checks remain unchanged. The normal source/native/coverage gate remains required.
+
+## Publication routes across discovery silence
+
+The [route lifetime control](NET-01-publication-route-lifetime.md) drives an actual
+native Node and Rust Node from one raw ZeroMQ publisher. Both must receive after
+heartbeat-only traffic and discovery silence with publisher metadata absent.
+Explicit native/Rust withdrawal differences remain visible. Four private controls
+cover failed-connect capacity recovery, full-capacity withdrawal/replacement in
+one batch, independently bounded routes, drop counts, shared addresses, multiple
+topics and unsubscribe/shutdown release. Old freshness, channel and withdrawal assertions
+remain unchanged; no ledger promotion or broad lifetime completion is implied.
