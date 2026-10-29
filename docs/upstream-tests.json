@@ -1003,11 +1003,12 @@
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
+        "original_local_subscriber_receives_once_with_remote_subscriber_uuid",
         "original_local_subscriber_receives_once_with_remote_subscriber"
       ],
-      "review": "docs/reviews/local-remote-once.json",
+      "review": "Independent /root/integration_reviewer compared the complete pinned helper and original bodies, then passed four old/new Rust variants from fresh source/target with a freshly built C++ peer and the two unchanged native originals. Actual UUID readiness requires native >=2 plus an identity outside every captured local worker; setup translation and limits were reviewed. Only these two selected cases gain faithful-port credit conditional on the normal strict staged gate and exact hosted CI. Author wrong-topic child controls fail both readiness checks; this is separate author evidence, not independent replay. No global identity equivalence or remote receipt claim.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -1016,20 +1017,21 @@
         }
       ],
       "reference_features": [],
-      "contract": "Pinned local-and-remote Vector3d case: real remote C++ subscriber and local subscriber are present before ten x=0..9 publishes; local receiver gets exactly ten in order with no extra within the native 5s/10ms wait and 300ms quiet period. Two topic-info descriptors are a fixture-specific surrogate for the native two distinct subscriber process UUIDs; remote delivery is unasserted by both original and port.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-local-remote-once.md; exact native original replayed separately, Rust port required by scripts/verify.py"
+      "contract": "Pinned local-and-remote Vector3d case: actual subscriber process UUIDs satisfy native >=2, with an additional identity outside all captured local workers proving native child presence. Each local worker is captured once before child startup through the bounded immediate metadata API; no readiness loop is added. The original 10s/50ms discovery poll, ten x=0..9 publishes, ordered local receipts within 5s/10ms and 300ms no-extra check remain. Earlier descriptor variant remains unchanged. Remote receipt and process-global identity equality remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native helper/body, explicit local-capture-before-child setup translation, actual owned admitted metadata and real C++ subscriber; other backends remain unqualified.",
+      "evidence": "docs/NET-02-local-remote-once.md; unchanged pinned native original and both retained/new Rust variants required by scripts/verify.py; independent source/native replay; normal strict staged gate and exact hosted CI required"
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.IgnoreLocalMessagesWithRemoteSubscriber",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
+        "original_ignore_local_messages_with_remote_subscriber_uuid",
         "original_ignore_local_messages_with_remote_subscriber"
       ],
-      "review": "docs/reviews/ignore-local.json",
+      "review": "Independent /root/integration_reviewer compared the complete pinned helper and original bodies, then passed four old/new Rust variants from fresh source/target with a freshly built C++ peer and the two unchanged native originals. Actual UUID readiness requires native >=2 plus an identity outside every captured local worker; setup translation and limits were reviewed. Only these two selected cases gain faithful-port credit conditional on the normal strict staged gate and exact hosted CI. Author wrong-topic child controls fail both readiness checks; this is separate author evidence, not independent replay. No global identity equivalence or remote receipt claim.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -1038,9 +1040,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Exact ten default Vector3d publications with ignored owner Node and a second local witness Node: witness receives ten then no extra after 300 ms; ignored Node receives none while a real C++ subscriber is registered. Three descriptor readiness is a fixture-specific surrogate for native distinct subscriber process UUIDs. Native child callback is empty, so remote receipt is unasserted; process-global origin sharing remains unported.",
-      "configuration": "Expanded on Linux x86_64; pinned native reference replay and Rust source review completed for this case.",
-      "evidence": "docs/NET-02-ignore-local.md; exact pinned native original and Rust port required by scripts/verify.py"
+      "contract": "Exact ten default Vector3d publications with ignored owner Node and a second local witness Node: actual subscriber process UUIDs satisfy native >=2 and include an identity outside both captured local workers. One immediate bounded metadata query per local Node precedes child startup; no added readiness loop. Original 10s/50ms discovery, 5s/10ms receipt and 300ms quiet bounds remain. Witness receives ten then no extra; ignored Node receives none. Earlier three-descriptor variant remains unchanged. Native child callback is empty, so remote receipt and native process-global identity equality remain unclaimed.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ native helper/body, explicit local-capture-before-child setup translation, actual admitted owned metadata and real C++ subscriber; other backends remain unqualified.",
+      "evidence": "docs/NET-02-ignore-local.md; unchanged pinned native original and both retained/new Rust variants required by scripts/verify.py; independent source/native replay; normal strict staged gate and exact hosted CI required"
     },
     {
       "id": "INTEGRATION_twoProcsPubSubStats:twoProcPubSubStats.PubSubTwoProcsThreeNodes",

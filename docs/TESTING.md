@@ -362,6 +362,27 @@ selected Rust cases; removing the direct-delivery filter fails the Int32
 assertion. See the [case contract](NET-02-ignore-local.md). Final protected
 hook and hosted qualification remain separate publication gates.
 
+The additive `original_local_subscriber_receives_once_with_remote_subscriber_uuid`
+and `original_ignore_local_messages_with_remote_subscriber_uuid` retain the
+old variants above while replacing their readiness surrogate with actual
+subscriber `process_uuid` values. Both preserve the native at-least-two UUID
+predicate and require an identity outside all local workers, so the native
+child must be represented. Local metadata is captured once per Node before
+child startup, with the unchanged five-second reply bound and no added
+readiness loop. The original 10 s/50 ms discovery poll, 5 s/10 ms delivery
+checks, ten Vector3d values/counts, ignore-local option and 300 ms quiet period
+remain. Setup order is the explicit translation described in the two case
+contracts. Raw identities remain per worker; full process-global equality and
+remote receipt remain outside these selected assertions. The pinned unchanged
+C++ originals passed 2/0 during author characterization; all four retained/new
+Rust variants and all-target Clippy passed. Independent `/root/integration_reviewer`
+compared helper/body semantics, repeated the four Rust tests using fresh source,
+target and C++ peer, and replayed the native pair 2/0. A separate author wrong-topic
+child control fails both new readiness checks after 10 seconds, including the
+two-local-worker case. Only these two rows move to faithful_port, conditional on
+the normal strict staged gate and exact hosted success (97/9 becomes 99/7;
+312 pending remains). No production, dependency, gate or raw identity change.
+
 ## Same-process direct message delivery
 
 The retained `NodeTest.PubSubOneThreadTwoSubs` first publication now reaches

@@ -20,6 +20,7 @@
 use gz_msgs::{prost::Message, stringmsg::StringMsg, vector3d::Vector3d};
 use gz_transport::{AdvertiseOptions, Config, Error, Node, Scope, SubscribeOptions};
 use std::{
+    collections::BTreeSet,
     io::{BufRead, BufReader, Write},
     process::{Child, ChildStdout, Command, Stdio},
     sync::{Arc, Barrier},
@@ -3762,5 +3763,163 @@ fn physical_publication_routes_survive_discovery_silence_with_native_delivery() 
             std::panic::resume_unwind(error);
         }
     });
+    peer.success();
+}
+
+// Native waitForRemoteSubscriber tests actual advertised process UUIDs. Rust
+// workers retain distinct identities, so also require an identity outside every
+// local worker captured before the native child starts.
+fn wait_for_remote_subscriber_uuid(
+    node: &Node,
+    topic: &str,
+    local_processes: &BTreeSet<String>,
+    peer: &mut Peer,
+) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        assert!(
+            peer.0.try_wait().unwrap().is_none(),
+            "native subscriber exited"
+        );
+        // Keep the original query's SUBSCRIBERS_REQ side effect; the owned
+        // metadata query deliberately does not refresh discovery itself.
+        node.known_topic_info(topic).unwrap();
+        let processes: BTreeSet<_> = node
+            .known_topic_subscribers(topic)
+            .unwrap()
+            .into_iter()
+            .map(|record| record.process_uuid)
+            .collect();
+        if processes.len() >= 2 && !processes.is_subset(local_processes) {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "remote subscriber UUID was not discovered"
+        );
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
+// twoProcsPubSub.cc:LocalSubscriberReceivesOnceWithRemoteSubscriber.
+// Original assertion adaptation: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_local_subscriber_receives_once_with_remote_subscriber_uuid() {
+    let config = config();
+    let topic = "/local_and_remote";
+    let node = Node::new(config.clone()).unwrap();
+    let subscription = node.subscribe(topic, "gz.msgs.Vector3d").unwrap();
+    let publisher = node.advertise_typed::<Vector3d>(topic).unwrap();
+
+    // Immediate bounded capture, without a readiness poll. The child is started
+    // afterwards so its identity cannot be mistaken for a local worker.
+    let local_processes: BTreeSet<_> = node
+        .known_topic_subscribers(topic)
+        .unwrap()
+        .into_iter()
+        .map(|record| record.process_uuid)
+        .collect();
+    assert_eq!(local_processes.len(), 1);
+    let mut peer = Peer::start(&config, "list-vector3d-subscriber", topic, "unused");
+    wait_for_remote_subscriber_uuid(&node, topic, &local_processes, &mut peer);
+
+    for index in 0..10 {
+        publisher
+            .publish_typed(&Vector3d {
+                x: f64::from(index),
+                y: 0.0,
+                z: 0.0,
+                ..Default::default()
+            })
+            .unwrap();
+    }
+
+    let receipt_deadline = Instant::now() + Duration::from_secs(5);
+    for index in 0..10 {
+        let delivered = loop {
+            let now = Instant::now();
+            assert!(
+                now < receipt_deadline,
+                "ten local messages were not received"
+            );
+            match subscription.recv_timeout(Duration::from_millis(10)) {
+                Ok(delivered) => break delivered,
+                Err(Error::Timeout) => continue,
+                Err(error) => panic!("local subscription failed: {error:?}"),
+            }
+        };
+        let actual = Vector3d::decode(delivered.data.as_slice()).unwrap();
+        assert_eq!(actual.x, f64::from(index));
+        assert_eq!(actual.y, 0.0);
+        assert_eq!(actual.z, 0.0);
+    }
+    assert_eq!(
+        subscription.recv_timeout(Duration::from_millis(300)),
+        Err(Error::Timeout),
+        "an extra local copy arrived after ten messages"
+    );
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
+    peer.success();
+}
+
+// twoProcsPubSub.cc:IgnoreLocalMessagesWithRemoteSubscriber.
+// Original assertion adaptation: Copyright (C) 2014 Open Source Robotics Foundation.
+#[test]
+fn original_ignore_local_messages_with_remote_subscriber_uuid() {
+    let config = config();
+    let topic = "/ignore_local_remote";
+    let owner = Node::new(config.clone()).unwrap();
+    let witness = Node::new(config.clone()).unwrap();
+    let mut options = SubscribeOptions::default();
+    options.set_ignore_local_messages(true);
+    let ignored = owner
+        .subscribe_with_options(topic, "gz.msgs.Vector3d", options)
+        .unwrap();
+    let observed = witness.subscribe(topic, "gz.msgs.Vector3d").unwrap();
+    let publisher = owner.advertise_typed::<Vector3d>(topic).unwrap();
+
+    // Capture each local worker's real metadata once, before the native child
+    // exists. Distinct local worker UUIDs alone must never satisfy readiness.
+    let local_processes: BTreeSet<_> = [&owner, &witness]
+        .into_iter()
+        .flat_map(|node| node.known_topic_subscribers(topic).unwrap())
+        .map(|record| record.process_uuid)
+        .collect();
+    assert_eq!(local_processes.len(), 2);
+    let mut peer = Peer::start(&config, "list-vector3d-subscriber", topic, "unused");
+    wait_for_remote_subscriber_uuid(&owner, topic, &local_processes, &mut peer);
+
+    for _ in 0..10 {
+        publisher.publish_typed(&Vector3d::default()).unwrap();
+    }
+    let receipt_deadline = Instant::now() + Duration::from_secs(5);
+    for _ in 0..10 {
+        loop {
+            assert!(
+                Instant::now() < receipt_deadline,
+                "witness missed ten messages"
+            );
+            match observed.recv_timeout(Duration::from_millis(10)) {
+                Ok(message) => {
+                    assert_eq!(
+                        Vector3d::decode(message.data.as_slice()).unwrap(),
+                        Vector3d::default()
+                    );
+                    break;
+                }
+                Err(Error::Timeout) => continue,
+                Err(error) => panic!("witness failed: {error:?}"),
+            }
+        }
+    }
+    assert_eq!(
+        observed.recv_timeout(Duration::from_millis(300)),
+        Err(Error::Timeout)
+    );
+    assert_eq!(
+        ignored.recv_timeout(Duration::from_millis(20)),
+        Err(Error::Timeout)
+    );
+    writeln!(peer.0.stdin.as_mut().unwrap(), "QUIT").unwrap();
     peer.success();
 }
