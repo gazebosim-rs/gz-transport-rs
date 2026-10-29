@@ -196,13 +196,13 @@ records, remapping, partition isolation and eventual disappearance; see
 [review receipt](reviews/known-lists.json). Full original list equivalence is
 pending.
 
-The subscriber-only known-topic snapshot additionally requires the unchanged
-native NodeTest.TopicListSubscriberOnly original. Rust retains its local size,
-indexed `/foo`, and post-unsubscribe empty assertions; a real C++ peer exercises
-eventual remote subscriber discovery and disappearance. See
-[subscriber-list scope](NET-02-subscriber-lists.md) and
-[independent receipt](reviews/subscriber-lists.json). Full original TopicList
-equivalence remains pending.
+The subscriber-only known-topic snapshot requires the unchanged native
+NodeTest.TopicListSubscriberOnly original. Its faithful Int32 port retains
+subscription success, size one, indexed `/foo`, unsubscribe success, explicit
+clear and the empty second list. The older StringMsg variant remains unchanged;
+real C++ peer tests cover remote interest separately. See the
+[subscriber-list contract](NET-02-subscriber-lists.md). Broader registry,
+initialization, convergence and latency behavior remain open.
 
 The bounded topic information descriptor snapshot requires unchanged native
 NodeTest.TopicInfoSubscriberOnly in every gate. Its Rust assertion port checks

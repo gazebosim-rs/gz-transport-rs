@@ -926,7 +926,7 @@ fn known_topics_include_local_and_remote_subscriber_only_interests() {
     assert_eq!(node.known_topics(), Err(Error::Shutdown));
 }
 
-// Node_TEST.cc:NodeTest.TopicListSubscriberOnly, including both list states.
+// Retain the existing StringMsg subscriber-only variant.
 #[test]
 fn original_topic_list_subscriber_only() {
     let node = Node::new(config()).unwrap();
@@ -936,6 +936,21 @@ fn original_topic_list_subscriber_only() {
     assert_eq!(topics[0], "/foo");
     node.unsubscribe("/foo").unwrap();
     assert!(node.known_topics().unwrap().is_empty());
+}
+
+// Node_TEST.cc:TopicListSubscriberOnly uses cb(const msgs::Int32 &).
+#[test]
+fn original_int32_topic_list_subscriber_only() {
+    let node = Node::new(config()).unwrap();
+    let _subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let mut topics = node.known_topics().unwrap();
+    assert_eq!(topics.len(), 1);
+    assert_eq!(topics[0], "/foo");
+
+    node.unsubscribe("/foo").unwrap();
+    topics.clear();
+    topics = node.known_topics().unwrap();
+    assert!(topics.is_empty());
 }
 
 // Node_TEST.cc:NodeTest.TopicInfoSubscriberOnly, including every assertion.

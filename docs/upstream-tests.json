@@ -5040,11 +5040,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicListSubscriberOnly",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
-        "original_topic_list_subscriber_only"
+        "original_topic_list_subscriber_only",
+        "original_int32_topic_list_subscriber_only"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-25; source/API/assertion mapping independently approved on final staged tree8eafca62; private C++ remote-interest, original one-node and worker lifetime checks3/0; exact receipt docs/reviews/subscriber-lists.json. Remains partial: global initialization and native latency unqualified.",
+      "review": "2026-10-29: independent integration reviewer compared native Node_TEST.cc:2655 and replayed both focused Rust tests. Exact Int32 subscription, size one, indexed /foo, unsubscribe success, explicit clear and empty second list approved. Older StringMsg test retained; only the selected one-Node case is complete.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5053,9 +5054,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Exact one-node Subscribe /foo success, known_topics size1 and index0 /foo, Unsubscribe success, and empty list assertions retained; remote subscriber-only interests are covered separately with a native C++ process. Native TopicList global initialization/timing remain unqualified.",
+      "contract": "One Node successfully subscribes to /foo as gz.msgs.Int32, observes known_topics size1 and index0 /foo, successfully unsubscribes, clears the list and observes an empty second query. Older StringMsg coverage remains unchanged. No extra discovery waits, global-registry completion, remote convergence or general latency claim.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-subscriber-lists.md; native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-subscriber-lists.md; unchanged native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.TopicInfoSubscriberOnly",
