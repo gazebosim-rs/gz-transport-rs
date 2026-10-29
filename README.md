@@ -22,6 +22,8 @@ in this process and already-discovered remote advertisements in the same
 explicit message domain and partition. `known_services()` retains its bounded
 worker snapshot; see the
 [bounded discovered listing contract](docs/NET-02-known-lists.md).
+`service_list(timeout)` waits for per-worker discovery startup before taking that
+snapshot; see the [bounded service startup contract](docs/NET-02-ready-service-list.md).
 `known_topics()` also includes live same-process subscriptions and snapshots
 eventually discovered remote subscriber-only interests; see the
 [bounded subscriber contract](docs/NET-02-subscriber-lists.md) and

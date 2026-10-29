@@ -4704,3 +4704,61 @@ fn prepared_all_and_host_track_live_direct_routes_without_inventing_wire_members
         assert!(worker.prepared_publications.is_empty());
     }
 }
+
+#[test]
+fn ready_service_queries_keep_bounds_expiry_and_shutdown_for_all_waiters() {
+    let (mut worker, _) = state(2);
+    let future = Instant::now() + Duration::from_secs(5);
+    let enqueue = |worker: &mut Worker, deadline| {
+        let (tx, rx) = mpsc::sync_channel(1);
+        worker.command(Command::ReadyServiceList(ServiceListQuery {
+            deadline,
+            reply: tx,
+        }));
+        rx
+    };
+    let first = enqueue(&mut worker, future);
+    let second = enqueue(&mut worker, future);
+    assert!(matches!(
+        enqueue(&mut worker, future).recv().unwrap(),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+    worker.discovery_cycles = 1;
+    worker.progress_service_list_queries(Instant::now());
+    assert!(matches!(first.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    assert!(matches!(second.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::KnownServices(tx));
+    assert!(rx.recv().unwrap().is_empty());
+    // Expiry frees capacity without restarting discovery or blocking commands.
+    worker.progress_service_list_queries(future);
+    assert_eq!(first.recv().unwrap(), Err(Error::Timeout));
+    assert_eq!(second.recv().unwrap(), Err(Error::Timeout));
+    let ready = enqueue(&mut worker, future);
+    worker.discovery_cycles = 2;
+    worker.progress_service_list_queries(Instant::now());
+    assert!(ready.recv().unwrap().unwrap().is_empty());
+    assert!(matches!(
+        enqueue(&mut worker, Instant::now()).recv().unwrap(),
+        Err(Error::Timeout)
+    ));
+    worker.discovery_cycles = 0;
+    let first = enqueue(&mut worker, future);
+    let second = enqueue(&mut worker, future);
+    worker.sender.stop.store(true, Ordering::Release);
+    worker.progress_service_list_queries(Instant::now());
+    assert_eq!(first.recv().unwrap(), Err(Error::Shutdown));
+    assert_eq!(second.recv().unwrap(), Err(Error::Shutdown));
+    worker.sender.stop.store(false, Ordering::Release);
+    worker.owner_dead.store(true, Ordering::Release);
+    assert_eq!(
+        enqueue(&mut worker, future).recv().unwrap(),
+        Err(Error::Shutdown)
+    );
+    worker.owner_dead.store(false, Ordering::Release);
+    drop(enqueue(&mut worker, future));
+    worker.discovery_cycles = 2;
+    worker.progress_service_list_queries(Instant::now());
+    assert!(worker.service_list_queries.is_empty());
+}

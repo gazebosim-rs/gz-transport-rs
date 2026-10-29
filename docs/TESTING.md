@@ -916,3 +916,13 @@ are retained. Independent [review](reviews/base-advertise-option-values.json)
 recomputes full unfiltered JSON/LCOV and the empty production delta using unchanged
 policies. Every old test and partial mapping remains. Final metadata binding,
 mandatory normal hooks and exact new hosted success remain required.
+
+## Bounded service-list startup
+
+The [service startup query](NET-02-ready-service-list.md) adds deadline-bounded
+production behavior while retaining immediate snapshots and all old assertions.
+Its supplemental Rust tests exercise public and worker error/lifecycle boundaries.
+A real native peer compares fresh and warm native/Rust lists for three service
+signatures and an absent provider, then checks native withdrawal separately.
+These tests run in the ordinary full gate; they confer no additional original
+case credit and claim no convergence or latency equality.

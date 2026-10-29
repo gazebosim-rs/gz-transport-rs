@@ -1369,6 +1369,26 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Wait for discovery startup, then snapshot sorted known service paths.
+    /// The explicit timeout bounds startup and the worker reply; zero returns
+    /// `Timeout`. Startup belongs to this worker and does not prove that all
+    /// remote services have been discovered. `known_services` remains immediate.
+    pub fn service_list(&self, timeout: Duration) -> Result<Vec<String>, Error> {
+        let deadline = Instant::now()
+            .checked_add(timeout)
+            .ok_or(Error::InvalidConfig)?;
+        if timeout.is_zero() {
+            return Err(Error::Timeout);
+        }
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender
+            .send(Command::ReadyServiceList(ServiceListQuery {
+                deadline,
+                reply: tx,
+            }))?;
+        rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .map_err(receive_error)?
+    }
     /// Withdraw all handlers for a local service. Valid absent topics also succeed.
     /// Already admitted requests may still be drained and completed.
     pub fn unadvertise_service(&self, topic: &str) -> Result<(), Error> {
@@ -1618,6 +1638,7 @@ enum Command {
     Unsubscribe(String),
     Serve(String, String, String, SyncSender<Request>, Arc<AtomicBool>),
     KnownServices(SyncSender<Vec<String>>),
+    ReadyServiceList(ServiceListQuery),
     ServiceSignatures(String, SyncSender<Vec<ServiceTypes>>),
     ServiceProviderTypes(String, SyncSender<Vec<ServiceTypes>>),
     HasConnections(String, String, SyncSender<bool>),
@@ -1638,6 +1659,10 @@ struct TopicInfoQuery {
     topic: String,
     deadline: Instant,
     reply: SyncSender<Result<TopicEndpointRecords, Error>>,
+}
+struct ServiceListQuery {
+    deadline: Instant,
+    reply: SyncSender<Result<Vec<String>, Error>>,
 }
 struct Pending {
     topic: String,
@@ -1757,6 +1782,7 @@ struct Worker {
     has_other_local_interest: bool,
     discovery_cycles: u8,
     topic_info_queries: VecDeque<TopicInfoQuery>,
+    service_list_queries: VecDeque<ServiceListQuery>,
     prepared_publications: Vec<(Weak<AtomicBool>, Weak<AtomicU8>)>,
     process: String,
     node: String,
@@ -1947,6 +1973,7 @@ impl Worker {
             has_other_local_interest: false,
             discovery_cycles: 0,
             topic_info_queries: VecDeque::new(),
+            service_list_queries: VecDeque::new(),
             prepared_publications: Vec::new(),
             process,
             node,
@@ -2437,6 +2464,21 @@ impl Worker {
             }
             Command::KnownServices(reply) => {
                 let _ = reply.try_send(self.known_names(1));
+            }
+            Command::ReadyServiceList(query) => {
+                // Native service discovery waits for startup without sending
+                // the message-only SUBSCRIBERS_REQ control.
+                self.progress_service_list_queries(Instant::now());
+                if self.service_list_queries.len() >= self.config.capacity {
+                    self.sender
+                        .counters
+                        .queue_drops
+                        .fetch_add(1, Ordering::Relaxed);
+                    let _ = query.reply.try_send(Err(Error::QueueFull));
+                } else {
+                    self.service_list_queries.push_back(query);
+                    self.progress_service_list_queries(Instant::now());
+                }
             }
             Command::Unsubscribe(topic) => {
                 // Even an absent or repeated native retirement refreshes END.
@@ -3053,6 +3095,7 @@ impl Worker {
                 self.discovery_cycles = self.discovery_cycles.saturating_add(1).min(2);
             }
             self.progress_topic_info_queries(Instant::now());
+            self.progress_service_list_queries(Instant::now());
             self.peers
                 .retain(|_, (_, stamp)| stamp.elapsed() < Duration::from_secs(3));
             self.subscriber_interests
@@ -3063,6 +3106,7 @@ impl Worker {
             }
         }
         self.progress_topic_info_queries(Instant::now());
+        self.progress_service_list_queries(Instant::now());
         // Graceful Node shutdown withdraws subscriptions before process BYE.
         // Native publishers intentionally retain registration on BYE alone.
         let mut topics = HashSet::new();
@@ -3101,6 +3145,24 @@ impl Worker {
                 Ok(self.topic_endpoint_records(&query.topic))
             } else {
                 self.topic_info_queries.push_back(query);
+                continue;
+            };
+            let _ = query.reply.try_send(result);
+        }
+    }
+    fn progress_service_list_queries(&mut self, now: Instant) {
+        for _ in 0..self.service_list_queries.len() {
+            let query = self.service_list_queries.pop_front().unwrap();
+            let result = if self.sender.stop.load(Ordering::Acquire)
+                || self.owner_dead.load(Ordering::Acquire)
+            {
+                Err(Error::Shutdown)
+            } else if now >= query.deadline {
+                Err(Error::Timeout)
+            } else if self.discovery_cycles >= 2 {
+                Ok(self.known_names(1))
+            } else {
+                self.service_list_queries.push_back(query);
                 continue;
             };
             let _ = query.reply.try_send(result);

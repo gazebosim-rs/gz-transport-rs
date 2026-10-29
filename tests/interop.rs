@@ -3227,3 +3227,57 @@ fn ready_topic_info_observes_preexisting_cpp_endpoints_on_first_query() {
         native.success();
     }
 }
+
+// Native ServiceList waits for service discovery startup without SUBSCRIBERS_REQ.
+#[test]
+fn ready_service_list_matches_fresh_native_queries_for_held_providers_and_absence() {
+    for kind in ["ordinary", "inputless", "outputless", "absent"] {
+        let cfg = config();
+        let mut provider = (kind != "absent")
+            .then(|| Peer::start(&cfg, "service-info-reference", "/ready-service", kind));
+        let mut native = Peer::start(&cfg, "service-list-startup", "/ready-service", "unused");
+        let node = Node::new(cfg).unwrap();
+        let expected = if kind == "absent" {
+            Vec::new()
+        } else {
+            vec!["/ready-service".to_owned()]
+        };
+        let first = node.service_list(Duration::from_secs(5)).unwrap();
+        assert_eq!(first, expected, "{kind}");
+        // A warm query must not restart the two-interval startup wait.
+        assert_eq!(node.service_list(Duration::from_secs(1)).unwrap(), first);
+        for _ in 0..2 {
+            let mut result = String::new();
+            native.1.read_line(&mut result).unwrap();
+            let expected_line = if kind == "absent" {
+                "0\n"
+            } else {
+                "1 /ready-service\n"
+            };
+            assert_eq!(result, expected_line, "native {kind}");
+        }
+        native.success();
+        if let Some(ref mut provider) = provider {
+            provider
+                .0
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(b"QUIT\n")
+                .unwrap();
+            provider.success();
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !node
+                .service_list(Duration::from_secs(1))
+                .unwrap()
+                .is_empty()
+            {
+                assert!(
+                    Instant::now() < deadline,
+                    "retired native service stayed visible"
+                );
+                thread::sleep(Duration::from_millis(10));
+            }
+        }
+    }
+}

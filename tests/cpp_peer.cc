@@ -175,6 +175,18 @@ int main(int argc, char **argv) {
     return 0;
   }
   gz::transport::Node node;
+  if (mode == "service-list-startup") {
+    std::cout << "READY" << std::endl;
+    for (int query=0; query<2; ++query) {
+      std::vector<std::string> names;
+      node.ServiceList(names);
+      std::sort(names.begin(), names.end());
+      std::cout << names.size();
+      for (const auto &name:names) std::cout << ' ' << name;
+      std::cout << std::endl;
+    }
+    return 0;
+  }
   if (mode == "scope-observer" || mode == "throttle-observer") {
     struct State { std::atomic<unsigned> received{0}; std::atomic<bool> valid{true}; };
     auto state=std::make_shared<State>();
