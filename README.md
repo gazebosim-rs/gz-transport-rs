@@ -29,11 +29,10 @@ eventually discovered remote subscriber-only interests; see the
 `known_topic_info()` returns known publisher and subscriber descriptor names for
 one original topic path, with immediate same-process endpoint identity;
 see the [bounded topic information contract](docs/NET-02-topic-info.md).
-The candidate `topic_info(topic, timeout)` startup query and prepare-phase
+The `topic_info(topic, timeout)` startup query and prepare-phase
 `Publisher::refresh_connection_snapshot(timeout)` have a separate
-[bounded readiness contract](docs/NET-02-ready-topic-info.md). Their strict source
-gate and independent source/runtime review passed; the protected normal hook
-and exact hosted acceptance remain pending at the final metadata freeze.
+[bounded readiness contract](docs/NET-02-ready-topic-info.md). Callers provide an
+explicit deadline; startup is per worker and does not imply remote consensus.
 `advertised_services()` reports live local service topics;
 `unadvertise_service()` withdraws their handlers and permits immediate recreation.
 Already admitted requests remain available to drain and complete.

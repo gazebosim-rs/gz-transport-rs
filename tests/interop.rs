@@ -966,6 +966,16 @@ fn original_topic_info_subscriber_only() {
 }
 
 #[test]
+fn original_topic_info_subscriber_only_ready() {
+    let node = Node::new(config()).unwrap();
+    let _subscription = node.subscribe("/foo", "gz.msgs.Int32").unwrap();
+    let info = node.topic_info("/foo", Duration::from_secs(5)).unwrap();
+    assert!(info.publishers.is_empty());
+    assert_eq!(info.subscribers.len(), 1);
+    assert_eq!(info.subscribers[0], "gz.msgs.Int32");
+}
+
+#[test]
 fn known_topic_info_uses_original_query_and_endpoint_multiplicity() {
     let mut config = config();
     config.add_topic_remap("/foo", "/bar").unwrap();

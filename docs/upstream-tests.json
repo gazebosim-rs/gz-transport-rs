@@ -5063,11 +5063,12 @@
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.TopicInfoSubscriberOnly",
       "baseline": "passed",
-      "disposition": "partial",
+      "disposition": "faithful_port",
       "replacement": [
-        "original_topic_info_subscriber_only"
+        "original_topic_info_subscriber_only",
+        "original_topic_info_subscriber_only_ready"
       ],
-      "review": "/root/msgs_review_fallback; 2026-10-25; exact nine-file source/API/assertion review approved on staged tree c82367ca; private original, remap/C++ and worker checks4/0 plus local-subscriber removal mutant failure; receipt docs/reviews/topic-info.json. Partial: full MessagePublisher metadata, process-global sharing and latency unqualified.",
+      "review": "2026-10-29: independent integration reviewer compared the native selected body and replayed both focused tests. Exact Int32 subscription, successful ready info query, zero publishers, one subscriber and Int32 type approved. The explicit query deadline changes no original untimed predicate; the old snapshot variant remains unchanged.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5076,9 +5077,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Original TopicInfo success, zero publishers, one subscriber and exact gz.msgs.Int32 descriptor preserved in Rust. Bounded worker descriptor snapshot and native query evidence; process-global shared-node ownership, full MessagePublisher metadata, immediate remote discovery and latency remain unqualified.",
+      "contract": "One Node successfully subscribes to /foo as gz.msgs.Int32. The bounded topic_info startup query succeeds and preserves zero publishers, one subscriber and exact gz.msgs.Int32 descriptor. The older immediate known_topic_info test remains unchanged. No complete MessagePublisher facade, process-global initialization/ownership, immediate remote convergence or general latency claim.",
       "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
-      "evidence": "docs/NET-02-topic-info.md; exact native original required by scripts/verify.py"
+      "evidence": "docs/NET-02-topic-info.md; unchanged native original required by scripts/verify.py"
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AllTopicInfo",

@@ -10,6 +10,12 @@ two empty vectors. Invalid names and worker shutdown return the existing
 errors. A message-channel `SUBSCRIBERS_REQ` is sent without waiting for its
 replies, so a remote subscriber can appear on a later query.
 
+`Node::topic_info(topic, timeout)` uses the same endpoint projection after
+waiting for discovery startup. Native `Node::TopicInfo` first triggers discovery
+`TopicList`, then calls `TopicInfoHelper`; this is the corresponding bounded
+query path. Its explicit timeout covers startup and worker reply waits. Startup
+is per Rust worker, not native process-global state, and is not remote consensus.
+
 Active local and fresh discovered channel-0 message publishers supply publisher
 types. Active local subscriptions and fresh `SUBSCRIBERS_REP` records supply
 subscriber types. Remote records retain process, node, topic, address and type
@@ -27,23 +33,30 @@ Rust Node collapse to one entry, as native `TopicInfoHelper` collapses equal
 remote node identities can produce duplicate type names. The vectors omit
 native address/control/options and process-global shared-node metadata.
 
-The unchanged pinned `NodeTest.TopicInfoSubscriberOnly` passes natively
-one test, zero failures and no skips. Its Rust port retains successful query,
-zero publishers, subscriber count one and the exact `gz.msgs.Int32` descriptor.
-A separate native three-handler probe observes two native records for two
-same-node `Int32` handlers plus one `StringMsg` handler, confirming identical
-endpoint collapse. Extra Rust checks cover `/foo` to `/bar` remapping with an
-unmapped `/foo` query, local duplicates, two remote node identities and type
-variants, age and END removal, a real C++ remote subscriber and publisher, and
-post-shutdown errors. Original full `TopicInfo`, `AllTopicInfo`, immediate
-remote discovery, process-global visibility and latency remain unqualified.
+## Selected subscriber-only original
 
-The exact nine-file staged gate passes 153 Rust checks and 22 tooling checks,
-with 1814/1838 production lines, 2749/2833 regions and 61/61 changed
-executable lines covered. Independent source/API/assertion review approved
-this bounded mapping after a private original replay, real C++ endpoint
-checks, a worker identity/withdrawal test and a local-subscriber removal
-control that fails the original assertion. The [review receipt](reviews/topic-info.json)
-binds the nine source inputs and pinned native original. The ledger row remains
-partial. Final metadata verification, normal commit hook and hosted CI remain
-pending.
+`original_topic_info_subscriber_only_ready` keeps the native Int32 subscription
+on `/foo`, successful info lookup, zero publishers, one subscriber and exact
+`gz.msgs.Int32` type name through `topic_info`. Its five-second deadline bounds
+the query; the original has no timing assertion. The older immediate
+`known_topic_info` snapshot test remains unchanged.
+
+Independent native-source comparison and replay approved the selected one-Node
+mapping as a faithful port. Existing controls for remap lookup, equal endpoint
+collapse, remote identities and types, withdrawal, expiry and shutdown remain.
+The earlier [runtime review](reviews/topic-info.json) is historical evidence for
+the snapshot implementation.
+
+The vectors still omit the full native `MessagePublisher` address/control/options
+facade. Complete process-global initialization and ownership, immediate remote
+convergence and general latency remain unqualified. No production, dependency,
+protocol or gate-policy change is part of this selected test mapping.
+
+Run both subscriber-only variants with:
+
+```sh
+cargo test --locked --test interop original_topic_info_subscriber_only
+```
+
+Every mandatory gate also runs the unchanged native
+`NodeTest.TopicInfoSubscriberOnly` original from the pinned reference.

@@ -204,15 +204,14 @@ real C++ peer tests cover remote interest separately. See the
 [subscriber-list contract](NET-02-subscriber-lists.md). Broader registry,
 initialization, convergence and latency behavior remain open.
 
-The bounded topic information descriptor snapshot requires unchanged native
-NodeTest.TopicInfoSubscriberOnly in every gate. Its Rust assertion port checks
-query success, zero publishers, one subscriber and exact `gz.msgs.Int32` type.
-Additional controls cover original-name remap lookup, duplicate subscriber
-endpoint identity, fresh remote C++ subscriber and publisher descriptors,
-and subscriber withdrawal. See [topic information scope](NET-02-topic-info.md).
-The [independent receipt](reviews/topic-info.json) approved this partial
-mapping. Native process-global endpoint ownership and full TopicInfo metadata
-remain open.
+The subscriber-only topic information ports require unchanged native
+NodeTest.TopicInfoSubscriberOnly in every gate. The faithful ready-query port
+retains Int32 subscription success, info-query success, zero publishers, one
+subscriber and exact `gz.msgs.Int32` type. The older immediate snapshot test
+and existing remap, endpoint identity, remote descriptor and withdrawal controls
+remain unchanged. See [topic information scope](NET-02-topic-info.md). Full
+MessagePublisher metadata, process-global ownership and general latency remain
+open.
 
 The retained two-process `twoProcPubSub.TopicInfo` original additionally runs
 in the pinned native gate. A real C++ Vector3d advertiser and Rust assertion
