@@ -37,7 +37,7 @@ def changed_lines(diff):
     result, path = {}, None
     old_left = new_left = 0
     have_file = expect_new = False
-    for line in diff.splitlines():
+    for line in diff.split("\n"):
         if line == "\\ No newline at end of file":
             continue
         if old_left or new_left:
@@ -78,20 +78,26 @@ def changed_lines(diff):
     return result
 
 
+def source_line_numbers(path):
+    data = path.read_bytes()
+    count = data.count(b"\n") + bool(data and not data.endswith(b"\n"))
+    return set(range(1, count + 1))
+
+
 def source_changes(root, production_files, base=None):
     if base and not re.fullmatch(r'[0-9a-f]{40}', base):
         raise ValueError('Invalid coverage base SHA')
     if base == '0' * 40:
-        return {p: set(range(1, len((root / p).read_text().splitlines()) + 1)) for p in production_files}
+        return {p: source_line_numbers(root / p) for p in production_files}
     if base:
         run(['git', 'cat-file', '-e', f'{base}^{{commit}}'], cwd=root, capture_output=True)
-    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base or 'HEAD', '--', 'src'], cwd=root, text=True)
+    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base or 'HEAD', '--', 'src'], cwd=root).decode('utf-8')
     if not base and not diff and subprocess.run(['git', 'rev-parse', '--verify', 'HEAD^'], cwd=root, capture_output=True).returncode == 0:
-        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], cwd=root, text=True)
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], cwd=root).decode('utf-8')
     changed = changed_lines(diff)
-    tracked = set(subprocess.check_output(['git', 'ls-files', '--', 'src'], cwd=root, text=True).splitlines())
+    tracked = set(subprocess.check_output(['git', 'ls-files', '-z', '--', 'src'], cwd=root).decode('utf-8').split('\0'))
     for filename in set(production_files) - tracked:
-        changed[filename] = set(range(1, len((root / filename).read_text().splitlines()) + 1))
+        changed[filename] = source_line_numbers(root / filename)
     return changed
 
 
@@ -183,7 +189,7 @@ def staged():
             env.pop(name, None)
         env.update(CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
         base = head or subprocess.check_output(['git', 'mktree'], cwd=ROOT, input='', text=True).strip()
-        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src'], cwd=ROOT, text=True)
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src'], cwd=ROOT).decode('utf-8')
         changed_file = Path(directory) / 'changed-lines.json'
         changed_file.write_text(json.dumps({name: sorted(lines) for name, lines in changed_lines(diff).items()}))
         env['GZ_CHANGED_LINES_FILE'] = str(changed_file)
@@ -245,7 +251,7 @@ def depinfo_inputs(text, root, production_files):
         if any(not part or any(c.isspace() or c in "\\$#" for c in part) for part in parts):
             raise ValueError('Unsupported compiler dep-info path encoding')
         return [(root / part).resolve() for part in parts]
-    for line in text.splitlines():
+    for line in text.split("\n"):
         if not line or line.startswith('# env-dep:'):
             continue
         if line.endswith(':'):
@@ -269,8 +275,8 @@ def production_inputs(root, production_files, package_id, env, artifact_dir):
     # Cargo's timestamp cache can miss a changed module graph after restored
     # mtimes. Clean only this package's normal dev outputs, keeping dependencies.
     run(['cargo', 'clean', '--package', 'gz-transport', '--profile', 'dev'], cwd=root, env=probe_env)
-    output = subprocess.check_output(['cargo', 'rustc', '--locked', '--lib', '--message-format=json'], cwd=root, env=probe_env, text=True)
-    artifacts = [json.loads(line) for line in output.splitlines()]
+    output = subprocess.check_output(['cargo', 'rustc', '--locked', '--lib', '--message-format=json'], cwd=root, env=probe_env).decode('utf-8')
+    artifacts = [json.loads(line) for line in output.split('\n') if line]
     libraries = [record for record in artifacts if record.get('reason') == 'compiler-artifact' and record['package_id'] == package_id and record['target']['kind'] == ['lib'] and not record['profile']['test']]
     if len(libraries) != 1 or libraries[0]['fresh']:
         raise ValueError('Missing unique normal library compiler artifact')
@@ -361,7 +367,7 @@ def verify(profile):
     env.update(RUSTFLAGS='', RUSTC_WORKSPACE_WRAPPER=str(wrapper), CARGO_TARGET_DIR=str(target), LLVM_PROFILE_FILE=str(profiles / '%m-%p.profraw'))
     with (artifacts / 'test-build.jsonl').open('w') as output:
         run(['cargo', 'test', '--locked', '--message-format=json', '--', '--test-threads=1'], stdout=output, env=env)
-    check_mapped_tests(ledger, (artifacts / 'test-build.jsonl').read_text())
+    check_mapped_tests(ledger, (artifacts / 'test-build.jsonl').read_bytes().decode('utf-8'))
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], env=env, text=True).strip())
     host = re.search(r'^host: (.+)$', subprocess.check_output(['rustc', '-vV'], env=env, text=True), re.M)[1]
     llvm = sysroot / 'lib/rustlib' / host / 'bin'
@@ -370,7 +376,7 @@ def verify(profile):
         raise ValueError('Missing LLVM instrumentation')
     run([str(llvm / 'llvm-profdata'), 'merge', '-sparse', *raw, '-o', str(artifacts / 'coverage.profdata')])
     objects = []
-    for line in (artifacts / 'test-build.jsonl').read_text().splitlines():
+    for line in (artifacts / 'test-build.jsonl').read_bytes().decode('utf-8').split('\n'):
         try:
             record = json.loads(line)
         except json.JSONDecodeError:
@@ -382,7 +388,7 @@ def verify(profile):
     command = [str(llvm / 'llvm-cov'), 'export', '--fatal-warnings', '-num-threads=1', f'-instr-profile={artifacts}/coverage.profdata', *objects]
     with (artifacts / 'coverage.json').open('w') as output:
         run(command, stdout=output)
-    lcov = subprocess.check_output([*command, '-format=lcov'], text=True)
+    lcov = subprocess.check_output([*command, '-format=lcov']).decode('utf-8')
     (artifacts / 'coverage.lcov').write_text(lcov)
     report = json.loads((artifacts / 'coverage.json').read_text())
     totals = check(report, manifest, ROOT)
@@ -391,7 +397,7 @@ def verify(profile):
     elif (ROOT / '.git').exists():
         changed = source_changes(ROOT, manifest['production_files'], env.get('GZ_COVERAGE_BASE'))
     else:
-        changed = {p: set(range(1, len((ROOT / p).read_text().splitlines()) + 1)) for p in manifest['production_files']}
+        changed = {p: source_line_numbers(ROOT / p) for p in manifest['production_files']}
     changed_totals = changed_check(lcov, changed, ROOT, manifest['production_files'])
     evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'reference': reference_counts, 'production_inputs': library_inputs, 'cpp_libraries_sha256': {Path(path).name:hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in libraries}, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
     validate_evidence(evidence, ROOT, profile)

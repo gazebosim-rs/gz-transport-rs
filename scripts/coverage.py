@@ -47,7 +47,7 @@ def check(report, manifest, root):
 
 def changed_check(lcov, changed, root, production_files=None):
     lines, filename = {}, None
-    for line in lcov.splitlines():
+    for line in lcov.split("\n"):
         if line.startswith('SF:'):
             filename = str(Path(line[3:]).resolve())
             if filename in lines:

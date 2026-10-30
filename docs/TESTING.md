@@ -1221,3 +1221,25 @@ also checked. That extra Git control is review evidence rather than a claim
 that it is a committed fixture. Source ownership, thresholds and prior expected
 sets/assertions are unchanged, and no findings remain. The normal full staged
 gate and exact hosted qualification remain pending for this tooling slice.
+
+
+Coverage inputs retain their exact LF boundaries, following the reviewed
+simulator correction a61a151. Git diff and path-list subprocesses, compiler JSON
+and LCOV are decoded from bytes without universal-newline translation. Physical
+source line counts use LF bytes, including the last nonterminated line; non-LF
+Unicode separators and carriage returns remain data. The hunk-state parser,
+production inventory, strict line/region thresholds and exclusions are unchanged.
+Normal library dep-info keeps non-LF comment data in its actual record, while
+its existing unsupported path-encoding checks remain enforced.
+
+Eight new pure controls bring the tooling suite to 35. They cover all six
+non-LF separator forms in hunk data, synthetic uncovered-line rejection, exact
+byte line counts, real-Git CRLF working/push/clean/fallback ranges, a real staged
+export, LCOV source names, compiler dep-info comment data and a literal Unicode
+separator in normal Cargo JSON. Replaying the actual accepted selector in an
+isolated namespace redirects a later real hunk; its wrong selection accepts two
+of two synthetic executable lines while the corrected selection rejects the
+uncovered actual line (one of two). This is a tooling/LCOV control, not LLVM or
+native execution evidence. Independent Root source review and a fresh 35-tool
+run passed. No production, dependency, wire or ledger changes are included;
+normal full staged/native and exact hosted qualification remain required.

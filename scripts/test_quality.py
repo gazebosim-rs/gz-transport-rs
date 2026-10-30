@@ -515,5 +515,137 @@ class CompilerInputPolicy(unittest.TestCase):
                 depinfo_inputs(bad,root,['src/lib.rs'])
 
 
+class ExactLfPolicy(unittest.TestCase):
+    def test_hunk_non_lf_separators_cannot_redirect_following_hunks(self):
+        from verify import changed_lines
+        for separator in ("\v", "\f", "\r", "\x85", "\u2028", "\u2029"):
+            diff = ("--- a/src/real.rs\n+++ b/src/real.rs\n@@ -1 +1 @@\n-old\n"
+                    "+data" + separator + "diff --git a/src/fake.rs b/src/fake.rs" + separator
+                    + "--- a/src/fake.rs" + separator + "+++ b/src/fake.rs\n"
+                    "@@ -8 +8 @@\n-old\n+new\n")
+            with self.subTest(separator=repr(separator)):
+                self.assertEqual(changed_lines(diff), {'src/real.rs': {1, 8}})
+
+    def test_separator_data_cannot_omit_uncovered_changed_executable_line(self):
+        from verify import changed_lines
+        diff = ("--- a/src/real.rs\n+++ b/src/real.rs\n@@ -1 +1 @@\n-old\n"
+                "+data\u2028diff --git a/src/fake.rs b/src/fake.rs\u2028--- a/src/fake.rs\u2028+++ b/src/fake.rs\n"
+                "@@ -8 +8 @@\n-old\n+new\n")
+        root = Path('/tmp/transport-lf-proof')
+        lcov = (f'SF:{root}/src/real.rs\nDA:1,1\nDA:8,0\n'
+                f'SF:{root}/src/fake.rs\nDA:8,1\n')
+        old = {'src/real.rs': {1}, 'src/fake.rs': {8}}
+        self.assertEqual(changed_check(lcov, old, root), {'covered': 2, 'count': 2})
+        with self.assertRaises(ValueError):
+            changed_check(lcov, changed_lines(diff), root)
+
+    def test_source_line_numbers_count_only_lf_bytes(self):
+        from verify import source_line_numbers
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'a.rs'
+            for data, expected in [(b'', set()), (b'x', {1}), (b'x\n', {1}),
+                                   (b'x\r\ny\r', {1, 2}),
+                                   ('// a\u2028b\nfn f() {}\n'.encode(), {1, 2})]:
+                path.write_bytes(data)
+                with self.subTest(data=data):
+                    self.assertEqual(source_line_numbers(path), expected)
+
+    def test_real_git_range_preserves_crlf_and_separator_data(self):
+        import subprocess
+        from verify import source_changes
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'src').mkdir()
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root)
+            git('init', '-q')
+            git('config', 'core.autocrlf', 'false')
+            source = root / 'src/real.rs'
+            original = ['const TEXT: &str = r#"', 'before', '"#;'] + ['// gap'] * 12 + ['fn f() { old(); }']
+            source.write_bytes(('\n'.join(original) + '\n').encode())
+            git('add', '.')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'base')
+            base = git('rev-parse', 'HEAD').decode().strip()
+            changed = original.copy()
+            changed[1] = 'before\u2028diff --git a/src/fake.rs b/src/fake.rs\u2028--- a/src/fake.rs\u2028+++ b/src/fake.rs'
+            changed[-1] = 'fn f() { changed(); }'
+            source.write_bytes(('\r\n'.join(changed) + '\r\n').encode())
+            expected = {'src/real.rs': set(range(1, 17))}
+            self.assertEqual(source_changes(root, ['src/real.rs']), expected)
+            git('add', '.')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'change')
+            self.assertEqual(source_changes(root, ['src/real.rs'], base), expected)
+            self.assertEqual(source_changes(root, ['src/real.rs']), expected)
+            self.assertEqual(source_changes(root, ['src/real.rs'], '0' * 40), expected)
+            extra = root / 'src/a\rb.rs'
+            extra.write_bytes(b'// a\r\nfn f() {}\r')
+            self.assertEqual(source_changes(root, ['src/real.rs', 'src/a\rb.rs'], base),
+                             {**expected, 'src/a\rb.rs': {1, 2}})
+
+    def test_staged_changed_source_reads_exact_git_bytes(self):
+        import subprocess
+        import verify
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'src').mkdir()
+            (root / 'scripts').mkdir()
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root)
+            git('init', '-q')
+            git('config', 'core.autocrlf', 'false')
+            source = root / 'src/real.rs'
+            original = ['const TEXT: &str = r#"', 'before', '"#;'] + ['// gap'] * 12 + ['fn f() { old(); }']
+            source.write_bytes(('\n'.join(original) + '\n').encode())
+            (root / 'scripts/verify.py').write_text(
+                'import os,json\nfrom pathlib import Path\n'
+                'actual=json.loads(Path(os.environ["GZ_CHANGED_LINES_FILE"]).read_text())\n'
+                'assert actual == {"src/real.rs": list(range(1,17))}, actual\n'
+                'Path("artifacts").mkdir()\n')
+            git('add', '.')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'base')
+            changed = original.copy()
+            changed[1] = 'before\u2028diff --git a/src/fake.rs b/src/fake.rs\u2028--- a/src/fake.rs\u2028+++ b/src/fake.rs'
+            changed[-1] = 'fn f() { changed(); }'
+            source.write_bytes(('\r\n'.join(changed) + '\r\n').encode())
+            git('add', '.')
+            with patch.object(verify, 'ROOT', root):
+                verify.staged()
+
+    def test_lcov_source_paths_preserve_non_lf_separators(self):
+        root = Path('/tmp')
+        for separator in ('\r', '\u2028', '\u2029'):
+            name = f'a{separator}b.rs'
+            with self.subTest(separator=repr(separator)):
+                lcov = f'SF:{root / name}\nDA:1,1\nend_of_record\n'
+                self.assertEqual(changed_check(lcov, {name: {1}}, root, [name]),
+                                 {'covered': 1, 'count': 1})
+
+    def test_compiler_depinfo_non_lf_comment_data_stays_one_record(self):
+        from verify import depinfo_inputs
+        root = Path('/tmp/transport-depinfo-lf')
+        text = ('output.rlib: src/lib.rs\n\nsrc/lib.rs:\n'
+                '# env-dep:VALUE=a\u2028not-a-source-record\rstill-value\n')
+        self.assertEqual(depinfo_inputs(text, root, ['src/lib.rs']), ['src/lib.rs'])
+
+    def test_normal_compiler_json_preserves_literal_unicode_separator(self):
+        import json
+        from verify import production_inputs
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'src').mkdir()
+            (root / 'src/lib.rs').write_text('pub fn f() {}\n')
+            (root / 'owned.d').write_bytes(b'libowned.rmeta: src/lib.rs\n\nsrc/lib.rs:\n')
+            record = {'reason': 'compiler-artifact', 'package_id': 'owned',
+                      'target': {'kind': ['lib']}, 'profile': {'test': False},
+                      'fresh': False, 'filenames': [str(root / 'libowned.rmeta')],
+                      'extra': 'source\u2028data'}
+            output = (json.dumps(record, ensure_ascii=False) + '\n').encode()
+            with patch('verify.run'), patch('verify.subprocess.check_output', return_value=output):
+                proof = production_inputs(root, ['src/lib.rs'], 'owned', {}, root / 'artifacts')
+            self.assertEqual(proof['inputs'], ['src/lib.rs'])
+
+
 if __name__ == '__main__':
     unittest.main()
