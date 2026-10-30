@@ -1487,9 +1487,35 @@ module coverage is 38/38 lines and 70/70 regions, diagnostic only. Complete
 upstream predicates and the 100 ms sleep/minimum elapsed assertion are retained.
 Independent review now passes two private plus five public/native debug checks
 from a fresh accepted-8cc archive with the complete thirteen-path overlay and
-own target; all seven controlled SDK values and unchanged native original1 pass.
+own target; all seven controlled SDK values and unchanged native original 1 pass.
 Source/library hashes and actual canonical Gazebo linkage were checked. This is
 independent debug focused evidence, not fresh release/full-gate acceptance.
 Exactly the whole `ClockTest.WallClock` row is a conditional faithful candidate:
 122/7/289 becomes123/7/288 only after the normal full staged gate and exact
 hosted CI succeed. No other original or runtime statistics credit is proposed.
+
+## BadNetworkClock invalid-input candidate
+
+This separate test/docs-only candidate on accepted `447ad3b` adds the exact bad-topic
+rejection/capacity control and a real public-constructor compile-fail Rustdoc
+for -1. The mandatory Clock filter additionally runs unchanged
+`ClockTest.BadNetworkClock`: bad-topic not-ready plus three invalid-base
+not-ready observations retain both 100 ms waits, empty publication and SetTime 10 s.
+The documented owner-approved Rust API translation rejects construction or
+prevents invalid enum formation, so no Rust invalid object/method effects exist.
+This is not literal runtime predicate parity or an always-false facade.
+
+No production logic, defaults, dependencies, old tests, assertions or coverage
+policy changes. Author public 1 and compile-fail Rustdoc 1 pass in debug and
+release; the unchanged native original 1 passes. Metadata-only checks through
+the built public constructor accept Simulation and reject -1 with E0308; no
+program executes. All-target Clippy and 42 tools pass. Independent fresh-source
+and owned-target review now passes public 1/Rustdoc 1 in debug/release, actual
+same-library valid-constructor success and sole-E0308 invalid failure, unchanged
+native 1, 42 tools and Clippy. Complete source/default/invalid-setter semantics
+and explicit API translation are reviewed with no findings. Initial wrong-cwd
+pure Cargo setup was excluded; final source/commands are qualified.
+Exactly BadNetworkClock is a conditional candidate: 123/7/288 becomes 124/7/287
+only after the unchanged full normal staged and exact hosted checks. Native
+four readiness predicates/two waits remain preserved in the reference, not
+silently retired or mislabeled as literal Rust invalid-object predicate parity.

@@ -76,6 +76,15 @@ pub struct NetworkClock {
 impl NetworkClock {
     /// Admit a selected clock on the caller's bounded Node/domain.
     /// Duplicate publication and capacity failures preserve existing Node rules.
+    ///
+    /// Invalid topic names return [`Error::InvalidName`]. A native invalid time
+    /// base such as -1 cannot construct a Rust clock:
+    /// ```compile_fail,E0308
+    /// use gz_transport::{NetworkClock, Node};
+    /// fn invalid_base(node: &Node) {
+    ///     let _ = NetworkClock::new(node, "/clock", -1);
+    /// }
+    /// ```
     pub fn new(node: &Node, topic: &str, base: ClockTimeBase) -> Result<Self, Error> {
         let time = Arc::new(AtomicI64::new(0));
         let observed = time.clone();

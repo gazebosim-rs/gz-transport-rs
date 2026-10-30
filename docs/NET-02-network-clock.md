@@ -116,8 +116,69 @@ pure, seven public and two native/wire controls; the three unchanged native
 originals, all-target Clippy and 42 tools also passed. The helper matched the
 fixture's captured binary hash. All peers exited, with no remaining findings.
 
-Exactly the three selected Functionality rows are reviewed candidates: totals
-would become 122 faithful, 7 partial and 289 pending. The ordinary full staged
-gate and exact hosted success remain required before acceptance. WallClock,
-invalid native enum/object construction, Node statistics enable/disable and Metric publication remain
-separate retained work.
+The three selected Functionality rows were accepted at `8cc6295` after the full
+staged and exact hosted checks. The separate owned
+[WallClock](NET-02-wall-clock.md) was accepted at `447ad3b`; current accepted
+totals are 123 faithful, 7 partial and 288 pending. The invalid-input candidate
+below is separate from those accepted value contracts. Node statistics
+enable/disable and Metric publication remain separate retained work.
+
+## Invalid clock inputs: deliberate API translation
+
+Pinned `ClockTest.BadNetworkClock` remains unchanged in the mandatory native
+Clock filter. It constructs `//bad-clock` using the default SIM base and checks
+not-ready. It then casts -1 to the fixed-width native TimeBase and creates a
+`/clock` object. Three readiness observations cover initial state, an empty
+Clock from a second Node followed by 100 ms, and `SetTime(10 seconds)` followed
+by another 100 ms. All four original not-ready predicates and both original
+waits stay in the native reference; none is silently removed or replaced.
+
+`Clock.cc` initializes the native sample to zero. Invalid-topic construction
+fails both registrations but still returns an allocated clock object. An
+invalid-base message callback only logs and leaves the sample unchanged; its
+setter logs and returns **before** publication. The original does not assert
+stderr or packet counts. These source facts explain the inert-object behavior,
+without attributing supplemental predicates to the original.
+
+Rust deliberately exposes earlier rejection instead of that invalid object:
+
+- `NetworkClock::new(&node, "//bad-clock", ClockTimeBase::Simulation)` returns
+  `InvalidName`. Explicit Simulation translates the native default; no default
+  API or normalization is added. Existing topic validation occurs before shared
+  dispatcher and registration admission.
+- Passing the exact -1 value to the actual public constructor fails compilation
+  with E0308. The `ClockTimeBase` argument cannot represent it in safe Rust.
+  There is consequently no invalid Rust clock, readiness method or setter with
+  which to reproduce the three invalid-base observations and their waits.
+
+This is an owner-approved new-API translation of invalid-input intent, **not
+literal runtime-predicate parity**. A compile-fail Rustdoc checks the real
+constructor boundary. The separate public bad-topic control also verifies that
+a later valid clock can consume the full two-slot budget and retire cleanly;
+its initial zero/not-ready check belongs to that valid supplemental clock.
+It does not fabricate a placeholder that always reports false. No numeric enum
+conversion, invalid variant, production/default change or new dependency is
+introduced. Existing valid clock and rollback tests remain untouched.
+
+Author debug/release each pass the public negative-admission control and the
+constructor compile-fail Rustdoc. Separate metadata-only compiler checks first
+accept the valid Simulation argument and then reject -1 with E0308, so a missing
+dependency cannot masquerade as the intended failure. Neither compiler program
+executes. The unchanged native original passes 1/1 with all original predicates
+and waits. All-target Clippy and 42 tools pass.
+
+Independent review used a fresh accepted 447ad3b archive plus all five final paths
+and an owned target. Public 1 and Rustdoc 1 pass in both debug/release; the actual
+same-library compiler controls accept Simulation and reject -1 with sole E0308.
+The unchanged native original 1, 42 tools and workspace Clippy pass. The reviewer
+checked the complete source/header/default/invalid-setter behavior and this
+explicit API disposition, with no findings. An initial pure Cargo command from
+the wrong working directory was setup-only and excluded; qualifying commands
+used the fresh source. All final source paths match the reviewed copy.
+
+Only BadNetworkClock is a reviewed conditional case mapping: accepted totals
+123/7/288 become 124/7/287 only after the unchanged full normal staged gate and
+exact hosted success. The native four predicates and both waits remain in the
+reference gate; its Rust mapping does not claim literal runtime-predicate
+parity. Node statistics lifecycle policy and runtime Metric publication remain
+held outside this slice.
