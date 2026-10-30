@@ -3,6 +3,225 @@
 // TopicUtils assertion tables: Copyright (C) 2014 Open Source Robotics Foundation.
 use super::*;
 
+fn relay_state(capacity: usize) -> Worker {
+    let (mut worker, _) = service_state(Config {
+        capacity,
+        message_port: 0,
+        service_port: 0,
+        partition: Uuid::new_v4().to_string(),
+        ..Default::default()
+    });
+    worker.config.message_port = worker.udp[0].local_addr().unwrap().port();
+    worker.config.service_port = worker.udp[1].local_addr().unwrap().port();
+    worker
+}
+
+fn relay_observer(worker: &Worker, channel: usize, multicast: bool) -> UdpSocket {
+    let address = if multicast {
+        worker.config.multicast
+    } else {
+        Ipv4Addr::new(127, 0, 0, 2)
+    };
+    let socket = Socket::new(Domain::IPV4, SocketType::DGRAM, Some(Protocol::UDP)).unwrap();
+    socket.set_reuse_address(true).unwrap();
+    socket
+        .bind(&SocketAddrV4::new(address, worker.udp[channel].local_addr().unwrap().port()).into())
+        .unwrap();
+    if multicast {
+        socket
+            .join_multicast_v4(&address, &worker.config.interface)
+            .unwrap();
+    }
+    socket
+        .set_read_timeout(Some(Duration::from_millis(200)))
+        .unwrap();
+    socket.into()
+}
+
+fn relay_packet(worker: &Worker, channel: usize) -> Vec<u8> {
+    let mut publisher = worker.wire_publisher(
+        qualified_name(&worker.config.partition, &worker.config.namespace, "/relay").unwrap(),
+        if channel == 0 {
+            PubType::MsgPub(MessagePublisher {
+                msg_type: "type".into(),
+                ..Default::default()
+            })
+        } else {
+            PubType::SrvPub(ServicePublisher {
+                request_type: "type".into(),
+                response_type: "type".into(),
+                ..Default::default()
+            })
+        },
+    );
+    publisher.process_uuid = "remote-relay".into();
+    publisher.node_uuid = "remote-node".into();
+    protocol::encode(&protocol::advertisement("remote-relay", publisher)).unwrap()
+}
+
+#[test]
+fn discovery_relay_forwards_both_channels_and_dispatches_only_no_relay_copy() {
+    let mut worker = relay_state(2);
+    let source = Ipv4Addr::new(127, 0, 0, 2);
+    for channel in 0..2 {
+        let multicast = relay_observer(&worker, channel, true);
+        let unicast = relay_observer(&worker, channel, false);
+        let frame = relay_packet(&worker, channel);
+        let relayed = if channel == 0 {
+            protocol::relay_frame(&frame, true).unwrap()
+        } else {
+            let mut both_flags = protocol::decode(&frame).unwrap();
+            both_flags.flags = Some(gz_msgs::discovery::discovery::Flags {
+                relay: true,
+                no_relay: true,
+            });
+            protocol::encode(&both_flags).unwrap()
+        };
+        worker.receive_discovery(channel, &relayed, IpAddr::V4(source));
+        assert_eq!(worker.peers.len(), channel);
+        assert!(worker.discovery_relays[channel].contains(&source));
+        let mut buffer = [0; 4096];
+        let count = multicast.recv(&mut buffer).unwrap();
+        assert_eq!(
+            &buffer[..count],
+            protocol::relay_frame(&relayed, false).unwrap()
+        );
+        worker.receive_discovery(channel, &buffer[..count], IpAddr::V4(Ipv4Addr::LOCALHOST));
+        assert_eq!(worker.peers.len(), channel + 1);
+        assert!(unicast.recv(&mut buffer).is_err());
+        worker.receive_discovery(channel, &frame, IpAddr::V4(source));
+        let count = unicast.recv(&mut buffer).unwrap();
+        assert_eq!(
+            &buffer[..count],
+            protocol::relay_frame(&frame, true).unwrap()
+        );
+        assert_eq!(worker.peers.len(), channel + 1);
+        worker.announce(
+            channel,
+            protocol::discovery(&worker.process, Type::Heartbeat, None),
+        );
+        let count = unicast.recv(&mut buffer).unwrap();
+        let message = protocol::decode(&buffer[..count]).unwrap();
+        assert_eq!(message.process_uuid, worker.process);
+        assert!(message.flags.unwrap().relay);
+    }
+    assert_eq!(worker.sender.counters.snapshot(), Statistics::default());
+}
+
+#[test]
+fn discovery_relay_bounds_learning_and_atomic_explicit_admission() {
+    let mut worker = relay_state(1);
+    let first = Ipv4Addr::new(127, 0, 0, 2);
+    let other = Ipv4Addr::new(127, 0, 0, 3);
+    let frame = protocol::relay_frame(
+        &protocol::encode(&protocol::discovery("foreign", Type::Heartbeat, None)).unwrap(),
+        true,
+    )
+    .unwrap();
+    worker.receive_discovery(0, &frame, IpAddr::V4(first));
+    worker.receive_discovery(0, &frame, IpAddr::V4(first));
+    worker.receive_discovery(0, &frame, IpAddr::V4(other));
+    assert_eq!(worker.discovery_relays[0], vec![first]);
+    assert!(worker.discovery_relays[1].is_empty());
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::AddDiscoveryRelay(other, tx));
+    assert_eq!(rx.recv().unwrap(), Err(Error::QueueFull));
+    assert!(worker.discovery_relays[1].is_empty());
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::AddDiscoveryRelay(first, tx));
+    assert_eq!(rx.recv().unwrap(), Ok(()));
+    assert_eq!(worker.discovery_relays[1], vec![first]);
+    let (tx, rx) = mpsc::sync_channel(1);
+    worker.command(Command::DiscoveryRelays(tx));
+    assert_eq!(rx.recv().unwrap(), vec![first]);
+    // Invalid and own-process input must neither learn a source nor emit a copy.
+    let own = protocol::relay_frame(
+        &protocol::encode(&protocol::discovery(&worker.process, Type::Heartbeat, None)).unwrap(),
+        true,
+    )
+    .unwrap();
+    worker.receive_discovery(1, &own, IpAddr::V4(other));
+    worker.receive_discovery(1, &[255], IpAddr::V4(other));
+    let mut wrong = protocol::discovery("foreign", Type::Heartbeat, None);
+    wrong.version = 110;
+    worker.receive_discovery(1, &protocol::encode(&wrong).unwrap(), IpAddr::V4(other));
+    assert_eq!(worker.discovery_relays[1], vec![first]);
+    let counters = worker.sender.counters.snapshot();
+    assert_eq!(counters.queue_drops, 2);
+    assert_eq!(counters.malformed_frames, 2);
+    assert_eq!(counters.send_failures, 0);
+}
+
+#[test]
+fn discovery_relay_send_failures_keep_local_dispatch_and_bound_final_wire_size() {
+    let mut worker = relay_state(3);
+    let observer = relay_observer(&worker, 0, false);
+    // With SO_BROADCAST disabled, this first destination deterministically fails.
+    // Native stops the unicast loop; the later valid peer receives no packet.
+    worker.discovery_relays[0] = vec![Ipv4Addr::BROADCAST, Ipv4Addr::new(127, 0, 0, 2)];
+    worker.receive_discovery(
+        0,
+        &relay_packet(&worker, 0),
+        IpAddr::V4(Ipv4Addr::LOCALHOST),
+    );
+    assert_eq!(worker.peers.len(), 1);
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
+    let mut buffer = [0; 4096];
+    assert!(observer.recv(&mut buffer).is_err());
+    let mut large = protocol::discovery("x", Type::Heartbeat, None);
+    large.flags = Some(gz_msgs::discovery::discovery::Flags {
+        relay: true,
+        no_relay: false,
+    });
+    large.process_uuid = "x".repeat(protocol::MAX_DATAGRAM - 32);
+    let available = protocol::MAX_DATAGRAM - protocol::encode(&large).unwrap().len();
+    large.process_uuid.push_str(&"x".repeat(available));
+    let frame = protocol::encode(&large).unwrap();
+    assert_eq!(frame.len(), protocol::MAX_DATAGRAM);
+    let source = Ipv4Addr::new(127, 0, 0, 3);
+    let multicast = relay_observer(&worker, 0, true);
+    worker.receive_discovery(0, &frame, IpAddr::V4(source));
+    let mut received = vec![0; protocol::MAX_DATAGRAM];
+    assert_eq!(
+        multicast.recv(&mut received).unwrap(),
+        protocol::MAX_DATAGRAM
+    );
+    assert!(!protocol::decode(&received).unwrap().flags.unwrap().relay);
+    assert!(worker.discovery_relays[0].contains(&source));
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
+    large.flags = None;
+    let available = protocol::MAX_DATAGRAM - protocol::encode(&large).unwrap().len();
+    large.process_uuid.push_str(&"x".repeat(available));
+    worker.relay_unicast(0, &protocol::encode(&large).unwrap());
+    let counters = worker.sender.counters.snapshot();
+    assert_eq!(counters.send_failures, 2);
+    assert_eq!(counters.queue_drops, 0);
+    assert_eq!(counters.malformed_frames, 0);
+}
+
+#[test]
+fn discovery_relay_api_uses_existing_command_deadlines_without_revoking_admission() {
+    let (mut worker, commands) = service_state(Config {
+        capacity: 2,
+        message_port: 0,
+        service_port: 0,
+        reply_timeout: Duration::from_millis(10),
+        ..Default::default()
+    });
+    let node = service_registry_node(&worker);
+    let address = Ipv4Addr::new(127, 0, 0, 2);
+    assert_eq!(node.add_discovery_relay(address), Err(Error::Timeout));
+    assert_eq!(node.discovery_relays(), Err(Error::Timeout));
+    assert_eq!(node.discovery_relays(), Err(Error::QueueFull));
+    assert!(worker.discovery_relays.iter().all(Vec::is_empty));
+    // Timeout closes only the reply receiver. The admitted mutation can still
+    // execute later, and a disconnected reply cannot stop worker progress.
+    worker.command(commands.try_recv().unwrap());
+    worker.command(commands.try_recv().unwrap());
+    assert_eq!(worker.discovery_relays, [vec![address], vec![address]]);
+    assert_eq!(worker.sender.counters.snapshot().queue_drops, 1);
+}
+
 #[test]
 fn publication_rate_boundaries_keep_epoch_fractional_and_sub_nanosecond_periods() {
     let epoch = Duration::ZERO;

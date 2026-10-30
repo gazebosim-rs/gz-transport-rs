@@ -45,6 +45,169 @@ fn native_known(body: &[u8]) -> Option<Discovery> {
     }
 }
 
+fn native_relay(body: &[u8], mode: &str) -> Vec<u8> {
+    let path = std::env::var_os("GZ_DISCOVERY_RELAY_PEER")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("artifacts/discovery-relay-peer")
+        });
+    let mut peer = Command::new(path)
+        .arg(mode)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("build the discovery relay C++ peer");
+    peer.stdin.take().unwrap().write_all(body).unwrap();
+    let output = peer.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "native relay oracle failed: {:?}",
+        output.stderr
+    );
+    output.stdout
+}
+
+#[test]
+fn relay_flags_preserve_native_merges_and_opaque_unknown_fields() {
+    let base = discovery("p", Type::Heartbeat, None).encode_to_vec();
+    let flags = [
+        vec![],
+        vec![0x2a, 0],
+        vec![0x2a, 4, 8, 1, 16, 1],
+        vec![0x2a, 4, 8, 0, 16, 0],
+        vec![0x2a, 2, 8, 1, 0x2a, 2, 16, 1],
+        vec![0x2a, 8, 8, 1, 16, 1, 0xa0, 6, 0x81, 0],
+        vec![0x2a, 5, 10, 1, 255, 16, 1],
+        vec![0x28, 1],
+    ];
+    let unknown = [
+        vec![],
+        vec![0xa0, 6, 0x81, 0],
+        vec![0x12, 1, 255],
+        vec![0xa3, 6, 8, 1, 0xa4, 6],
+    ];
+    for flags in flags {
+        for unknown in &unknown {
+            let body = [base.as_slice(), &flags, unknown].concat();
+            let frame = [(body.len() as u16).to_ne_bytes().as_slice(), &body].concat();
+            let original = decode(&frame).unwrap();
+            for (unicast, mode) in [(true, "unicast"), (false, "multicast")] {
+                let forwarded = relay_frame(&frame, unicast).unwrap();
+                let non_flags = if flags == [0x28, 1] {
+                    [base.as_slice(), &flags, unknown].concat()
+                } else {
+                    [base.as_slice(), unknown].concat()
+                };
+                assert_eq!(&forwarded[2..2 + non_flags.len()], non_flags);
+                if unknown.is_empty() {
+                    for raw in [&[0xa0, 6, 0x81, 0][..], &[10, 1, 255][..]] {
+                        if flags.windows(raw.len()).any(|value| value == raw) {
+                            assert!(forwarded.windows(raw.len()).any(|value| value == raw));
+                        }
+                    }
+                }
+                let observed = decode(&forwarded).unwrap();
+                assert_eq!(observed.process_uuid, original.process_uuid);
+                assert_eq!(observed.r#type, original.r#type);
+                let observed_flags = observed.flags.unwrap();
+                assert_eq!(observed_flags.relay, unicast);
+                assert_eq!(
+                    observed_flags.no_relay,
+                    !unicast || original.flags.as_ref().is_some_and(|value| value.no_relay)
+                );
+                assert_eq!(
+                    native_relay(&forwarded[2..], "parse"),
+                    native_relay(&body, mode)
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn relay_flags_enforce_final_datagram_bound() {
+    assert_eq!(relay_frame(&[], true), Err(Error::InvalidFrame));
+    let frame = relay_frame_at_size(MAX_DATAGRAM - 4, false);
+    let exact = relay_frame(&frame, true).unwrap();
+    assert_eq!(exact.len(), MAX_DATAGRAM);
+    assert_eq!(
+        u16::from_ne_bytes(exact[..2].try_into().unwrap()) as usize,
+        MAX_DATAGRAM - 2
+    );
+    let too_large = relay_frame_at_size(MAX_DATAGRAM - 3, false);
+    assert_eq!(relay_frame(&too_large, true), Err(Error::InvalidFrame));
+    assert_eq!(
+        relay_frame(&vec![0; MAX_DATAGRAM], true),
+        Err(Error::InvalidFrame)
+    );
+}
+
+fn relay_frame_at_size(size: usize, relay: bool) -> Vec<u8> {
+    let mut message = discovery(&"x".repeat(size - 32), Type::Heartbeat, None);
+    if relay {
+        message.flags = Some(Flags {
+            relay: true,
+            no_relay: false,
+        });
+    }
+    let remaining = size - encode(&message).unwrap().len();
+    message.process_uuid.push_str(&"x".repeat(remaining));
+    let frame = encode(&message).unwrap();
+    assert_eq!(frame.len(), size);
+    frame
+}
+
+#[test]
+fn relay_reinjection_keeps_native_maximum_datagram() {
+    let frame = relay_frame_at_size(MAX_DATAGRAM, true);
+    let native = native_relay(&frame[2..], "multicast");
+    assert_eq!(native.len() + 2, MAX_DATAGRAM);
+    let forwarded = relay_frame(&frame, false).unwrap();
+    assert!(forwarded.len() <= MAX_DATAGRAM);
+    assert_eq!(native_relay(&forwarded[2..], "parse"), native);
+}
+
+#[test]
+fn relay_flags_merge_length_boundaries_and_reject_malformed_fields() {
+    let base = discovery("p", Type::Heartbeat, None).encode_to_vec();
+    for length in [0, 127, 128, 16383, 16384, 60000] {
+        let opaque = field(127, WireType::LengthDelimited, &vec![255; length]);
+        let flags = [vec![8, 1], opaque.clone()].concat();
+        let body = [
+            base.clone(),
+            field(5, WireType::LengthDelimited, &flags),
+            field(5, WireType::LengthDelimited, &[16, 1]),
+        ]
+        .concat();
+        let frame = [(body.len() as u16).to_ne_bytes().as_slice(), &body].concat();
+        let forwarded = relay_frame(&frame, false).unwrap();
+        assert!(forwarded.len() <= frame.len());
+        assert!(forwarded.windows(opaque.len()).any(|value| value == opaque));
+        assert_eq!(
+            native_relay(&forwarded[2..], "parse"),
+            native_relay(&body, "multicast")
+        );
+    }
+    for malformed in [
+        vec![0],
+        vec![0x2a, 0x80],
+        vec![0x2a, 5, 1],
+        vec![0x2a, 1, 0],
+        vec![0x2a, 1, 8],
+        vec![0x32, 5, 1],
+        vec![0x2b],
+    ] {
+        let frame = [
+            (malformed.len() as u16).to_ne_bytes().as_slice(),
+            &malformed,
+        ]
+        .concat();
+        assert_eq!(relay_frame(&frame, false), Err(Error::InvalidFrame));
+    }
+}
+
 #[test]
 fn native_discovery_wrong_wire_values_presence_and_framing() {
     let base = discovery("wire-process", Type::Heartbeat, None).encode_to_vec();

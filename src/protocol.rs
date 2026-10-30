@@ -34,6 +34,61 @@ pub(crate) fn encode(message: &Discovery) -> Result<Vec<u8>, Error> {
     Ok(frame)
 }
 
+/// Rewrite only Flags in an already validated discovery frame. Merging its
+/// occurrences lets a full-size relayed packet stay within the native limit.
+pub(crate) fn relay_frame(frame: &[u8], unicast: bool) -> Result<Vec<u8>, Error> {
+    use gz_msgs::prost::encoding::{self, DecodeContext, WireType, bool as boolean, bytes};
+    if frame.len() < 2 || frame.len() > MAX_DATAGRAM {
+        return Err(Error::InvalidFrame);
+    }
+    let mut input = &frame[2..];
+    let mut output = Vec::with_capacity((frame.len() + 4).min(MAX_DATAGRAM));
+    output.extend_from_slice(&[0, 0]);
+    let mut flags = Vec::new();
+    while !input.is_empty() {
+        let original = input;
+        let (tag, wire) = encoding::decode_key(&mut input).map_err(|_| Error::InvalidFrame)?;
+        if tag == 5 && wire == WireType::LengthDelimited {
+            let length = encoding::decode_varint(&mut input).map_err(|_| Error::InvalidFrame)?;
+            if length > input.len() as u64 {
+                return Err(Error::InvalidFrame);
+            }
+            let length = length as usize;
+            let mut fields = &input[..length];
+            input = &input[length..];
+            while !fields.is_empty() {
+                let original = fields;
+                let (tag, wire) =
+                    encoding::decode_key(&mut fields).map_err(|_| Error::InvalidFrame)?;
+                encoding::skip_field(wire, tag, &mut fields, DecodeContext::default())
+                    .map_err(|_| Error::InvalidFrame)?;
+                // A wrong-wire occurrence is unknown, not an edited bool. All
+                // other flag bytes retain their order and exact representation.
+                if wire != WireType::Varint || (tag != 1 && (unicast || tag != 2)) {
+                    flags.extend_from_slice(&original[..original.len() - fields.len()]);
+                }
+            }
+        } else {
+            encoding::skip_field(wire, tag, &mut input, DecodeContext::default())
+                .map_err(|_| Error::InvalidFrame)?;
+            output.extend_from_slice(&original[..original.len() - input.len()]);
+        }
+    }
+    // Reinjection removes every known relay bool, so its native default false
+    // needs no extra encoded field. Unicast preserves the no_relay value.
+    boolean::encode(if unicast { 1 } else { 2 }, &true, &mut flags);
+    let size = output
+        .len()
+        .checked_add(bytes::encoded_len(5, &flags))
+        .ok_or(Error::InvalidFrame)?;
+    if size > MAX_DATAGRAM {
+        return Err(Error::InvalidFrame);
+    }
+    bytes::encode(5, &flags, &mut output);
+    output[..2].copy_from_slice(&((size - 2) as u16).to_ne_bytes());
+    Ok(output)
+}
+
 pub(crate) fn decode(frame: &[u8]) -> Result<Discovery, Error> {
     decode_version(frame, VERSION)
 }

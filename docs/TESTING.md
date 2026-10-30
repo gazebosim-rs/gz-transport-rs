@@ -1337,3 +1337,30 @@ reset timing, nullable state and external failure marker were compared to the
 complete source. Only CallbackScope.CleanupCorrectly becomes a conditional
 whole-case candidate (116/7/295 to 117/7/294); no other ledger row changes or
 broader cancellation/raw-inline/performance credit are implied.
+
+## Two-channel discovery forwarding candidate
+
+The candidate preserves all old tests and the GZ_RELAY rejection. A native-backed
+maximum-frame regression required replacing the initial append-only helper with
+a Flags-only transform using maintained prost codecs. The final four pure,
+four private and four public/native controls pass in debug, release and
+instrumented profiles. The corrected serial affected matrix passes 182 library,
+111 unchanged interop, eleven typed callback, five owned, six raw and four relay
+tests with nine freshly built canonical peers. The unchanged NodeTest.relay
+original passes; its exact absence/size-increase/presence predicates are retained
+separately from added wire and capacity controls. Eleven configuration checks,
+35 Python tools and Clippy pass.
+
+Root's fixture review found that dropped exclusive port reservations could be
+stolen before actor startup. Reusable wildcard socket guards now last through
+each test with multicast-all disabled, preserving bind order and every assertion
+and deadline. The final four public tests re-pass in all three profiles; the
+unchanged 111 were not repeated solely for this fixture correction. Focused
+instrumentation reports 150/155 changed executable lines: five old moved
+announcement-error lines remain unhit in these focused controls. No exclusion or
+threshold changed. Independent Root fresh-source/target review rebuilt canonical
+peers and passed all eight pure/private plus four guarded public/native controls,
+verified the pinned native linkage and forwarding source, and approved this
+bounded slice. This is not full strict coverage; normal staged coverage and exact
+hosted qualification remain pending. No ledger row is promoted. See the
+[scope and wire contract](NET-02-discovery-relay.md).

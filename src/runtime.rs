@@ -2271,6 +2271,26 @@ impl Node {
         rx.recv_timeout(self.config.reply_timeout)
             .map_err(receive_error)
     }
+    /// Add a unicast discovery peer on both configured discovery ports.
+    /// Admission is atomic across the two bounded, worker-owned address sets.
+    /// Duplicate addresses succeed without consuming capacity.
+    pub fn add_discovery_relay(&self, address: Ipv4Addr) -> Result<(), Error> {
+        if address.is_unspecified() || address.is_multicast() || address.is_broadcast() {
+            return Err(Error::InvalidConfig);
+        }
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::AddDiscoveryRelay(address, tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)?
+    }
+    /// Sorted union of this worker's explicit and learned discovery relay peers.
+    /// An address may have been learned on only one discovery channel.
+    pub fn discovery_relays(&self) -> Result<Vec<Ipv4Addr>, Error> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.sender.send(Command::DiscoveryRelays(tx))?;
+        rx.recv_timeout(self.config.reply_timeout)
+            .map_err(receive_error)
+    }
     /// Wait for discovery startup, then snapshot sorted known service paths.
     /// The explicit timeout bounds startup and the worker reply; zero returns
     /// `Timeout`. Startup belongs to this worker and does not prove that all
@@ -2629,6 +2649,8 @@ impl Drop for Node {
 }
 
 enum Command {
+    AddDiscoveryRelay(Ipv4Addr, SyncSender<Result<(), Error>>),
+    DiscoveryRelays(SyncSender<Vec<Ipv4Addr>>),
     Advertise(
         String,
         String,
@@ -2910,6 +2932,7 @@ struct Worker {
     process: String,
     node: String,
     udp: [UdpSocket; 2],
+    discovery_relays: [Vec<Ipv4Addr>; 2],
     publisher: zmq::Socket,
     subscriber: zmq::Socket,
     router: zmq::Socket,
@@ -3142,6 +3165,7 @@ impl Worker {
             process,
             node,
             udp,
+            discovery_relays: std::array::from_fn(|_| Vec::new()),
             publisher,
             subscriber,
             router,
@@ -3173,27 +3197,95 @@ impl Worker {
             message.version = protocol::VERSION + 100;
         }
         if let Ok(frame) = protocol::encode(&message) {
-            self.sender.counters.sent(
-                self.udp[channel]
-                    .send_to(
-                        &frame,
-                        SocketAddrV4::new(
-                            self.config.multicast,
-                            if channel == 0 {
-                                self.config.message_port
-                            } else {
-                                self.config.service_port
-                            },
-                        ),
-                    )
-                    .map(|_| ()),
-            );
+            self.send_discovery(channel, &frame, self.config.multicast);
+            self.relay_unicast(channel, &frame);
         } else {
             self.sender
                 .counters
                 .malformed_frames
                 .fetch_add(1, Ordering::Relaxed);
         }
+    }
+    fn send_discovery(&self, channel: usize, frame: &[u8], address: Ipv4Addr) -> bool {
+        self.sender.counters.sent(
+            self.udp[channel]
+                .send_to(
+                    frame,
+                    SocketAddrV4::new(
+                        address,
+                        if channel == 0 {
+                            self.config.message_port
+                        } else {
+                            self.config.service_port
+                        },
+                    ),
+                )
+                .map(|_| ()),
+        )
+    }
+    fn relay_unicast(&self, channel: usize, frame: &[u8]) {
+        if self.discovery_relays[channel].is_empty() {
+            return;
+        }
+        if let Some(frame) = self.relay_copy(frame, true) {
+            for address in &self.discovery_relays[channel] {
+                if !self.send_discovery(channel, &frame, *address) {
+                    break;
+                }
+            }
+        }
+    }
+    fn relay_copy(&self, frame: &[u8], unicast: bool) -> Option<Vec<u8>> {
+        match protocol::relay_frame(frame, unicast) {
+            Ok(frame) => Some(frame),
+            Err(_) => {
+                self.sender
+                    .counters
+                    .send_failures
+                    .fetch_add(1, Ordering::Relaxed);
+                None
+            }
+        }
+    }
+    fn receive_discovery(&mut self, channel: usize, frame: &[u8], source: IpAddr) {
+        let decoded = if self.config.statistics_wire {
+            protocol::decode_version(frame, protocol::VERSION + 100)
+        } else {
+            protocol::decode(frame)
+        };
+        let Ok(message) = decoded else {
+            self.sender
+                .counters
+                .malformed_frames
+                .fetch_add(1, Ordering::Relaxed);
+            return;
+        };
+        if message.process_uuid == self.process {
+            return;
+        }
+        if message.flags.as_ref().is_some_and(|flags| flags.relay) {
+            if let Some(frame) = self.relay_copy(frame, false) {
+                self.send_discovery(channel, &frame, self.config.multicast);
+            }
+            if let IpAddr::V4(address) = source
+                && !self.discovery_relays[channel].contains(&address)
+            {
+                if self.discovery_relays[channel].len() < self.config.capacity {
+                    self.discovery_relays[channel].push(address);
+                } else {
+                    self.sender
+                        .counters
+                        .queue_drops
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+            }
+            // Dispatch only the multicast copy, whose NO_RELAY flag stops loops.
+            return;
+        }
+        if !message.flags.as_ref().is_some_and(|flags| flags.no_relay) {
+            self.relay_unicast(channel, frame);
+        }
+        self.discovery(channel, message, source);
     }
     fn wire_publisher(&self, topic: String, kind: PubType) -> WirePublisher {
         WirePublisher {
@@ -3700,6 +3792,36 @@ impl Worker {
             }
             Command::KnownServices(reply) => {
                 let _ = reply.try_send(self.known_names(1));
+            }
+            Command::AddDiscoveryRelay(address, reply) => {
+                let full = self.discovery_relays.iter().any(|relays| {
+                    !relays.contains(&address) && relays.len() >= self.config.capacity
+                });
+                let result = if full {
+                    self.sender
+                        .counters
+                        .queue_drops
+                        .fetch_add(1, Ordering::Relaxed);
+                    Err(Error::QueueFull)
+                } else {
+                    for relays in &mut self.discovery_relays {
+                        if !relays.contains(&address) {
+                            relays.push(address);
+                        }
+                    }
+                    Ok(())
+                };
+                let _ = reply.try_send(result);
+            }
+            Command::DiscoveryRelays(reply) => {
+                let mut addresses: Vec<_> = self
+                    .discovery_relays
+                    .iter()
+                    .flat_map(|relays| relays.iter().copied())
+                    .collect();
+                addresses.sort_unstable();
+                addresses.dedup();
+                let _ = reply.try_send(addresses);
             }
             Command::ReadyServiceList(query) => {
                 // Native service discovery waits for startup without sending
@@ -4457,19 +4579,7 @@ impl Worker {
                 for _ in 0..self.config.capacity {
                     match self.udp[channel].recv_from(&mut buffer) {
                         Ok((len, source)) => {
-                            let message = if self.config.statistics_wire {
-                                protocol::decode_version(&buffer[..len], protocol::VERSION + 100)
-                            } else {
-                                protocol::decode(&buffer[..len])
-                            };
-                            if let Ok(msg) = message {
-                                self.discovery(channel, msg, source.ip());
-                            } else {
-                                self.sender
-                                    .counters
-                                    .malformed_frames
-                                    .fetch_add(1, Ordering::Relaxed);
-                            }
+                            self.receive_discovery(channel, &buffer[..len], source.ip());
                         }
                         Err(_) => break,
                     }

@@ -149,8 +149,8 @@ partition, topic, descriptor and delivery-path metadata; raw receive remains
 available. Matching same-process Nodes now receive direct copies with native
 intra-process origin; wire peers remain remote. See [direct delivery](docs/NET-02-process-local-direct.md)
 and [received metadata](docs/NET-01-message-info.md). Two native owned
-member-callback originals map to a [joined Rust dispatch adaptation](docs/NET-02-class-member-callback.md)
-without a public callback registration API. The publisher's bounded
+member-callback originals retain a [joined Rust dispatch adaptation](docs/NET-02-class-member-callback.md);
+the public callback APIs use the shared owned dispatcher described above. The publisher's bounded
 echo history and process-local fanout have a reviewed [cost update](docs/NET-02-publication-cost.md).
 Local counters expose drops, wire errors and direct-routing errors; service replies retry
 mandatory routing until an explicit deadline. This is not complete upstream transport parity: statistics/auth/logs,
@@ -202,6 +202,8 @@ the pre-commit hook and CI. It requires strictly >95% handwritten production
 line **and** region coverage, no missing files, a real C++ peer, and original
 mapped assertions. Missing native infrastructure fails the gate.
 See [testing and evidence](docs/TESTING.md).
+The private [discovery forwarding candidate](docs/NET-02-discovery-relay.md)
+describes bounded worker-owned relay APIs and their pending runtime qualification.
 
 The canonical cross-repository plan, test policy and compatibility contract live
 in [gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md).

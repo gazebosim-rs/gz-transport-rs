@@ -10,8 +10,10 @@ by canonical `gz.msgs.Discovery` protobuf bytes. Maximum datagram size is 65507.
 The reviewed native-compatible decoder treats known tags with unexpected wire
 types as unknown occurrences, including nested publisher metadata, without
 overwriting known values or changing message/oneof presence. Malformed known
-data still fails. The typed value is cloned for dispatch; discovery relay and
-lossless reencoding remain unclaimed. Application payload bytes are opaque.
+data still fails. The typed value is cloned for local dispatch. The bounded
+[relay candidate](NET-02-discovery-relay.md) forwards the original bytes with an
+explicit flag suffix instead of reencoding that typed value. Application payload
+bytes are opaque; broader topology qualification remains open.
 Version 10 is the default ZeroMQ profile. `Config::statistics_wire` opts into
 version 110 on both message and service discovery. Mismatched
 versions and malformed delimiters/protobuf are discarded. Unix HOST-scoped
@@ -161,7 +163,7 @@ or a process-global registry. See the [API and timing contract](NET-01-service-t
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
 HOST advertisement controls and actual multi-host qualification; process-wide
 multi-node discovery identity;
-END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
+END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; broader relay topology/GZ_RELAY;
 IPv6 and all-interface routing; automatic interface selection, exceptional NSS
 fallback and Windows default identity; topic throttling and
 aggregate statistics and metric publication; authentication; complete

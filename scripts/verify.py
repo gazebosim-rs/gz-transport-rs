@@ -320,7 +320,8 @@ def verify(profile):
                                ('topic-metric-peer', 'topic-metric-linkage.txt'),
                                ('subscription-callback-peer', 'subscription-callback-linkage.txt'),
                                ('owned-subscriber-peer', 'owned-subscriber-linkage.txt'),
-                               ('raw-subscription-peer', 'raw-subscription-linkage.txt')):
+                               ('raw-subscription-peer', 'raw-subscription-linkage.txt'),
+                               ('discovery-relay-peer', 'discovery-relay-linkage.txt')):
         linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts' / peer)], env=env, text=True)
         (ROOT / 'artifacts' / linkage_file).write_text(linkage)
         linked = re.findall(r'libgz-[^ ]+\s+=>\s+(\S+)', linkage)
