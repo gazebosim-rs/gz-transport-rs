@@ -536,3 +536,183 @@ fn unavailable_control_queue_rolls_back_capture_and_endpoint_admission() {
     assert!(node.subscribed_topics().unwrap().is_empty());
     assert!(control.terminal());
 }
+
+#[test]
+fn per_handle_unsubscribe_has_one_concurrent_winner_and_releases_one_lease() {
+    let sender = sender(8);
+    let (control, retained) = SubscriptionDispatcher::new(
+        sender.clone(),
+        Arc::new(AtomicBool::new(false)),
+        spawn_callback,
+    )
+    .unwrap();
+    let (handle, destination) = admit(&control, retained, |_| Ok(()));
+    let handle = Arc::new(handle);
+    assert!(handle.is_active());
+    let winners = thread::scope(|scope| {
+        (0..8)
+            .map(|_| scope.spawn(|| handle.unsubscribe()))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|task| task.join().unwrap())
+            .filter(|won| *won)
+            .count()
+    });
+    assert_eq!(winners, 1);
+    assert!(!handle.is_active());
+    assert_eq!(handle.slots.load(Ordering::Acquire), 0);
+    assert!(!handle.unsubscribe());
+    handle.cancel();
+    assert_eq!(handle.slots.load(Ordering::Acquire), 0);
+    drop(handle);
+    drop(destination);
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn unsubscribed_selected_callback_retains_entry_budget_until_real_exit() {
+    let sender = sender(1);
+    let (control, retained) = SubscriptionDispatcher::new(
+        sender.clone(),
+        Arc::new(AtomicBool::new(false)),
+        spawn_callback,
+    )
+    .unwrap();
+    let gate = Arc::new((Mutex::new(false), Condvar::new()));
+    let release_gate = ReleaseGate(gate.clone());
+    let callback_gate = gate.clone();
+    let (entered, entry) = mpsc::channel();
+    let (handle, destination) = admit(&control, retained, move |_| {
+        entered.send(()).unwrap();
+        let (lock, ready) = &*callback_gate;
+        let mut released = lock.lock().unwrap();
+        while !*released {
+            released = ready.wait(released).unwrap();
+        }
+        Ok(())
+    });
+    destination.try_send(message()).unwrap();
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(handle.unsubscribe());
+    assert!(!handle.is_active());
+    assert_eq!(handle.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(control.reserve(), Err(Error::QueueFull)));
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 1);
+    assert!(!handle.unsubscribe());
+    drop(release_gate);
+    drop(handle);
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn self_unsubscribe_is_nonblocking_and_suppresses_queued_work() {
+    let sender = sender(1);
+    let (control, retained) = SubscriptionDispatcher::new(
+        sender.clone(),
+        Arc::new(AtomicBool::new(false)),
+        spawn_callback,
+    )
+    .unwrap();
+    let held = Arc::new(Mutex::new(None::<Weak<CallbackSubscription>>));
+    let callback_handle = held.clone();
+    let (completed, completion) = mpsc::channel();
+    let entries = Arc::new(AtomicUsize::new(0));
+    let callback_entries = entries.clone();
+    let gate = Arc::new((Mutex::new(false), Condvar::new()));
+    let release_gate = ReleaseGate(gate.clone());
+    let callback_gate = gate.clone();
+    let (entered, entry) = mpsc::channel();
+    let (handle, destination) = admit(&control, retained, move |_| {
+        callback_entries.fetch_add(1, Ordering::AcqRel);
+        entered.send(()).unwrap();
+        let (lock, ready) = &*callback_gate;
+        let mut released = lock.lock().unwrap();
+        while !*released {
+            released = ready.wait(released).unwrap();
+        }
+        drop(released);
+        let handle = callback_handle
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .upgrade()
+            .unwrap();
+        let retired = handle.unsubscribe();
+        completed.send(retired).unwrap();
+        Ok(())
+    });
+    let handle = Arc::new(handle);
+    *held.lock().unwrap() = Some(Arc::downgrade(&handle));
+    destination.try_send(message()).unwrap();
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    destination.try_send(message()).unwrap();
+    drop(release_gate);
+    assert!(completion.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert!(!handle.is_active());
+    assert!(!handle.unsubscribe());
+    drop(handle);
+    assert_eq!(entries.load(Ordering::Acquire), 1);
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn active_snapshot_observes_owner_stop_and_existing_cancel_is_idempotent() {
+    for owner_retirement in [false, true] {
+        let sender = sender(1);
+        let owner_dead = Arc::new(AtomicBool::new(false));
+        let (control, retained) =
+            SubscriptionDispatcher::new(sender.clone(), owner_dead.clone(), spawn_callback)
+                .unwrap();
+        let (handle, destination) = admit(&control, retained, |_| Ok(()));
+        assert!(handle.is_active());
+        if owner_retirement {
+            owner_dead.store(true, Ordering::Release);
+        } else {
+            sender.stop.store(true, Ordering::Release);
+        }
+        assert!(!handle.is_active());
+        control.notify();
+        handle.cancel();
+        handle.cancel();
+        assert!(!handle.unsubscribe());
+        assert_eq!(handle.slots.load(Ordering::Acquire), 0);
+        drop(handle);
+        drop(destination);
+        assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
+    }
+}
+
+#[test]
+fn stopped_owner_can_hide_liveness_before_retained_lease_retirement() {
+    let sender = sender(1);
+    let owner_dead = Arc::new(AtomicBool::new(false));
+    let (control, retained) =
+        SubscriptionDispatcher::new(sender.clone(), owner_dead.clone(), spawn_callback).unwrap();
+    let gate = Arc::new((Mutex::new(false), Condvar::new()));
+    let release_gate = ReleaseGate(gate.clone());
+    let callback_gate = gate.clone();
+    let (entered, entry) = mpsc::channel();
+    let (handle, destination) = admit(&control, retained, move |_| {
+        entered.send(()).unwrap();
+        let mut released = callback_gate.0.lock().unwrap();
+        while !*released {
+            released = callback_gate.1.wait(released).unwrap();
+        }
+        Ok(())
+    });
+    destination.try_send(message()).unwrap();
+    entry.recv_timeout(Duration::from_secs(1)).unwrap();
+    // The blocked invocation prevents dispatcher retirement from racing this
+    // observation. Liveness includes owner state; retirement reports the lease.
+    owner_dead.store(true, Ordering::Release);
+    assert!(!handle.is_active());
+    assert!(handle.unsubscribe());
+    assert!(!handle.unsubscribe());
+    assert_eq!(handle.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(control.reserve(), Err(Error::QueueFull)));
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 1);
+    drop(release_gate);
+    drop(handle);
+    assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
+}

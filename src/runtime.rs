@@ -363,9 +363,12 @@ impl Drop for Lease {
         release(&self.active, &self.slots);
     }
 }
-fn release(active: &AtomicBool, slots: &AtomicUsize) {
+fn release(active: &AtomicBool, slots: &AtomicUsize) -> bool {
     if active.swap(false, Ordering::AcqRel) {
         slots.fetch_sub(1, Ordering::AcqRel);
+        true
+    } else {
+        false
     }
 }
 const LOCAL_INTEREST: u8 = 1;

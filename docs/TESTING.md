@@ -1290,3 +1290,18 @@ deadline changed to obtain the serial pass. Only the two selected lambda cases
 are candidate whole-case ports (111/7/300 to 113/7/298), conditional on normal
 full staged and exact hosted qualification. The detailed contract records the
 setup correction, original replay scope and remaining global/raw-inline limits.
+
+
+The separate owned-subscriber retirement follow-up has independent SDF terra
+source/assertion/lifecycle approval. Fresh reviewer source/target passed 14 pure
+and five public/native controls plus all three unchanged native originals; its
+final readiness correction independently replayed all five public controls.
+Author debug/release also pass 14 pure plus five public/native checks. Native
+waitUntil retains 10 seconds/10 ms; only native untimed callback completion has
+an explicit one-second Rust bound. Source-only metadata validity is kept distinct
+from live Rust registration state, including the stopped-owner/retained-lease
+control. The weak original post-drop wait is preserved and the stronger quiet
+entry-counter check is separate. Only BoolOperatorTest, CreateSubscriber and
+MixedSubscribeAPIs are candidate whole-case ports, conditional on preceding
+callback acceptance and this slice's normal staged/exact hosted qualification
+(113/7/298 to 116/7/295). No extra global identity or timing parity is implied.

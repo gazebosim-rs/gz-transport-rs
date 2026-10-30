@@ -276,13 +276,30 @@ pub struct CallbackSubscription {
     done: Arc<Completion>,
 }
 impl CallbackSubscription {
-    pub fn cancel(&self) {
-        release(&self.active, &self.slots);
+    /// Snapshot whether this lease is active and its Node has not stopped.
+    /// This is live Rust registration state, not native stored-ID validity or
+    /// a guarantee that a callback will run or has finished.
+    pub fn is_active(&self) -> bool {
+        self.active.load(Ordering::Acquire)
+            && !self.control.owner_dead.load(Ordering::Acquire)
+            && !self.control.sender.stop.load(Ordering::Acquire)
+    }
+    /// Retire this lease without waiting for selected user code or capture Drop.
+    /// Exactly one concurrent retirement of an active lease returns true.
+    /// Owner stop can make is_active false before lease retirement, so this
+    /// may still return true. It is not the inverse of the liveness query.
+    /// Queued unselected callbacks are suppressed; Drop waits for real exit.
+    pub fn unsubscribe(&self) -> bool {
+        let retired = release(&self.active, &self.slots);
         self.interest
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .refresh();
         self.control.notify();
+        retired
+    }
+    pub fn cancel(&self) {
+        let _ = self.unsubscribe();
     }
 }
 impl Drop for CallbackSubscription {

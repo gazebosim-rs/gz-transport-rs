@@ -3915,10 +3915,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubWithCreateSubscriber",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubWithCreateSubscriber",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_with_create_subscriber"
+      ],
+      "review": "Independent SDF terra review; fresh source/target passed 14 pure and five public/native controls plus all three unchanged native originals. Final 10s/10ms readiness overlay independently replayed all five public controls. Full original/source/lifetime/return/quiet-state review approved; conditional on preceding callback acceptance and this slice normal staged/exact hosted qualification.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3927,17 +3929,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete Int32 data 5, /foo, successful publisher and default-invalid-to-created subscriber setup, native 10000ms/10ms readiness, successful publication and callback data/executed predicates, scope destruction, second successful publication and original final 300ms conditional wait. The original never resets executed before that wait and has no false assertion; a separate supplemental control proves no later entry. Rust explicitly bounds the native untimed completion to one second.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-owned-subscription-retirement.md; tests/owned_subscriber.rs; tests/owned_subscriber_peer.cc; mandatory unchanged native original filters and canonical peer linkage audit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWithMixedSubscribeAPIs",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubWithMixedSubscribeAPIs",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_with_mixed_subscribe_apis"
+      ],
+      "review": "Independent SDF terra review; fresh source/target passed 14 pure and five public/native controls plus all three unchanged native originals. Final 10s/10ms readiness overlay independently replayed all five public controls. Full original/source/lifetime/return/quiet-state review approved; conditional on preceding callback acceptance and this slice normal staged/exact hosted qualification.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3946,8 +3951,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete three-registration Int32 data 5 fixture: initial callbacks all execute, handle2 unsubscribe succeeds, callback1/3 continue while callback2 remains false after 300ms, then Node-wide unsubscribe succeeds and all three flags remain false after their separate 300ms waits. Native 10000ms/10ms readiness and all publication/data/return assertions retained. Holding the first owned Rust callback through Node-wide withdrawal translates native legacy registration lifetime; only untimed completion uses an explicit one-second Rust bound. Independent entry counters cannot hide invocation under caught panics.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-owned-subscription-retirement.md; tests/owned_subscriber.rs; tests/owned_subscriber_peer.cc; mandatory unchanged native original filters and canonical peer linkage audit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.AdvertiseTwoEqualTopics",
@@ -5288,10 +5294,12 @@
       "id": "UNIT_Node_TEST:NodeSubTest.BoolOperatorTest",
       "target": "UNIT_Node_TEST",
       "case": "NodeSubTest.BoolOperatorTest",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_owned_subscriber_bool_operator_states"
+      ],
+      "review": "Independent SDF terra review; fresh source/target passed 14 pure and five public/native controls plus all three unchanged native originals. Final 10s/10ms readiness overlay independently replayed all five public controls. Full original/source/lifetime/return/quiet-state review approved; conditional on preceding callback acceptance and this slice normal staged/exact hosted qualification.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -5300,8 +5308,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete original invalid mutable/immutable subscriber states, Int32 /foo callback registration, valid handle, successful explicit unsubscribe, invalidated state and a second immutable valid handle. Rust Option::None translates default-invalid storage; is_active is actual Rust registration liveness, not general native stored-ID validity. No claim about native stale validity after external Node unsubscribe or owner destruction.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-owned-subscription-retirement.md; tests/owned_subscriber.rs; tests/owned_subscriber_peer.cc; mandatory unchanged native original filters and canonical peer linkage audit."
     },
     {
       "id": "UNIT_ParamCommandAPI_TEST:ParametersClientTest.cmdParameterGet",
