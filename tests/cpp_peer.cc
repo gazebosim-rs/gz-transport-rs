@@ -41,6 +41,9 @@
 #include <iterator>
 #include <map>
 #include <ctime>
+#include <zmq.hpp>
+#include <sstream>
+#include <iomanip>
 
 template<typename Publisher>
 std::size_t Count(const gz::transport::TopicStorage<Publisher> &storage,
@@ -71,9 +74,137 @@ static std::optional<bool> wait_metadata(const std::shared_ptr<MetadataState> &s
   if (!state->cv.wait_for(lock,std::chrono::seconds(5),[&]{return state->received;}) || !state->valid) return std::nullopt;
   return state->intra;
 }
+static std::string statistics_wire_hex(const void *data,std::size_t size) {
+  if(size==0)return "-";
+  const auto *bytes=static_cast<const unsigned char *>(data);
+  std::ostringstream output;
+  for(std::size_t i=0;i<size;++i)
+    output<<std::hex<<std::setfill('0')<<std::setw(2)<<static_cast<unsigned>(bytes[i]);
+  return output.str();
+}
+static int statistics_wire_publisher(const std::string &topic,const std::string &other) {
+  using namespace std::chrono_literals;
+  gz::transport::Node node;
+  auto first=node.Advertise<gz::msgs::Int32>(topic);
+  auto second=node.Advertise<gz::msgs::Int32>(other);
+  if(!first || !second)return 170;
+  std::vector<gz::transport::MessagePublisher> publishers,subscribers;
+  if(!node.TopicInfo(topic,publishers,subscribers) || publishers.size()!=1)return 171;
+  std::cout<<publishers[0].Addr()<<'\n'<<publishers[0].Topic()<<'\n';
+  if(!node.TopicInfo(other,publishers,subscribers) || publishers.size()!=1)return 172;
+  std::cout<<publishers[0].Topic()<<"\nREADY"<<std::endl;
+  std::string command;
+  while(std::cin>>command) {
+    if(command=="QUIT")return 0;
+    if(command=="CONNECTIONS") {
+      bool expected=false;std::cin>>expected;
+      const auto end=std::chrono::steady_clock::now()+2500ms;
+      while((!first.HasConnections() || !second.HasConnections()) && std::chrono::steady_clock::now()<end)
+        std::this_thread::sleep_for(10ms);
+      const bool a=first.HasConnections(),b=second.HasConnections();
+      std::cout<<"CONNECTIONS "<<a<<' '<<b<<std::endl;
+      if(a!=expected || b!=expected)return 173;
+    } else if(command=="PUB" || command=="OPAQUE" || command=="EMPTY") {
+      std::string target;std::cin>>target;
+      const auto &selected=target=="foo"?first:second;
+      auto publisher=selected;
+      std::string bytes;
+      bool ok=false;
+      if(command=="PUB") {
+        int value=0;std::cin>>value;
+        gz::msgs::Int32 message;message.set_data(value);bytes=message.SerializeAsString();
+        ok=publisher.Publish(message);
+      } else {
+        if(command=="OPAQUE")bytes=std::string("\0\xff\1\0",4);
+        ok=publisher.PublishRaw(bytes,"gz.msgs.Int32");
+      }
+      std::cout<<"PUBLISHED "<<ok<<' '<<statistics_wire_hex(bytes.data(),bytes.size())<<std::endl;
+      if(!ok)return 174;
+    } else return 175;
+  }
+  return 176;
+}
+struct StatisticsWireReceiver {
+  std::mutex mutex;
+  unsigned count=0;
+  std::string data,type;
+};
+static int statistics_wire_subscriber(const std::string &topic,const std::string &address) {
+  auto state=std::make_shared<StatisticsWireReceiver>();
+  gz::transport::Node node;
+  const auto callback=[state](const char *data,std::size_t size,const gz::transport::MessageInfo &info){
+    std::lock_guard<std::mutex> guard(state->mutex);
+    ++state->count;state->data.assign(data,size);state->type=info.Type();
+  };
+  if(!node.SubscribeRaw(topic,callback) || !node.SubscribeRaw("/bar",callback))return 177;
+  zmq::context_t context(1);
+  zmq::socket_t capture(context,zmq::socket_type::sub);
+  capture.set(zmq::sockopt::linger,0);
+  capture.set(zmq::sockopt::rcvtimeo,1000);
+  capture.set(zmq::sockopt::subscribe,"");
+  capture.connect(address);
+  std::cout<<"READY"<<std::endl;
+  std::string command;
+  while(std::cin>>command) {
+    if(command=="QUIT")return 0;
+    if(command=="COUNT") {
+      std::lock_guard<std::mutex> guard(state->mutex);
+      std::cout<<"COUNT "<<state->count<<' '<<statistics_wire_hex(state->data.data(),state->data.size())<<' '<<state->type<<std::endl;
+    } else if(command=="CAPTURE") {
+      std::vector<std::string> frames;
+      do {
+        zmq::message_t message;
+        if(!capture.recv(message)) {
+          if(frames.empty()){std::cout<<"NONE"<<std::endl;break;}
+          return 178;
+        }
+        frames.push_back(statistics_wire_hex(message.data(),message.size()));
+        if(frames.size()>8)return 179;
+      } while(capture.get(zmq::sockopt::rcvmore));
+      if(!frames.empty()) {
+        std::cout<<"FRAMES "<<frames.size();
+        for(const auto &frame:frames)std::cout<<' '<<frame;
+        std::cout<<std::endl;
+      }
+    } else return 180;
+  }
+  return 181;
+}
 int main(int argc, char **argv) {
   if (argc != 4) return 2;
   const std::string mode=argv[1], topic=argv[2], value=argv[3];
+  if (mode == "statistics-wire-rpc-provider") {
+    auto calls=std::make_shared<std::atomic<unsigned>>(0);
+    gz::transport::Node node;
+    const std::function<bool(const gz::msgs::Int32&,gz::msgs::Int32&)> callback=[calls](const auto &request,auto &reply){
+      ++*calls;reply.set_data(request.data());return request.data()==5;
+    };
+    if(!node.Advertise(topic,callback))return 182;
+    std::cout<<"READY"<<std::endl;
+    std::string command;
+    while(std::cin>>command) {
+      if(command=="QUIT")return 0;
+      if(command!="COUNT")return 183;
+      std::cout<<"COUNT "<<*calls<<std::endl;
+    }
+    return 184;
+  }
+  if (mode == "statistics-wire-rpc-request") {
+    gz::transport::Node node;
+    const bool expected=value=="present";
+    std::vector<gz::transport::ServicePublisher> providers;
+    bool found=node.ServiceInfo(topic,providers);
+    const auto end=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+    while(expected && !found && std::chrono::steady_clock::now()<end) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));found=node.ServiceInfo(topic,providers);
+    }
+    gz::msgs::Int32 request,reply;request.set_data(5);bool result=false;
+    const bool returned=node.Request(topic,request,expected?3000:300,reply,result);
+    std::cout<<"RPC "<<found<<' '<<returned<<' '<<result<<' '<<reply.data()<<std::endl;
+    return found==expected && returned==expected && result==expected && reply.data()==(expected?5:0)?0:185;
+  }
+  if (mode == "statistics-wire-publisher") return statistics_wire_publisher(topic,value);
+  if (mode == "statistics-wire-subscriber") return statistics_wire_subscriber(topic,value);
   if (mode == "subscriber-storage-identity") {
     using namespace gz::transport;
     AdvertiseMessageOptions options; options.SetMsgsPerSec(7);

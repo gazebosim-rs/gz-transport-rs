@@ -222,7 +222,9 @@ struct Sender {
     capacity: usize,
     counters: Arc<Counters>,
     identity: WorkerOwner,
+    publication_sequences: Option<PublicationSequences>,
 }
+type PublicationSequences = Arc<Mutex<HashMap<String, Arc<AtomicU64>>>>;
 type WorkerOwner = Arc<OnceLock<WorkerIdentity>>;
 type WeakWorkerOwner = Weak<OnceLock<WorkerIdentity>>;
 struct LocalService {
@@ -1071,6 +1073,7 @@ struct MessageDomain {
     interface: Ipv4Addr,
     multicast: Ipv4Addr,
     port: u16,
+    statistics_wire: bool,
 }
 impl MessageDomain {
     fn from_service_config(config: &Config) -> Self {
@@ -1090,13 +1093,25 @@ impl MessageDomain {
             interface: config.interface,
             multicast: config.multicast,
             port: config.message_port,
+            statistics_wire: config.statistics_wire,
         }
     }
 }
 #[derive(Clone)]
 struct PublicationHandle {
     active: Weak<AtomicBool>,
+    sequence: Option<Arc<AtomicU64>>,
     recent_frames: Arc<Mutex<VecDeque<(u64, usize, Instant)>>>,
+}
+fn statistics_metadata(
+    sequence: &AtomicU64,
+    now: Result<Duration, Error>,
+) -> Result<[u8; 16], Error> {
+    let stamp = u64::try_from(now?.as_millis()).map_err(|_| Error::InvalidFrame)?;
+    let mut bytes = [0; 16];
+    bytes[..8].copy_from_slice(&stamp.to_ne_bytes());
+    bytes[8..].copy_from_slice(&sequence.fetch_add(1, Ordering::Relaxed).to_ne_bytes());
+    Ok(bytes)
 }
 struct LocalPublication {
     domain: MessageDomain,
@@ -1224,6 +1239,9 @@ impl Node {
             capacity: config.capacity,
             counters: Arc::new(Counters::default()),
             identity: Arc::new(OnceLock::new()),
+            publication_sequences: config
+                .statistics_wire
+                .then(|| Arc::new(Mutex::new(HashMap::new()))),
         };
         let owner_dead = Arc::new(AtomicBool::new(false));
         let state = Worker::new(
@@ -1313,6 +1331,36 @@ impl Node {
         if topics.contains_key(&topic) {
             return Err(Error::AlreadyAdvertised);
         }
+        if self.config.statistics_wire && self.sender.stop.load(Ordering::Acquire) {
+            return Err(Error::Shutdown);
+        }
+        // Retain history for this worker's wire-process lifetime. Keeping the
+        // guard through registration commits no new history on admission failure.
+        let mut sequences = self
+            .sender
+            .publication_sequences
+            .as_ref()
+            .map(|history| {
+                history
+                    .lock()
+                    .map_err(|_| Error::Native("statistics sequence registry poisoned".into()))
+            })
+            .transpose()?;
+        let sequence = if let Some(history) = sequences.as_ref() {
+            if let Some(sequence) = history.get(&topic) {
+                Some(sequence.clone())
+            } else if history.len() < self.config.capacity {
+                Some(Arc::new(AtomicU64::new(0)))
+            } else {
+                self.sender
+                    .counters
+                    .queue_drops
+                    .fetch_add(1, Ordering::Relaxed);
+                return Err(Error::QueueFull);
+            }
+        } else {
+            None
+        };
         let lease = self.reserve()?;
         let interest = Arc::new(AtomicU8::new(0));
         self.sender.send(Command::Advertise(
@@ -1328,6 +1376,7 @@ impl Node {
         let (_, path) = decompose_fully_qualified_topic(&topic)?;
         let publication = PublicationHandle {
             active: Arc::downgrade(&lease.active),
+            sequence: sequence.clone(),
             recent_frames: Arc::new(Mutex::new(VecDeque::new())),
         };
         let mut local = local_publications()
@@ -1346,7 +1395,12 @@ impl Node {
                 address: identity.address.clone(),
             },
             type_name: type_name.into(),
-            publication: publication.clone(),
+            // Echo tombstones retain only payload fingerprints, not this
+            // worker's sequence ownership after all of its senders retire.
+            publication: PublicationHandle {
+                sequence: None,
+                ..publication.clone()
+            },
             stopped: Arc::downgrade(&self.sender.stop),
             retired_at: None,
         });
@@ -1361,6 +1415,9 @@ impl Node {
             bits: Arc::downgrade(&interest),
         });
         interests.refresh();
+        if let (Some(history), Some(sequence)) = (sequences.as_mut(), sequence) {
+            history.insert(topic.clone(), sequence);
+        }
         Ok(Publisher {
             _lease: lease,
             sender: self.sender.clone(),
@@ -2886,26 +2943,52 @@ fn receive(
     socket: &zmq::Socket,
     expected: usize,
     counters: &Counters,
+    cancelled: impl FnMut() -> bool,
+) -> Option<Vec<Vec<u8>>> {
+    receive_validated(socket, expected, counters, cancelled, |_, _| true)
+}
+fn receive_validated(
+    socket: &zmq::Socket,
+    expected: usize,
+    counters: &Counters,
     mut cancelled: impl FnMut() -> bool,
+    mut valid: impl FnMut(usize, usize) -> bool,
 ) -> Option<Vec<Vec<u8>>> {
     let mut frames = Vec::with_capacity(expected);
     let mut count = 0;
+    let mut malformed = false;
     loop {
         if cancelled() {
             return None;
         }
         let frame = socket.recv_msg(zmq::DONTWAIT).ok()?;
         count += 1;
-        if count <= expected {
+        let keep = valid(count - 1, frame.len());
+        malformed |= !keep;
+        if count <= expected && keep {
             frames.push(frame.to_vec());
         }
         if !frame.get_more() {
-            if count != expected {
+            if count != expected || malformed {
                 counters.malformed_frames.fetch_add(1, Ordering::Relaxed);
             }
-            return (count == expected).then_some(frames);
+            return (count == expected && !malformed).then_some(frames);
         }
     }
+}
+fn receive_publication_frames(
+    socket: &zmq::Socket,
+    statistics_wire: bool,
+    counters: &Counters,
+    cancelled: impl FnMut() -> bool,
+) -> Option<Vec<Vec<u8>>> {
+    receive_validated(
+        socket,
+        if statistics_wire { 5 } else { 4 },
+        counters,
+        cancelled,
+        |index, size| !statistics_wire || index != 4 || size == 16,
+    )
 }
 #[cfg(unix)]
 struct LocalInterface {
@@ -3061,7 +3144,10 @@ impl Worker {
             replies: Vec::new(),
         })
     }
-    fn announce(&self, channel: usize, message: Discovery) {
+    fn announce(&self, channel: usize, mut message: Discovery) {
+        if self.config.statistics_wire {
+            message.version = protocol::VERSION + 100;
+        }
         if let Ok(frame) = protocol::encode(&message) {
             self.sender.counters.sent(
                 self.udp[channel]
@@ -3504,7 +3590,7 @@ impl Worker {
                 }
             }
             Command::Publish(topic, type_name, data, publication) => {
-                if let Some(publication) = publication {
+                if let Some(publication) = publication.as_ref() {
                     // An admitted Publisher owns this exact history. A queued
                     // command after its lease dies cannot record in a later
                     // advertisement's history at the same address.
@@ -3514,21 +3600,18 @@ impl Worker {
                         .is_some_and(|active| active.load(Ordering::Acquire))
                         && !self.sender.stop.load(Ordering::Acquire)
                     {
-                        self.record_publication(&publication, &data);
+                        self.record_publication(publication, &data);
                     }
                 } else {
                     // Private worker tests construct raw Publish commands.
                     self.remember_local_publication(&topic, &type_name, &data);
                 }
-                self.sender.counters.sent(self.publisher.send_multipart(
-                    [
-                        topic.as_bytes(),
-                        self.address.as_bytes(),
-                        &data,
-                        type_name.as_bytes(),
-                    ],
-                    zmq::DONTWAIT,
-                ));
+                self.send_publication_wire(
+                    &topic,
+                    &type_name,
+                    &data,
+                    publication.as_ref().and_then(|p| p.sequence.as_deref()),
+                );
                 let message = Message {
                     topic,
                     type_name,
@@ -3795,6 +3878,49 @@ impl Worker {
                 });
                 self.replies
                     .push((Instant::now() + self.config.reply_timeout, frames));
+            }
+        }
+    }
+    fn send_publication_wire(
+        &self,
+        topic: &str,
+        type_name: &str,
+        data: &[u8],
+        sequence: Option<&AtomicU64>,
+    ) {
+        let frames = [
+            topic.as_bytes(),
+            self.address.as_bytes(),
+            data,
+            type_name.as_bytes(),
+        ];
+        if !self.config.statistics_wire {
+            self.sender
+                .counters
+                .sent(self.publisher.send_multipart(frames, zmq::DONTWAIT));
+        } else if self.has_remote_subscribers(topic, type_name) {
+            // Native advances the per-topic sequence only on a wire attempt;
+            // local delivery and no-subscriber publications do not consume it.
+            let metadata = sequence
+                .ok_or(Error::InvalidFrame)
+                .and_then(|sequence| statistics_metadata(sequence, publication_time()));
+            match metadata {
+                Ok(metadata) => {
+                    self.sender.counters.sent(
+                        self.publisher.send_multipart(
+                            frames
+                                .into_iter()
+                                .chain(std::iter::once(metadata.as_slice())),
+                            zmq::DONTWAIT,
+                        ),
+                    );
+                }
+                Err(_) => {
+                    self.sender
+                        .counters
+                        .send_failures
+                        .fetch_add(1, Ordering::Relaxed);
+                }
             }
         }
     }
@@ -4307,7 +4433,12 @@ impl Worker {
                 for _ in 0..self.config.capacity {
                     match self.udp[channel].recv_from(&mut buffer) {
                         Ok((len, source)) => {
-                            if let Ok(msg) = protocol::decode(&buffer[..len]) {
+                            let message = if self.config.statistics_wire {
+                                protocol::decode_version(&buffer[..len], protocol::VERSION + 100)
+                            } else {
+                                protocol::decode(&buffer[..len])
+                            };
+                            if let Ok(msg) = message {
                                 self.discovery(channel, msg, source.ip());
                             } else {
                                 self.sender
@@ -4449,9 +4580,12 @@ impl Worker {
     }
     fn receive_publications(&self) {
         for _ in 0..self.config.capacity {
-            let Some(frames) = receive(&self.subscriber, 4, &self.sender.counters, || {
-                self.sender.stop.load(Ordering::Acquire)
-            }) else {
+            let Some(frames) = receive_publication_frames(
+                &self.subscriber,
+                self.config.statistics_wire,
+                &self.sender.counters,
+                || self.sender.stop.load(Ordering::Acquire),
+            ) else {
                 break;
             };
             if let (Ok(topic), Ok(type_name)) =
@@ -4781,3 +4915,7 @@ impl Worker {
 #[cfg(test)]
 #[path = "../tests/support/runtime.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../tests/support/statistics_wire.rs"]
+mod statistics_wire_tests;

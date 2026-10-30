@@ -12,7 +12,8 @@ types as unknown occurrences, including nested publisher metadata, without
 overwriting known values or changing message/oneof presence. Malformed known
 data still fails. The typed value is cloned for dispatch; discovery relay and
 lossless reencoding remain unclaimed. Application payload bytes are opaque.
-Version 10 is ordinary ZeroMQ; statistics-enabled peers use 110. Mismatched
+Version 10 is the default ZeroMQ profile. `Config::statistics_wire` opts into
+version 110 on both message and service discovery. Mismatched
 versions and malformed delimiters/protobuf are discarded. Unix HOST-scoped
 advertisements and withdrawals are accepted only from an eligible local IPv4
 interface or any127.* address, matching native Discovery.hh. Interface inventory
@@ -58,6 +59,12 @@ A subscriber matches the whole topic and descriptor name after ZeroMQ's prefix
 filter, preventing `/foo` from accidentally accepting `/foobar`. An empty Rust
 subscription type accepts all advertised types. Same-node publications use the
 same typed-byte contract without an unnecessary socket hop.
+
+The statistics transport profile appends a fifth 16-byte publication frame with
+native-endian u64 monotonic milliseconds and per-topic sequence. Rust validates
+its exact size before cloning and retains bounded per-worker topic history. RPC
+frames remain unchanged. This profile does not implement aggregate metrics; see
+the [statistics wire contract](NET-01-statistics-wire.md).
 
 Services use ROUTER sockets, not REQ/REP. The requester sends nine frames:
 provider routing identity, topic, response receiver address, response receiver
@@ -109,7 +116,7 @@ Applications choose their own response execution context. Request.respond report
 acceptance into the bounded command queue. Node.statistics exposes queue drops,
 malformed frames, native send failures and expired reply deadlines; these local
 counters do not claim the unobservable native PUB high-water-mark losses or the
-version-110 wire statistics contract. Dropping a subscription,
+aggregate native statistics/metric contract. Dropping a subscription,
 service, or publisher releases its registration, removes filters or advertises
 UNADVERTISE. Request deadlines expire without unbounded retries; shutdown drops
 pending reply senders so blocked callers receive Shutdown.
@@ -157,7 +164,7 @@ multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; relayed discovery/GZ_RELAY;
 IPv6 and all-interface routing; automatic interface selection, exceptional NSS
 fallback and Windows default identity; topic throttling and
-wire statistics version 110; authentication; complete
+aggregate statistics and metric publication; authentication; complete
 legacy CLI grammar; SQLite log record/read/replay and performance qualification.
 Each remains retained in the 418-case runtime ledger and non-gtest inventory.
 

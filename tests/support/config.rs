@@ -113,10 +113,6 @@ fn unsupported_and_invalid_configuration_are_explicit() {
             Error::Unsupported("unbounded ZeroMQ queues"),
         ),
         (
-            &[("GZ_TRANSPORT_TOPIC_STATISTICS", "1")][..],
-            Error::Unsupported("statistics wire version 110"),
-        ),
-        (
             &[("GZ_RELAY", "10.0.0.1")][..],
             Error::Unsupported("discovery relay"),
         ),
@@ -382,4 +378,46 @@ fn remapping_option_names_match_real_native_validation() {
             assert_eq!(output.stdout, expected.as_bytes(), "{from:?} -> {to:?}");
         }
     }
+}
+
+#[test]
+fn statistics_wire_configuration_positive() {
+    let baseline = Config::default();
+    assert!(!baseline.statistics_wire);
+    let enabled = baseline
+        .clone()
+        .with_environment(|key| (key == "GZ_TRANSPORT_TOPIC_STATISTICS").then(|| "1".into()))
+        .unwrap();
+    assert!(enabled.statistics_wire);
+    enabled.validate().unwrap();
+    assert_eq!(enabled.partition, baseline.partition);
+    assert_eq!(enabled.namespace, baseline.namespace);
+    assert_eq!(enabled.message_port, baseline.message_port);
+    assert_eq!(enabled.service_port, baseline.service_port);
+    assert_eq!(enabled.capacity, baseline.capacity);
+    assert_eq!(enabled.max_message_bytes, baseline.max_message_bytes);
+    for value in ["0", "", "true", "01", " 1"] {
+        let disabled = enabled
+            .clone()
+            .with_environment(|key| (key == "GZ_TRANSPORT_TOPIC_STATISTICS").then(|| value.into()))
+            .unwrap();
+        assert!(!disabled.statistics_wire, "{value:?}");
+        disabled.validate().unwrap();
+    }
+    assert!(enabled.with_environment(|_| None).unwrap().statistics_wire);
+}
+
+#[test]
+fn statistics_wire_metadata_limit_is_explicit() {
+    let mut config = Config {
+        statistics_wire: true,
+        max_message_bytes: 15,
+        ..Default::default()
+    };
+    assert_eq!(config.validate(), Err(Error::InvalidConfig));
+    config.max_message_bytes = 16;
+    config.validate().unwrap();
+    config.statistics_wire = false;
+    config.max_message_bytes = 1;
+    config.validate().unwrap();
 }

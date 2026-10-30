@@ -1067,3 +1067,25 @@ review passed 136 library, 42 public/native and six unchanged native checks,
 including the final distinct-port setup. Only those six value originals gain
 candidate faithful-port credit; normal staged coverage and exact hosted
 qualification remain required before acceptance.
+
+
+The [statistics transport profile](NET-01-statistics-wire.md) has separate exact
+configuration, wire-frame, mode-domain, history and lifecycle controls. The
+previous explicit statistics=1 Unsupported input moves into a complete positive
+case after prior independent review; all unrelated negative configuration rows
+remain byte-equivalent. Native four-pair and sequence lifecycle controls preceded
+implementation. Actual C++/Rust publications and RPC pass in both directions
+across matching and mismatched modes, including opaque/empty payloads and
+same-worker re-registration/orphan continuity. Local callback entry counters are
+checked before waiting and after the wrong-mode quiet window. Malformed metadata
+sizes, multipart counts, drain/progress and cancellation target the production
+receiver through inproc sockets. These also require socket-authorized execution;
+the retained default-sandbox signaler abort is setup failure, not a passing run.
+Echo tombstones retain no sequence ownership after the wire owner retires.
+Independent final review passed 149 library and 46 public/native checks with
+fresh source, target and canonical peers, plus the rebuilt native-only sequence
+lifecycle. The final test verifies actual failure/drop accounting and retained
+local delivery for missing sequence ownership, a controlled nonblocking send
+failure and absent interest; it does not claim an injected wire-clock failure.
+No ledger rows are promoted. The complete normal staged gate and exact hosted CI
+remain required; metric and global-identity work stays open.

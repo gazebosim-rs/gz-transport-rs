@@ -244,3 +244,15 @@ fn native_discovery_wrong_wire_values_presence_and_framing() {
         }
     }
 }
+
+#[test]
+fn statistics_discovery_requires_the_selected_wire_version() {
+    let mut message = discovery("profile", Type::Heartbeat, None);
+    let ordinary = encode(&message).unwrap();
+    assert_eq!(decode(&ordinary), Ok(message.clone()));
+    assert_eq!(decode_version(&ordinary, 110), Err(Error::InvalidFrame));
+    message.version = 110;
+    let statistics = encode(&message).unwrap();
+    assert_eq!(decode(&statistics), Err(Error::InvalidFrame));
+    assert_eq!(decode_version(&statistics, 110), Ok(message));
+}

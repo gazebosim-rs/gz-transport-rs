@@ -18,6 +18,8 @@ pub struct Config {
     pub multicast: Ipv4Addr,
     pub message_port: u16,
     pub service_port: u16,
+    /// Opt into native statistics transport framing; aggregate metrics are separate.
+    pub statistics_wire: bool,
     pub capacity: usize,
     pub send_high_watermark: usize,
     pub receive_high_watermark: usize,
@@ -34,6 +36,7 @@ impl Default for Config {
             multicast: Ipv4Addr::new(239, 255, 0, 7),
             message_port: 10317,
             service_port: 10318,
+            statistics_wire: false,
             capacity: 1000,
             send_high_watermark: 1000,
             receive_high_watermark: 1000,
@@ -102,6 +105,7 @@ impl Config {
             || self.capacity > i32::MAX as usize
             || self.max_message_bytes == 0
             || self.max_message_bytes > i64::MAX as usize
+            || (self.statistics_wire && self.max_message_bytes < 16)
             || self.reply_timeout.is_zero()
             || Instant::now().checked_add(self.reply_timeout).is_none()
             || !self.multicast.is_multicast()
@@ -111,6 +115,10 @@ impl Config {
             || self.service_port == 0
         {
             return Err(Error::InvalidConfig);
+        }
+        #[cfg(not(all(target_os = "linux", target_arch = "x86_64")))]
+        if self.statistics_wire {
+            return Err(Error::Unsupported("statistics metadata ABI"));
         }
         Ok(())
     }
@@ -196,8 +204,8 @@ impl Config {
         if self.send_high_watermark == 0 || self.receive_high_watermark == 0 {
             return Err(Error::Unsupported("unbounded ZeroMQ queues"));
         }
-        if lookup("GZ_TRANSPORT_TOPIC_STATISTICS").is_some_and(|v| v == "1") {
-            return Err(Error::Unsupported("statistics wire version 110"));
+        if let Some(value) = lookup("GZ_TRANSPORT_TOPIC_STATISTICS") {
+            self.statistics_wire = value == "1";
         }
         if lookup("GZ_RELAY").is_some_and(|v| !v.is_empty()) {
             return Err(Error::Unsupported("discovery relay"));

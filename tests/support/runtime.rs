@@ -841,6 +841,9 @@ fn service_state(config: Config) -> (Worker, Receiver<Command>) {
         capacity,
         counters: Arc::new(Counters::default()),
         identity: Arc::new(OnceLock::new()),
+        publication_sequences: config
+            .statistics_wire
+            .then(|| Arc::new(Mutex::new(HashMap::new()))),
     };
     (
         Worker::new(
@@ -898,6 +901,7 @@ fn local_echo_suppression_requires_recent_payload_and_expires_on_address_reuse()
         type_name: "gz.msgs.Int32".into(),
         publication: PublicationHandle {
             active: Arc::downgrade(&active),
+            sequence: None,
             recent_frames: Arc::new(Mutex::new(VecDeque::new())),
         },
         stopped: Arc::downgrade(&worker.sender.stop),
@@ -946,6 +950,7 @@ fn local_publication_expiry_removes_only_the_old_prefix() {
         type_name: "gz.msgs.Int32".into(),
         publication: PublicationHandle {
             active: Arc::downgrade(&active),
+            sequence: None,
             recent_frames: Arc::new(Mutex::new(VecDeque::from([
                 (frame_fingerprint(&[1]), 1, now - Duration::from_secs(4)),
                 (frame_fingerprint(&[2]), 1, now - Duration::from_secs(2)),
@@ -968,6 +973,7 @@ fn publication_handle_records_before_wire_and_cannot_write_after_lease_retiremen
     let old_active = Arc::new(AtomicBool::new(true));
     let old = PublicationHandle {
         active: Arc::downgrade(&old_active),
+        sequence: None,
         recent_frames: Arc::new(Mutex::new(VecDeque::new())),
     };
     let topic = qualified_name(&worker.config.partition, "", "/handle").unwrap();
@@ -987,6 +993,7 @@ fn publication_handle_records_before_wire_and_cannot_write_after_lease_retiremen
     let replacement_active = Arc::new(AtomicBool::new(true));
     let replacement = PublicationHandle {
         active: Arc::downgrade(&replacement_active),
+        sequence: None,
         recent_frames: Arc::new(Mutex::new(VecDeque::new())),
     };
     worker.command(Command::Publish(
@@ -1006,6 +1013,7 @@ fn poisoned_publisher_history_counts_routing_error_and_suppresses_ambiguous_echo
     let active = Arc::new(AtomicBool::new(true));
     let publication = PublicationHandle {
         active: Arc::downgrade(&active),
+        sequence: None,
         recent_frames: Arc::new(Mutex::new(VecDeque::new())),
     };
     local_publications().lock().unwrap().push(LocalPublication {
@@ -7636,4 +7644,98 @@ fn scoped_service_options_preserve_duplicate_cancel_and_spawn_rollback() {
         Err(Error::Shutdown)
     ));
     assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn statistics_wire_metadata_errors_are_observable_without_losing_local_delivery() {
+    let reserved = [
+        UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+        UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+    ];
+    let [message_port, service_port] = reserved.each_ref().map(|s| s.local_addr().unwrap().port());
+    assert_ne!(message_port, service_port);
+    drop(reserved);
+    let (mut worker, _commands) = service_state(Config {
+        statistics_wire: true,
+        capacity: 4,
+        partition: Uuid::new_v4().to_string(),
+        message_port,
+        service_port,
+        ..Default::default()
+    });
+    let topic = qualified_name(&worker.config.partition, "", "/metadata-errors").unwrap();
+    let (tx, local) = mpsc::sync_channel(1);
+    worker.command(Command::Subscribe(
+        topic.clone(),
+        "type".into(),
+        tx,
+        Arc::new(AtomicBool::new(true)),
+        SubscribeOptions::default(),
+        None,
+    ));
+    let mut registration = worker.wire_publisher(
+        topic.clone(),
+        PubType::MsgPub(MessagePublisher {
+            msg_type: "type".into(),
+            ctrl: worker.process.clone(),
+            ..Default::default()
+        }),
+    );
+    registration.process_uuid = "registered-peer".into();
+    registration.node_uuid = "registered-node".into();
+    let mut message = protocol::discovery(
+        "registered-peer",
+        Type::NewConnection,
+        Some(DiscContents::Pub(registration)),
+    );
+    message.version = 110;
+    worker.discovered(
+        0,
+        protocol::decode_version(&protocol::encode(&message).unwrap(), 110).unwrap(),
+    );
+    assert_eq!(worker.remote_subscribers.len(), 1);
+    assert!(worker.has_remote_subscribers(&topic, "type"));
+    let context = zmq::Context::new();
+    let publisher = context.socket(zmq::PAIR).unwrap();
+    let observer = context.socket(zmq::PAIR).unwrap();
+    publisher.set_linger(0).unwrap();
+    observer.set_linger(0).unwrap();
+    let address = format!("inproc://metadata-errors-{}", Uuid::new_v4());
+    publisher.bind(&address).unwrap();
+    observer.connect(&address).unwrap();
+    worker.publisher = publisher;
+    // This private invalid command has no admitted sequence. No timestamp or
+    // packet may be invented, but existing local delivery still completes.
+    worker.command(Command::Publish(
+        topic.clone(),
+        "type".into(),
+        vec![5],
+        None,
+    ));
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 1);
+    assert_eq!(
+        observer.recv_msg(zmq::DONTWAIT).unwrap_err(),
+        zmq::Error::EAGAIN
+    );
+    assert_eq!(
+        local.recv_timeout(Duration::from_secs(1)).unwrap().data,
+        vec![5]
+    );
+    assert!(matches!(local.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    // An unconnected PAIR deterministically rejects a nonblocking send. The
+    // bounded Rust policy reserves one sequence before that multipart attempt.
+    worker.publisher = context.socket(zmq::PAIR).unwrap();
+    worker.publisher.set_linger(0).unwrap();
+    let sequence = AtomicU64::new(17);
+    worker.send_publication_wire(&topic, "type", &[6], Some(&sequence));
+    assert_eq!(sequence.load(Ordering::Relaxed), 18);
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 2);
+    worker.remote_subscribers.clear();
+    worker.send_publication_wire(&topic, "type", &[7], Some(&sequence));
+    worker.send_publication_wire(&topic, "type", &[8], None);
+    assert_eq!(sequence.load(Ordering::Relaxed), 18);
+    let counters = worker.sender.counters.snapshot();
+    assert_eq!(counters.send_failures, 2);
+    assert_eq!(counters.queue_drops, 0);
+    assert_eq!(counters.malformed_frames, 0);
 }

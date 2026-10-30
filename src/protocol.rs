@@ -35,6 +35,10 @@ pub(crate) fn encode(message: &Discovery) -> Result<Vec<u8>, Error> {
 }
 
 pub(crate) fn decode(frame: &[u8]) -> Result<Discovery, Error> {
+    decode_version(frame, VERSION)
+}
+
+pub(crate) fn decode_version(frame: &[u8], version: u32) -> Result<Discovery, Error> {
     if frame.len() < 2
         || frame.len() > MAX_DATAGRAM
         || u16::from_ne_bytes([frame[0], frame[1]]) as usize != frame.len() - 2
@@ -45,7 +49,7 @@ pub(crate) fn decode(frame: &[u8]) -> Result<Discovery, Error> {
         .map_err(|_| Error::InvalidFrame)?
         .value()
         .clone();
-    if msg.version != VERSION {
+    if msg.version != version {
         return Err(Error::InvalidFrame);
     }
     Ok(msg)

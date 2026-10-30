@@ -8,13 +8,15 @@ queue capacity, and all must remain finite and positive.
 
 Implemented settings: GZ_PARTITION, GZ_IP, GZ_DISCOVERY_MULTICAST_IP,
 GZ_DISCOVERY_MSG_PORT, GZ_DISCOVERY_SRV_PORT, GZ_TRANSPORT_SNDHWM and
-GZ_TRANSPORT_RCVHWM. Decimal integer parsing preserves upstream std::stoi's
+GZ_TRANSPORT_RCVHWM, and the exact statistics transport selector
+GZ_TRANSPORT_TOPIC_STATISTICS=1. See the [bounded statistics wire contract](NET-01-statistics-wire.md).
+Decimal integer parsing preserves upstream std::stoi's
 ASCII leading whitespace, optional sign and numeric prefix, with default fallback
 on invalid, negative or overflowing int32 input. Duplicate discovery ports adjust
 the service port upward, or downward at65535, exactly as NodeShared does.
 
 Pending modes return Unsupported: relay, PLAIN credentials when both environment
-variables are present, statistics wire110 and non-ZeroMQ implementation selection.
+variables are present and non-ZeroMQ implementation selection.
 HWM0 explicitly returns Unsupported because it requests an unbounded native
 queue. Ports0 and values beyond uint16 are invalid. These are explicit bounds of
 the current Rust API, not parity claims for legacy invalid/wrapping port handling.

@@ -17,6 +17,9 @@ handles. See the [bounded ownership contract](docs/NET-02-publisher-after-node-d
 `ServiceOptions` adds immutable All, Host or Process service discovery scope
 through the three explicit option entry points; existing methods keep All.
 Native scoped heartbeat packets are preserved. See [service scope](docs/NET-01-service-scopes.md).
+`Config::statistics_wire` opts into native version-110 discovery and publication
+metadata framing while the default remains version 10. Its bounded sequence
+history and separate metric API limits are in the [statistics transport contract](docs/NET-01-statistics-wire.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).
