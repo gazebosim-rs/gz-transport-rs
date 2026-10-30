@@ -1305,3 +1305,35 @@ entry-counter check is separate. Only BoolOperatorTest, CreateSubscriber and
 MixedSubscribeAPIs are candidate whole-case ports, conditional on preceding
 callback acceptance and this slice's normal staged/exact hosted qualification
 (113/7/298 to 116/7/295). No extra global identity or timing parity is implied.
+
+
+The opaque-callback author slice reuses the same demand-created dispatcher and
+private admission path as typed callbacks. Eighteen pure and six public/native
+controls pass in debug/release. Affected serial debug qualification passes all
+174 library tests, eleven unchanged typed callback controls, five unchanged
+owned-subscriber controls and the six new controls, with fresh canonical peers.
+Raw positive observations check empty/opaque/all-byte/unknown-field data, actual
+metadata, borrowed pointer identity, typed/raw sharing, options/type entry guards
+and real C++ opaque/empty/canonical wire. The safe native probe observes both
+kinds of already-selected handlers finishing after Node.Unsubscribe returns.
+
+The full unchanged CallbackScope.CleanupCorrectly original passes. Its complete
+Rust candidate retains both typed/raw phases, default messages, two immediate
+publications, unsubscribe then logical pointer reset, and an external marker for
+null observations that cannot be swallowed by panic isolation. Owned handle Drop
+is after reset, and no readiness/completion wait is inserted before it. Positive
+controls are separate, so the original's weak entry observations are not
+presented as complete delivery or in-flight cancellation proof. That setup
+translation has independent assertion approval but still requires normal staged
+and exact hosted qualification before any ledger credit.
+A pure focused instrumented run reports 379/380 executable LCOV lines in the
+existing module, with only its old early-Shutdown branch unexercised; this is
+diagnostic, not full strict coverage. Formatting and all-target Clippy pass.
+Normal staged/native/full coverage and exact hosted qualification remain required.
+Independent SDF terra fresh-source/target review passed 18 pure, six serial
+public/native, unchanged native original one/no failures and Clippy, with eight
+fresh canonical peer builds and the raw-peer linkage check. Both typed/raw phases,
+reset timing, nullable state and external failure marker were compared to the
+complete source. Only CallbackScope.CleanupCorrectly becomes a conditional
+whole-case candidate (116/7/295 to 117/7/294); no other ledger row changes or
+broader cancellation/raw-inline/performance credit are implied.

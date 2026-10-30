@@ -25,10 +25,12 @@
       "id": "INTEGRATION_callback_scope_TEST:CallbackScope.CleanupCorrectly",
       "target": "INTEGRATION_callback_scope_TEST",
       "case": "CallbackScope.CleanupCorrectly",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_callback_scope_cleanup_correctly"
+      ],
+      "review": "Independent SDF terra; fresh source/target passed 18 pure and six serial public/native controls, all-target Clippy, eight rebuilt canonical peers and the unchanged full native CallbackScope original1/0. Complete typed/raw body, nullable storage, unsubscribe/reset order and external failure marker reviewed and approved. Normal full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "test/integration/callback_scope_TEST.cc",
@@ -37,8 +39,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete typed and raw phases with default Int32, /my_topic and /my_topic_raw, two immediate publications, Node-wide unsubscribe then logical pointer reset, while the first Node/publisher remains alive through the raw phase. No pre-reset readiness or completion wait added. Safe shared Option storage preserves nullable unique_ptr observations; an external flag precedes the null assertion and owned handle Drop follows reset solely to expose any caught late failure. No minimum callback count or in-flight cancellation barrier is inferred; separate positive opaque/typed/native controls prove the API is real.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-raw-subscription-callbacks.md; tests/raw_subscription_callbacks.rs; tests/raw_subscription_peer.cc; required unchanged CallbackScope filter and canonical helper linkage audit."
     },
     {
       "id": "INTEGRATION_defunctSockets:DefunctSockets.NodeSurvives",

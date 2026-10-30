@@ -393,11 +393,77 @@ impl Node {
             })),
             counters: self.sender.counters.clone(),
         };
+        self.register_subscription_callback(topic, M::PROTOBUF_NAME, options, capture, spawn)
+    }
+    /// Invoke an asynchronous callback with the admitted opaque bytes unchanged.
+    /// An empty type hint matches every publication, as with subscribe().
+    /// This shares the typed dispatcher; local PublishRaw is not inline here.
+    pub fn subscribe_raw_callback<F>(
+        &self,
+        topic: &str,
+        type_name: &str,
+        callback: F,
+    ) -> Result<CallbackSubscription, Error>
+    where
+        F: for<'a> FnMut(&'a [u8], MessageInfo<'a>) -> Result<(), Error> + Send + 'static,
+    {
+        self.subscribe_raw_callback_with_options(
+            topic,
+            type_name,
+            SubscribeOptions::default(),
+            callback,
+        )
+    }
+    pub fn subscribe_raw_callback_with_options<F>(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: SubscribeOptions,
+        callback: F,
+    ) -> Result<CallbackSubscription, Error>
+    where
+        F: for<'a> FnMut(&'a [u8], MessageInfo<'a>) -> Result<(), Error> + Send + 'static,
+    {
+        self.subscribe_raw_callback_with_spawner(
+            topic,
+            type_name,
+            options,
+            callback,
+            spawn_callback,
+        )
+    }
+    fn subscribe_raw_callback_with_spawner<F>(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: SubscribeOptions,
+        mut callback: F,
+        spawn: CallbackSpawner,
+    ) -> Result<CallbackSubscription, Error>
+    where
+        F: for<'a> FnMut(&'a [u8], MessageInfo<'a>) -> Result<(), Error> + Send + 'static,
+    {
+        let capture = Capture {
+            callback: Some(Box::new(move |message| {
+                callback(message.data.as_slice(), message.info())
+            })),
+            counters: self.sender.counters.clone(),
+        };
+        self.register_subscription_callback(topic, type_name, options, capture, spawn)
+    }
+    fn register_subscription_callback(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: SubscribeOptions,
+        capture: Capture,
+        spawn: CallbackSpawner,
+    ) -> Result<CallbackSubscription, Error> {
         self.remapped_topic(topic)?;
         let (control, retained) = self.subscription_callback_dispatcher(spawn)?;
         let subscription = match self.subscribe_destination(
             topic,
-            M::PROTOBUF_NAME,
+            type_name,
             options,
             Some(Arc::downgrade(&control.wake)),
         ) {

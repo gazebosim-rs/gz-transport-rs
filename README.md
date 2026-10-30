@@ -29,6 +29,8 @@ history; see [topic statistics](docs/NET-01-topic-statistics.md). Its bounded
 `Node::subscribe_typed_callback` adds explicitly owned asynchronous canonical
 callbacks with a demand-created shared dispatcher; see the
 [callback contract](docs/NET-02-async-subscription-callbacks.md).
+`subscribe_raw_callback` borrows opaque bytes through the same dispatcher; see
+the [opaque callback contract](docs/NET-02-raw-subscription-callbacks.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).

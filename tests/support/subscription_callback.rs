@@ -716,3 +716,255 @@ fn stopped_owner_can_hide_liveness_before_retained_lease_retirement() {
     drop(handle);
     assert_eq!(sender.callback_threads.load(Ordering::Acquire), 0);
 }
+
+#[test]
+fn raw_callback_preserves_opaque_bytes_pointer_and_actual_metadata_without_io() {
+    let (node, commands) = fake_node(2);
+    let partition = format!("/{}", node.config.partition);
+    let (done, observed) = mpsc::channel();
+    let mut count = 0;
+    let callback = node
+        .subscribe_raw_callback("/foo", "", move |data, info| {
+            count += 1;
+            done.send((
+                count,
+                data.to_vec(),
+                data.as_ptr() as usize,
+                info.topic.to_owned(),
+                info.partition.to_owned(),
+                info.type_name.to_owned(),
+                info.intra_process,
+            ))
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+    let (topic, destination) = match commands.recv_timeout(Duration::from_secs(1)).unwrap() {
+        Command::Subscribe(topic, hint, destination, ..) => {
+            assert!(hint.is_empty());
+            (topic, destination)
+        }
+        _ => panic!("wrong simulated worker command"),
+    };
+    let payloads = [
+        vec![],
+        vec![0xff],
+        (0..=255).collect(),
+        vec![0x10, 5, 0xf8, 7, 1],
+    ];
+    for (i, data) in payloads.into_iter().enumerate() {
+        let expected = data.clone();
+        let address = data.as_ptr() as usize;
+        let local = i % 2 == 0;
+        destination
+            .try_send(ReceivedMessage {
+                message: Message {
+                    topic: topic.clone(),
+                    type_name: "opaque.future.Type".into(),
+                    data,
+                },
+                intra_process: local,
+            })
+            .unwrap();
+        let actual = observed.recv_timeout(Duration::from_secs(1)).unwrap();
+        assert_eq!(
+            actual,
+            (
+                i + 1,
+                expected,
+                address,
+                "/foo".into(),
+                partition.clone(),
+                "opaque.future.Type".into(),
+                local
+            )
+        );
+    }
+    drop(callback);
+    assert_eq!(node.sender.counters.snapshot().routing_errors, 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn raw_and_typed_callbacks_share_existing_dispatcher_and_option_admission() {
+    use gz_msgs::{msgs::Int32, prost::Message as _};
+    let (node, commands) = fake_node(2);
+    let (done, observed) = mpsc::channel();
+    let typed_done = done.clone();
+    let typed = node
+        .subscribe_typed_callback::<Int32, _>("/foo", move |value, _| {
+            assert_eq!(value.data, 5);
+            typed_done.send(thread::current().id()).unwrap();
+            Ok(())
+        })
+        .unwrap();
+    let options = SubscribeOptions {
+        ignore_local_messages: true,
+        msgs_per_sec: 7,
+    };
+    let raw = node
+        .subscribe_raw_callback_with_options("/foo", "opaque.Type", options, move |data, _| {
+            assert_eq!(data, [0xff]);
+            done.send(thread::current().id()).unwrap();
+            Ok(())
+        })
+        .unwrap();
+    assert!(Arc::ptr_eq(&typed.control, &raw.control));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 1);
+    for is_raw in [false, true] {
+        let (topic, kind, destination) =
+            match commands.recv_timeout(Duration::from_secs(1)).unwrap() {
+                Command::Subscribe(topic, kind, destination, _, actual_options, _) => {
+                    if is_raw {
+                        assert_eq!(actual_options, options);
+                        assert_eq!(kind, "opaque.Type");
+                    } else {
+                        assert_eq!(kind, "gz.msgs.Int32");
+                    }
+                    (topic, kind, destination)
+                }
+                _ => panic!("wrong simulated worker command"),
+            };
+        let data = if is_raw {
+            vec![0xff]
+        } else {
+            Int32 {
+                data: 5,
+                ..Default::default()
+            }
+            .encode_to_vec()
+        };
+        destination
+            .try_send(ReceivedMessage {
+                message: Message {
+                    topic,
+                    type_name: kind,
+                    data,
+                },
+                intra_process: false,
+            })
+            .unwrap();
+    }
+    let first = observed.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert_eq!(
+        observed.recv_timeout(Duration::from_secs(1)).unwrap(),
+        first
+    );
+    drop(typed);
+    drop(raw);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn raw_api_validation_and_spawn_failure_use_existing_rollback_without_io() {
+    let (node, commands) = fake_node(1);
+    assert!(matches!(
+        node.subscribe_raw_callback("invalid topic", "", |_, _| Ok(())),
+        Err(Error::InvalidName)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert!(matches!(
+        node.subscribe_raw_callback_with_spawner(
+            "/foo",
+            "",
+            SubscribeOptions::default(),
+            |_, _| Ok(()),
+            fail_spawn
+        ),
+        Err(Error::Native(_))
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(matches!(
+        node.subscribe_raw_callback_with_spawner(
+            "/foo",
+            "",
+            SubscribeOptions::default(),
+            |_, _| Ok(()),
+            disconnected_spawn
+        ),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert!(node.subscribed_topics().unwrap().is_empty());
+    assert!(matches!(commands.try_recv(), Ok(Command::Subscribe(..))));
+    let _held = node.reserve().unwrap();
+    assert!(matches!(
+        node.subscribe_raw_callback("/foo", "", |_, _| Ok(())),
+        Err(Error::QueueFull)
+    ));
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+}
+
+#[test]
+fn raw_callback_errors_panics_and_capture_drop_preserve_other_registration_progress() {
+    struct DropFault;
+    impl Drop for DropFault {
+        fn drop(&mut self) {
+            panic!("controlled raw capture drop");
+        }
+    }
+    let (node, commands) = fake_node(2);
+    let (entered, observed) = mpsc::channel();
+    let fault = DropFault;
+    let bad = node
+        .subscribe_raw_callback("/foo", "", move |data, _| {
+            std::hint::black_box(&fault);
+            entered.send(()).unwrap();
+            if data == [1] {
+                Err(Error::InvalidFrame)
+            } else {
+                panic!("controlled raw callback panic");
+            }
+        })
+        .unwrap();
+    let (done, completion) = mpsc::channel();
+    let good = node
+        .subscribe_raw_callback("/foo", "", move |data, _| {
+            assert_eq!(data, [0xff]);
+            done.send(()).unwrap();
+            Ok(())
+        })
+        .unwrap();
+    let mut inputs = Vec::new();
+    for _ in 0..2 {
+        match commands.recv_timeout(Duration::from_secs(1)).unwrap() {
+            Command::Subscribe(topic, _, destination, ..) => inputs.push((topic, destination)),
+            _ => panic!("wrong simulated worker command"),
+        }
+    }
+    for value in [1, 2] {
+        inputs[0]
+            .1
+            .try_send(ReceivedMessage {
+                message: Message {
+                    topic: inputs[0].0.clone(),
+                    type_name: "opaque.Type".into(),
+                    data: vec![value],
+                },
+                intra_process: true,
+            })
+            .unwrap();
+        observed.recv_timeout(Duration::from_secs(1)).unwrap();
+    }
+    drop(bad);
+    assert_eq!(node.sender.counters.snapshot().routing_errors, 3);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 1);
+    inputs[1]
+        .1
+        .try_send(ReceivedMessage {
+            message: Message {
+                topic: inputs[1].0.clone(),
+                type_name: "opaque.Type".into(),
+                data: vec![0xff],
+            },
+            intra_process: true,
+        })
+        .unwrap();
+    completion.recv_timeout(Duration::from_secs(1)).unwrap();
+    drop(good);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+}
