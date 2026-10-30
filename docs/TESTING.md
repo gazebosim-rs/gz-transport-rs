@@ -1153,3 +1153,34 @@ assertion passes the reviewer's debug/release overlay. An additional
 reviewer-only Unicode/varint-prefix budget control passes actual encoded-byte
 checks, without claiming that extra fixture is committed. No findings remain;
 the normal staged coverage gate and exact hosted checks are still pending.
+
+
+Two RAII setup variants in `tests/raii_originals.rs` preserve the complete
+pinned `NodePubTest.DestructionOrder` and `NodeTest.MoveSubscriber` bodies.
+Neither native original has EXPECT/ASSERT predicates: the observable boundary
+is successful setup, destruction order and a process that exits without a crash.
+The publisher variant keeps an outer initially invalid slot, inner Node and
+Vector3d `/foo` registration; Rust represents the invalid slot as None. The
+subscriber variant moves an admitted Int32 `/foo` receiver into a vector; the
+native callback is never invoked by that original body. Admitted Result values
+must succeed, rather than silently admitting invalid handles.
+
+Separate supplemental controls require actual Int32 value5 delivery through a
+receiver moved out of its vector and final-drop interest retirement. A newly
+admitted receiver drains its queued value5 after explicit shutdown, then returns
+Shutdown; later publication is rejected. A worker-command barrier orders only
+that supplemental queue setup, without changing either original variant. A Vector3d1/2/3 publisher survives its Node, delivers to another
+live Node, and its last drop finishes within two seconds and withdraws its local
+registration. Delivery has a one-second bound and connection readiness a separate
+two-second bound; these are explicit Rust supplemental limits, not new native
+original predicates. All older stronger lifetime/native-peer controls remain
+unchanged. Only the two exact setup originals are candidates for whole-case
+credit after independent review and normal staged/hosted qualification.
+
+Independent SDF terra review compared the exact native RAII bodies and additive
+filter, then passed all four controls using a reviewer-owned fresh target and both
+unchanged native originals with proper loopback/interface access. No findings
+remain and all processes exited. Exactly DestructionOrder and MoveSubscriber
+are candidate whole-case ports, conditionally changing 109/7/302 to 111/7/300;
+normal staged and exact hosted qualification remain pending. This is an additive
+slice after the separately qualified formatter, preserving its helper/prose.

@@ -3673,10 +3673,12 @@
       "id": "UNIT_Node_TEST:NodePubTest.DestructionOrder",
       "target": "UNIT_Node_TEST",
       "case": "NodePubTest.DestructionOrder",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "node_pub_destruction_order_original"
+      ],
+      "review": "/root/sdformat_owner_terra; independently read complete pinned native bodies and additive gate filter, then reviewer-owned fresh target passed all four Rust controls and both unchanged native originals. Proper loopback/interface execution; no findings. Originals have no EXPECT/ASSERT predicates. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3685,8 +3687,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete native no-EXPECT lifetime setup: initially invalid outer Publisher, inner Node and successful Vector3d advertisement on /foo, Node destroyed before outer Publisher. Rust Option None explicitly translates the invalid handle slot. No original publication or timing predicate exists.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Unique Rust partitions and simultaneously reserved pairwise-distinct ephemeral discovery ports isolate setup. Invalid Publisher maps to Option None; uninvoked native subscriber callback maps to owned receiver. Successful Result admission is required. Explicit supplemental receipt/readiness/retirement bounds are not native original predicates.",
+      "evidence": "docs/NET-02-raii-originals.md; unchanged native original pair required by scripts/verify.py. Separate Int32 value5 receiver move/delivery/final-drop/re-admission/queued-drain/shutdown and Vector3d1/2/3 post-owner delivery/last-worker-drop controls passed independently. All older lifetime and C++ peer tests remain unchanged; no broad ownership/callback/global-identity credit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubWithoutAdvertise",
@@ -3884,10 +3887,12 @@
       "id": "UNIT_Node_TEST:NodeTest.MoveSubscriber",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.MoveSubscriber",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "node_move_subscriber_original"
+      ],
+      "review": "/root/sdformat_owner_terra; independently read complete pinned native bodies and additive gate filter, then reviewer-owned fresh target passed all four Rust controls and both unchanged native originals. Proper loopback/interface execution; no findings. Originals have no EXPECT/ASSERT predicates. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3896,8 +3901,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete native no-EXPECT move setup: construct one Node, move admitted Int32 /foo subscription into a vector, destroy vector before Node. The native callback is never invoked by this no-publication body; Rust owned receiver preserves the registration, type, move and destruction relationships.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Unique Rust partitions and simultaneously reserved pairwise-distinct ephemeral discovery ports isolate setup. Invalid Publisher maps to Option None; uninvoked native subscriber callback maps to owned receiver. Successful Result admission is required. Explicit supplemental receipt/readiness/retirement bounds are not native original predicates.",
+      "evidence": "docs/NET-02-raii-originals.md; unchanged native original pair required by scripts/verify.py. Separate Int32 value5 receiver move/delivery/final-drop/re-admission/queued-drain/shutdown and Vector3d1/2/3 post-owner delivery/last-worker-drop controls passed independently. All older lifetime and C++ peer tests remain unchanged; no broad ownership/callback/global-identity credit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWithCreateSubscriber",
