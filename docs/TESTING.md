@@ -1089,3 +1089,21 @@ local delivery for missing sequence ownership, a controlled nonblocking send
 failure and absent interest; it does not claim an injected wire-clock failure.
 No ledger rows are promoted. The complete normal staged gate and exact hosted CI
 remain required; metric and global-identity work stays open.
+
+The [SampleStatistics value](NET-01-sample-statistics.md) preserves the complete
+native MinMax and AvgStdDev scalar cases, including the original 1e-3 tolerance.
+The normal gate also runs all four unchanged native TopicsStatistics originals;
+Constructor and DroppedMsg remain pending because topic aggregation is absent.
+A separate pure native helper emits every scalar getter from exact input bits.
+The retained 604-state corpus, all reduced library underflow counterexamples and
+43,122 longer adversarial states are compared against that helper. It creates
+no Nodes or sockets. Constructor sentinels, signed-zero/NaN comparison order,
+nonfinite count propagation and independent value copies are covered. Private
+synthetic count controls verify explicit u64 wrap and width; they are source
+boundary tests, not a claim of 2^64 actual native updates. No dependency or
+operational counter/runtime behavior changes. Independent fresh source/target
+and canonical helper review passed two private and six public/native tests in
+both debug and release, four unchanged native originals and independently
+rebuilt five-version/six-reduction library controls. Only MinMax/AvgStdDev gain
+candidate faithful-port credit; normal strict staged coverage and exact hosted
+qualification remain required before acceptance.

@@ -6964,10 +6964,12 @@
       "id": "UNIT_TopicStatistics_TEST:TopicsStatistics.MinMax",
       "target": "UNIT_TopicStatistics_TEST",
       "case": "TopicsStatistics.MinMax",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "topics_statistics_min_max"
+      ],
+      "review": "/root/sdformat_owner; fresh source/target and canonical native helper passed two private and six public/native tests in both debug and release, all four unchanged native originals and independent five-version/six-reduction library controls. Complete original assertions preserved; no findings. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/TopicStatistics_TEST.cc",
@@ -6976,17 +6978,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Statistics updates 1.0, 2.0 and 0.1 preserve every original minimum and maximum assertion.",
+      "configuration": "Pinned Linux x86_64 SDK; pure owned SampleStatistics value, no Node, topic aggregation or runtime counters. Native unsigned u64 count wrap and extrema comparison order retained; synthetic wrap tests are source-defined boundary controls, not 2^64 native updates.",
+      "evidence": "docs/NET-01-sample-statistics.md; independent debug/release two private and six public tests, 604 retained plus 16 reduced plus 43,122 longer actual native getter states, four unchanged native originals and independently rebuilt library underflow controls. Only complete scalar case credited; Constructor and DroppedMsg remain pending. Acceptance requires normal staged coverage and exact hosted CI."
     },
     {
       "id": "UNIT_TopicStatistics_TEST:TopicsStatistics.AvgStdDev",
       "target": "UNIT_TopicStatistics_TEST",
       "case": "TopicsStatistics.AvgStdDev",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "topics_statistics_avg_std_dev"
+      ],
+      "review": "/root/sdformat_owner; fresh source/target and canonical native helper passed two private and six public/native tests in both debug and release, all four unchanged native originals and independent five-version/six-reduction library controls. Complete original assertions preserved; no findings. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/TopicStatistics_TEST.cc",
@@ -6995,8 +7000,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Statistics updates 1.0, 2.0 and 3.0 preserve all original count, mean and population deviation assertions, including the third-sample 0.816 within 1e-3 tolerance.",
+      "configuration": "Pinned Linux x86_64 SDK; pure owned SampleStatistics value, no Node, topic aggregation or runtime counters. Native unsigned u64 count wrap and extrema comparison order retained; synthetic wrap tests are source-defined boundary controls, not 2^64 native updates.",
+      "evidence": "docs/NET-01-sample-statistics.md; independent debug/release two private and six public tests, 604 retained plus 16 reduced plus 43,122 longer actual native getter states, four unchanged native originals and independently rebuilt library underflow controls. Only complete scalar case credited; Constructor and DroppedMsg remain pending. Acceptance requires normal staged coverage and exact hosted CI."
     },
     {
       "id": "UNIT_TopicStorage_TEST:TopicStorageTest.TopicStorageAPI",

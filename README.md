@@ -20,6 +20,8 @@ Native scoped heartbeat packets are preserved. See [service scope](docs/NET-01-s
 `Config::statistics_wire` opts into native version-110 discovery and publication
 metadata framing while the default remains version 10. Its bounded sequence
 history and separate metric API limits are in the [statistics transport contract](docs/NET-01-statistics-wire.md).
+`SampleStatistics` provides owned scalar sample values independently of Node
+counters; see [scalar statistics and numeric compatibility](docs/NET-01-sample-statistics.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).

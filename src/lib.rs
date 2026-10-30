@@ -5,6 +5,7 @@ mod config;
 mod names;
 mod protocol;
 mod runtime;
+mod sample_statistics;
 
 pub use config::Config;
 pub use gz_msgs::discovery::discovery::publisher::Scope;
@@ -15,6 +16,7 @@ pub use runtime::{
     ServiceOptions, ServiceProviderInfo, ServiceTypeResolution, ServiceTypes, Statistics,
     SubscribeOptions, Subscription, TopicEndpointTypes, TopicPublisherInfo, TopicSubscriberInfo,
 };
+pub use sample_statistics::SampleStatistics;
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.
 #[derive(Debug, Clone, PartialEq, Eq)]
