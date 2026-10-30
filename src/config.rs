@@ -18,6 +18,9 @@ pub struct Config {
     pub multicast: Ipv4Addr,
     pub message_port: u16,
     pub service_port: u16,
+    /// Initial worker-owned discovery peers, used on both configured ports.
+    /// At most `capacity` entries; duplicates are coalesced at worker startup.
+    pub discovery_relays: Vec<Ipv4Addr>,
     /// Opt into native statistics transport framing; aggregate metrics are separate.
     pub statistics_wire: bool,
     pub capacity: usize,
@@ -36,6 +39,7 @@ impl Default for Config {
             multicast: Ipv4Addr::new(239, 255, 0, 7),
             message_port: 10317,
             service_port: 10318,
+            discovery_relays: Vec::new(),
             statistics_wire: false,
             capacity: 1000,
             send_high_watermark: 1000,
@@ -47,6 +51,21 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Add an initial unicast discovery peer without reading process environment.
+    /// Duplicates succeed; rejection leaves the configuration unchanged.
+    pub fn add_discovery_relay(&mut self, address: Ipv4Addr) -> Result<(), Error> {
+        if !relay_address_valid(address) {
+            return Err(Error::InvalidConfig);
+        }
+        if self.discovery_relays.contains(&address) {
+            return Ok(());
+        }
+        if self.discovery_relays.len() >= self.capacity {
+            return Err(Error::QueueFull);
+        }
+        self.discovery_relays.push(address);
+        Ok(())
+    }
     /// Add one native-style, single-hop substitution. Rejection preserves the map.
     /// At most `capacity` mappings may be installed before creating a Node.
     pub fn add_topic_remap(&mut self, from: &str, to: &str) -> Result<(), Error> {
@@ -87,7 +106,13 @@ impl Config {
     }
     pub(crate) fn validate(&self) -> Result<(), Error> {
         qualified_name(&self.partition, &self.namespace, "validation")?;
-        if self.topic_remaps.len() > self.capacity {
+        if self.topic_remaps.len() > self.capacity
+            || self.discovery_relays.len() > self.capacity
+            || self
+                .discovery_relays
+                .iter()
+                .any(|address| !relay_address_valid(*address))
+        {
             return Err(Error::InvalidConfig);
         }
         for (from, to) in &self.topic_remaps {
@@ -122,6 +147,10 @@ impl Config {
         }
         Ok(())
     }
+}
+
+pub(crate) fn relay_address_valid(address: Ipv4Addr) -> bool {
+    !address.is_unspecified() && !address.is_multicast() && !address.is_broadcast()
 }
 
 const VARIABLES: &[&str] = &[

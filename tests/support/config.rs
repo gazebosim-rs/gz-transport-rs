@@ -1,6 +1,92 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
+
+#[test]
+fn initial_relay_configuration_is_bounded_atomic_and_copied() {
+    let first = Ipv4Addr::new(127, 0, 0, 2);
+    let second = Ipv4Addr::new(127, 0, 0, 3);
+    let mut config = Config {
+        capacity: 2,
+        ..Default::default()
+    };
+    assert!(config.discovery_relays.is_empty());
+    config.add_discovery_relay(first).unwrap();
+    config.add_discovery_relay(first).unwrap();
+    config.add_discovery_relay(second).unwrap();
+    assert_eq!(config.discovery_relays, vec![first, second]);
+    assert_eq!(
+        config.add_discovery_relay(Ipv4Addr::new(127, 0, 0, 4)),
+        Err(Error::QueueFull)
+    );
+    for invalid in [
+        Ipv4Addr::UNSPECIFIED,
+        Ipv4Addr::BROADCAST,
+        Ipv4Addr::new(224, 0, 0, 1),
+    ] {
+        assert_eq!(
+            config.add_discovery_relay(invalid),
+            Err(Error::InvalidConfig)
+        );
+        assert_eq!(config.discovery_relays, vec![first, second]);
+    }
+    let mut copied = config.clone();
+    copied.discovery_relays[0] = Ipv4Addr::new(127, 0, 0, 5);
+    assert_eq!(config.discovery_relays, vec![first, second]);
+    config.validate().unwrap();
+    copied.capacity = 1;
+    assert_eq!(copied.validate(), Err(Error::InvalidConfig));
+    let preserved = config.clone().with_environment(|_| None).unwrap();
+    assert_eq!(preserved.discovery_relays, config.discovery_relays);
+    let empty = config
+        .clone()
+        .with_environment(|name| (name == "GZ_RELAY").then(String::new))
+        .unwrap();
+    assert_eq!(empty.discovery_relays, config.discovery_relays);
+    assert_eq!(
+        config
+            .with_environment(|name| (name == "GZ_RELAY").then(|| "127.0.0.2".into()))
+            .unwrap_err(),
+        Error::Unsupported("discovery relay")
+    );
+}
+
+#[test]
+fn raw_initial_relay_fields_are_validated_before_worker_creation() {
+    for address in [
+        Ipv4Addr::UNSPECIFIED,
+        Ipv4Addr::BROADCAST,
+        Ipv4Addr::new(239, 1, 2, 3),
+    ] {
+        let config = Config {
+            discovery_relays: vec![address],
+            ..Default::default()
+        };
+        assert_eq!(config.validate(), Err(Error::InvalidConfig));
+        assert!(matches!(
+            crate::Node::new(config),
+            Err(Error::InvalidConfig)
+        ));
+    }
+    let address = Ipv4Addr::LOCALHOST;
+    let config = Config {
+        capacity: 1,
+        discovery_relays: vec![address, address],
+        ..Default::default()
+    };
+    assert_eq!(config.validate(), Err(Error::InvalidConfig));
+    assert!(matches!(
+        crate::Node::new(config),
+        Err(Error::InvalidConfig)
+    ));
+    Config {
+        capacity: 2,
+        discovery_relays: vec![address, address],
+        ..Default::default()
+    }
+    .validate()
+    .unwrap();
+}
 fn configured(values: &[(&str, &str)]) -> Result<Config, Error> {
     Config::default().with_environment(|key| {
         values

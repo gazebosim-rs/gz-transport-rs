@@ -1364,3 +1364,21 @@ verified the pinned native linkage and forwarding source, and approved this
 bounded slice. This is not full strict coverage; normal staged coverage and exact
 hosted qualification remain pending. No ledger row is promoted. See the
 [scope and wire contract](NET-02-discovery-relay.md).
+
+## Typed initial relay configuration candidate
+
+The separate configuration slice retains every old test and the exact GZ_RELAY
+Unsupported guard. Thirteen pure configuration checks, one new private
+first-announcement control and five public relay controls pass in debug, release
+and instrumented profiles; all-target Clippy passes. New checks cover atomic
+bounded admission, rejected state, duplicates, caller clones, raw-field failure
+before worker allocation, independent channel copies and worker-local lifetime.
+Existing reusable wildcard reservation guards preserve the public fixture setup.
+Focused coverage is 30/30 changed executable lines. Independent rendering-owner
+review directly from the author worktree with a fresh reviewer-owned target
+passed both new pure controls plus first-announcement and public
+ownership/capacity controls, with sandbox EPERM excluded as setup and
+unchanged socket tests passing outside sandbox. Full normal staged coverage and
+exact hosted qualification remain pending. No ledger row
+changes. The retained native environment study is separate from this typed API;
+see [initial relay configuration](NET-02-relay-configuration.md).

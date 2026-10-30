@@ -426,3 +426,33 @@ fn actual_cpp_relays_are_reinjected_and_learned_by_the_rust_worker() {
     assert_eq!(node.statistics().malformed_frames, 0);
     peer.finish();
 }
+
+#[test]
+fn configured_initial_relays_are_owned_bounded_and_worker_local() {
+    let (mut configured, _ports) = config();
+    configured.capacity = 2;
+    let first = Ipv4Addr::new(127, 0, 0, 2);
+    let second = Ipv4Addr::new(127, 0, 0, 3);
+    configured.add_discovery_relay(first).unwrap();
+    configured.add_discovery_relay(first).unwrap();
+    configured.add_discovery_relay(second).unwrap();
+    let node = Node::new(configured.clone()).unwrap();
+    assert_eq!(node.discovery_relays().unwrap(), vec![first, second]);
+    configured.discovery_relays.clear();
+    assert_eq!(node.discovery_relays().unwrap(), vec![first, second]);
+    node.add_discovery_relay(first).unwrap();
+    assert_eq!(
+        node.add_discovery_relay(Ipv4Addr::new(127, 0, 0, 4)),
+        Err(Error::QueueFull)
+    );
+    assert_eq!(node.statistics().queue_drops, 1);
+    let (independent_config, _independent_ports) = config();
+    for port in [configured.message_port, configured.service_port] {
+        assert_ne!(port, independent_config.message_port);
+        assert_ne!(port, independent_config.service_port);
+    }
+    let independent = Node::new(independent_config).unwrap();
+    assert!(independent.discovery_relays().unwrap().is_empty());
+    drop(node);
+    assert!(independent.discovery_relays().unwrap().is_empty());
+}

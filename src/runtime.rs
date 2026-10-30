@@ -2275,7 +2275,7 @@ impl Node {
     /// Admission is atomic across the two bounded, worker-owned address sets.
     /// Duplicate addresses succeed without consuming capacity.
     pub fn add_discovery_relay(&self, address: Ipv4Addr) -> Result<(), Error> {
-        if address.is_unspecified() || address.is_multicast() || address.is_broadcast() {
+        if !crate::config::relay_address_valid(address) {
             return Err(Error::InvalidConfig);
         }
         let (tx, rx) = mpsc::sync_channel(1);
@@ -3100,11 +3100,15 @@ fn local_interfaces() -> Result<Vec<Ipv4Addr>, Error> {
 
 impl Worker {
     fn new(
-        config: Config,
+        mut config: Config,
         sender: Sender,
         owner_dead: Arc<AtomicBool>,
         response_rx: Receiver<Command>,
     ) -> Result<Self, Error> {
+        let mut initial_relays = std::mem::take(&mut config.discovery_relays);
+        let mut seen = HashSet::new();
+        initial_relays.retain(|address| seen.insert(*address));
+        let discovery_relays = [initial_relays.clone(), initial_relays];
         #[cfg(unix)]
         let host_interfaces = local_interfaces()?;
         #[cfg(not(unix))]
@@ -3165,7 +3169,7 @@ impl Worker {
             process,
             node,
             udp,
-            discovery_relays: std::array::from_fn(|_| Vec::new()),
+            discovery_relays,
             publisher,
             subscriber,
             router,

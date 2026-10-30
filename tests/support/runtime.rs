@@ -223,6 +223,45 @@ fn discovery_relay_api_uses_existing_command_deadlines_without_revoking_admissio
 }
 
 #[test]
+fn configured_relay_seeds_exist_before_first_announcement_on_both_channels() {
+    let first = Ipv4Addr::new(127, 0, 0, 2);
+    let second = Ipv4Addr::new(127, 0, 0, 3);
+    let config = Config {
+        capacity: 3,
+        discovery_relays: vec![first, second, first],
+        message_port: 0,
+        service_port: 0,
+        ..Default::default()
+    };
+    let (mut worker, _) = service_state(config.clone());
+    worker.config.message_port = worker.udp[0].local_addr().unwrap().port();
+    worker.config.service_port = worker.udp[1].local_addr().unwrap().port();
+    assert_eq!(
+        worker.discovery_relays,
+        [vec![first, second], vec![first, second]]
+    );
+    assert!(worker.config.discovery_relays.is_empty());
+    assert_eq!(config.discovery_relays, vec![first, second, first]);
+    for channel in 0..2 {
+        let observer = relay_observer(&worker, channel, false);
+        // No worker command or heartbeat cycle precedes this first announcement.
+        worker.announce(
+            channel,
+            protocol::discovery(&worker.process, Type::Heartbeat, None),
+        );
+        let mut frame = [0; 4096];
+        let length = observer.recv(&mut frame).unwrap();
+        let message = protocol::decode(&frame[..length]).unwrap();
+        assert_eq!(message.process_uuid, worker.process);
+        assert!(message.flags.unwrap().relay);
+    }
+    worker.discovery_relays[0].push(Ipv4Addr::new(127, 0, 0, 4));
+    assert_eq!(worker.discovery_relays[1], vec![first, second]);
+    assert_eq!(config.discovery_relays, vec![first, second, first]);
+    assert_eq!(worker.sender.counters.snapshot(), Statistics::default());
+}
+
+#[test]
 fn publication_rate_boundaries_keep_epoch_fractional_and_sub_nanosecond_periods() {
     let epoch = Duration::ZERO;
     assert!(PublicationThrottle::new(u64::MAX).is_none());

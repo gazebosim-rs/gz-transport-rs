@@ -202,8 +202,9 @@ the pre-commit hook and CI. It requires strictly >95% handwritten production
 line **and** region coverage, no missing files, a real C++ peer, and original
 mapped assertions. Missing native infrastructure fails the gate.
 See [testing and evidence](docs/TESTING.md).
-The private [discovery forwarding candidate](docs/NET-02-discovery-relay.md)
-describes bounded worker-owned relay APIs and their pending runtime qualification.
+The [discovery forwarding contract](docs/NET-02-discovery-relay.md) describes
+bounded worker-owned relay APIs. Typed [initial relay configuration](docs/NET-02-relay-configuration.md)
+seeds both channels at startup; GZ_RELAY environment capture remains unsupported.
 
 The canonical cross-repository plan, test policy and compatibility contract live
 in [gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md).
