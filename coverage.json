@@ -11,6 +11,7 @@
     "src/names.rs",
     "src/protocol.rs",
     "src/runtime.rs",
+    "src/subscription_callback.rs",
     "src/sample_statistics.rs",
     "src/topic_statistics.rs",
     "src/config.rs"

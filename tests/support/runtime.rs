@@ -407,6 +407,7 @@ fn publisher_ownership_is_concurrent_and_failed_admission_releases_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.advertise("/topic", "one"));
@@ -536,6 +537,7 @@ fn service_withdrawal_releases_capacity_once_and_rolls_back_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert!(node.advertised_services().unwrap().is_empty());
     assert_eq!(
@@ -587,6 +589,7 @@ fn concurrent_service_duplicates_admit_one_receiver_and_preserve_the_original() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let results = thread::scope(|scope| {
         let first = scope.spawn(|| node.serve("/topic", "req", "rep"));
@@ -643,6 +646,7 @@ fn service_recreation_orders_withdrawal_and_retains_already_admitted_requests() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     receiver
@@ -759,6 +763,7 @@ fn service_retirement_race_before_worker_admission_preserves_queue_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let service = node.serve("/race", "req", "rep").unwrap();
     let barrier = std::sync::Barrier::new(2);
@@ -1471,7 +1476,7 @@ fn discovery_lifecycle_and_capacity() {
     worker.command(Command::Subscribe(
         "/topic".into(),
         "type".into(),
-        tx,
+        tx.into(),
         active.clone(),
         SubscribeOptions::default(),
         None,
@@ -1986,7 +1991,7 @@ fn queue_saturation_is_observable_in_local_counters() {
     worker.command(Command::Subscribe(
         "topic".into(),
         "type".into(),
-        tx,
+        tx.into(),
         active,
         SubscribeOptions::default(),
         None,
@@ -2022,7 +2027,7 @@ fn malformed_publications_and_discovery_errors_are_counted() {
     worker.subscriptions.push(SubscriberState {
         topic: "topic".into(),
         type_name: "type".into(),
-        tx,
+        tx: tx.into(),
         active: Arc::new(AtomicBool::new(true)),
         options: SubscribeOptions::default(),
         throttle: None,
@@ -2081,7 +2086,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
     worker.subscriptions.push(SubscriberState {
         topic: "topic".into(),
         type_name: "type".into(),
-        tx,
+        tx: tx.into(),
         active: old,
         options: SubscribeOptions::default(),
         throttle: None,
@@ -2090,7 +2095,7 @@ fn pending_capacity_and_shared_topic_filter_lifetime() {
     worker.subscriptions.push(SubscriberState {
         topic: "topic".into(),
         type_name: "type".into(),
-        tx,
+        tx: tx.into(),
         active: Arc::new(AtomicBool::new(true)),
         options: SubscribeOptions::default(),
         throttle: None,
@@ -2361,7 +2366,7 @@ fn subscriber_listing_uses_message_channel_live_leases_and_native_wildcard() {
         worker.command(Command::Subscribe(
             topic.into(),
             type_name.into(),
-            tx,
+            tx.into(),
             active,
             SubscribeOptions::default(),
             None,
@@ -2422,7 +2427,7 @@ fn subscriber_withdrawal_waits_for_last_lease_and_emits_one_generic_end() {
         worker.command(Command::Subscribe(
             "/shared".into(),
             "gz.msgs.StringMsg".into(),
-            tx,
+            tx.into(),
             active,
             SubscribeOptions::default(),
             None,
@@ -2651,7 +2656,7 @@ fn discovered_endpoints_only_connect_and_stay_alive_on_their_native_channel() {
     worker.command(Command::Subscribe(
         "/message".into(),
         "type".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
         None,
@@ -2752,7 +2757,7 @@ fn duplicate_or_capacity_rejected_advertisements_cannot_register_new_metadata() 
     worker.command(Command::Subscribe(
         "/topic".into(),
         "correct".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
         None,
@@ -2910,6 +2915,7 @@ fn service_signature_coordination_is_bounded_and_explicit_types_bypass_it() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert_eq!(
         node.service_type_signatures("invalid service"),
@@ -2986,6 +2992,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise("alias", "type").unwrap();
     assert_eq!(
@@ -3027,6 +3034,7 @@ fn remapping_precedes_qualification_and_keeps_admission_ownership_bounded() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert!(matches!(
         long.advertise("alias", "type"),
@@ -3042,7 +3050,7 @@ fn remembered_subscribers_preserve_native_control_identity_and_lifecycle() {
     worker.command(Command::Subscribe(
         "/topic".into(),
         "wrong".into(),
-        tx,
+        tx.into(),
         active.clone(),
         SubscribeOptions::default(),
         None,
@@ -3331,6 +3339,7 @@ fn publisher_connection_coordination_has_no_unbounded_pending_state() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3374,6 +3383,7 @@ fn publisher_snapshot_uses_remembered_remote_registration_controls() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise("/wire", "T").unwrap();
     assert_eq!(publisher.connection_snapshot(), Ok(false));
@@ -3479,6 +3489,7 @@ fn publisher_snapshot_sees_admitted_local_interest_before_worker_commands() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise("/topic", "T").unwrap();
     let subscription = node.subscribe("/topic", "T").unwrap();
@@ -3507,7 +3518,7 @@ fn graceful_shutdown_sends_one_end_per_known_topic_before_bye() {
         worker.command(Command::Subscribe(
             topic.into(),
             "T".into(),
-            tx,
+            tx.into(),
             active.clone(),
             SubscribeOptions::default(),
             None,
@@ -3600,6 +3611,7 @@ fn local_topic_inventory_tracks_live_leases_bounds_and_failed_admission() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert!(node.advertised_topics().unwrap().is_empty());
     assert!(node.subscribed_topics().unwrap().is_empty());
@@ -3663,7 +3675,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
     worker.command(Command::Subscribe(
         "/topic".into(),
         "old".into(),
-        tx,
+        tx.into(),
         old.clone(),
         SubscribeOptions::default(),
         None,
@@ -3687,7 +3699,7 @@ fn subscription_admission_withdraws_old_before_new_control_registration() {
     worker.command(Command::Subscribe(
         "/topic".into(),
         "new".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
         None,
@@ -3727,6 +3739,7 @@ fn local_inventory_registry_poison_and_rollback_are_explicit() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let subscription = node.subscribe("/one", "T").unwrap();
     drop(subscription);
@@ -3789,7 +3802,7 @@ fn duplicate_receivers_share_one_socket_filter_until_final_retirement() {
         worker.command(Command::Subscribe(
             topic.into(),
             descriptor.into(),
-            tx,
+            tx.into(),
             flag.clone(),
             SubscribeOptions::default(),
             None,
@@ -3844,6 +3857,7 @@ fn provider_record_query_coordination_is_bounded_without_registration_permits() 
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert_eq!(
         node.service_provider_types("invalid service"),
@@ -3938,6 +3952,7 @@ fn unsubscribe_keeps_owned_buffers_and_retires_filters_before_recreation() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::XPUB).unwrap();
@@ -4040,6 +4055,7 @@ fn unsubscribe_admission_failure_preserves_leases_and_absent_calls_refresh_end()
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let subscription = node.subscribe("/topic", "T").unwrap();
     assert_eq!(node.unsubscribe("/topic"), Err(Error::QueueFull));
@@ -4092,6 +4108,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/typed").unwrap();
     let wrong = Vector3d {
@@ -4132,6 +4149,7 @@ fn typed_publication_preserves_binding_size_queue_and_shutdown_errors() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise_typed::<Int32>("/size").unwrap();
     assert_eq!(publisher.publish_typed(&right), Err(Error::InvalidFrame));
@@ -4234,7 +4252,7 @@ fn wire_metadata_is_not_inferred_from_a_local_looking_address() {
     worker.command(Command::Subscribe(
         topic.clone(),
         "opaque.Type".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
         None,
@@ -4306,7 +4324,7 @@ fn subscription_filters_precede_one_shared_wire_and_local_admission_clock() {
     worker.command(Command::Subscribe(
         "topic".into(),
         "type".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         options,
         Some(throttle.clone()),
@@ -4363,7 +4381,7 @@ fn full_subscription_queue_consumes_its_interval_and_new_registrations_are_indep
     worker.command(Command::Subscribe(
         "topic".into(),
         "type".into(),
-        full_tx,
+        full_tx.into(),
         Arc::new(AtomicBool::new(true)),
         options,
         Some(full.clone()),
@@ -4377,7 +4395,7 @@ fn full_subscription_queue_consumes_its_interval_and_new_registrations_are_indep
     worker.command(Command::Subscribe(
         "topic".into(),
         "type".into(),
-        fresh_tx,
+        fresh_tx.into(),
         Arc::new(AtomicBool::new(true)),
         options,
         Some(fresh.clone()),
@@ -4607,6 +4625,7 @@ fn prepared_refresh_budget_rejects_without_enqueue_and_expired_work_stays_inert(
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     let publisher = node.advertise("/budget", "T").unwrap();
     worker.command(commands.recv().unwrap());
@@ -4871,6 +4890,7 @@ fn service_info_query_keeps_validation_timeout_backpressure_and_shutdown_errors(
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert_eq!(node.known_service_info("bad name"), Err(Error::InvalidName));
     assert_eq!(node.known_service_info("/info"), Err(Error::Timeout));
@@ -5032,6 +5052,7 @@ fn publication_info_keeps_validation_queue_timeout_and_shutdown_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert_eq!(
         node.known_topic_publishers("bad name"),
@@ -5253,7 +5274,7 @@ fn subscriber_metadata_local_normalization_and_native_merge_identity_are_distinc
         worker.command(Command::Subscribe(
             topic.clone(),
             kind.into(),
-            mpsc::sync_channel(1).0,
+            mpsc::sync_channel(1).0.into(),
             active,
             options,
             None,
@@ -5341,6 +5362,7 @@ fn subscriber_metadata_query_keeps_name_queue_timeout_and_shutdown_bounds() {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     };
     assert_eq!(
         node.known_topic_subscribers("bad name"),
@@ -5374,7 +5396,7 @@ fn route_subscription(worker: &mut Worker, topic: &str) -> Arc<AtomicBool> {
     worker.command(Command::Subscribe(
         topic.into(),
         "kind".into(),
-        tx,
+        tx.into(),
         active.clone(),
         SubscribeOptions::default(),
         None,
@@ -5579,6 +5601,7 @@ fn service_registry_node(worker: &Worker) -> Node {
         topics: Mutex::new(HashMap::new()),
         subscriptions: Mutex::new(Vec::new()),
         services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
     }
 }
 fn service_registry_query(
@@ -7668,7 +7691,7 @@ fn statistics_wire_metadata_errors_are_observable_without_losing_local_delivery(
     worker.command(Command::Subscribe(
         topic.clone(),
         "type".into(),
-        tx,
+        tx.into(),
         Arc::new(AtomicBool::new(true)),
         SubscribeOptions::default(),
         None,

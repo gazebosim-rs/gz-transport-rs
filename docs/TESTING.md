@@ -1243,3 +1243,50 @@ uncovered actual line (one of two). This is a tooling/LCOV control, not LLVM or
 native execution evidence. Independent Root source review and a fresh 35-tool
 run passed. No production, dependency, wire or ledger changes are included;
 normal full staged/native and exact hosted qualification remain required.
+
+
+The asynchronous typed-subscription slice adds nine pure dispatcher controls
+and eleven public/native controls in `tests/subscription_callbacks.rs`. The
+pure controls use synthetic runtime ownership without creating Nodes or sockets;
+public controls exercise real IO and the canonical C++ peer. Debug and release
+both pass the full nine-plus-eleven set. An affected debug regression run also
+passed all 163 then-current library tests, 111 unchanged interoperability tests
+and ten then-current public callback controls, before two pure controls and the
+durable native scheduling probe were added. Formatting and all-target Clippy
+pass. Existing fixture assertions, payloads, timing bounds and queued-receiver
+semantics remain unchanged; private setup supplies only the new empty weak slot
+and ordinary destinations without callback notifications.
+
+The new native helper records actual shared typed dispatch, blocked cross-Node
+progress, queued and self-unsubscribe behavior, and raw inline invocation. Its
+Gazebo dynamic-library linkage is audited alongside the other canonical peers.
+The verifier also replays both unchanged native Lambda originals. Their Rust
+variants preserve their distinct lock placement, value5, `/foo`, successful
+registration/publication, readiness and metadata assertions. Readiness preserves
+native waitUntil's ten-second limit and ten-ms interval; a one-second Rust
+completion bound translates only the untimed native condition waits. Per-Node async
+execution does not establish process-global ordering or raw inline parity.
+
+A focused instrumented nine-plus-eleven run covers all 314 executable LCOV
+lines of the new module; raw LLVM includes generic instantiations and reports
+310/333 lines and 413/457 regions. This is author diagnostic evidence, not a
+substitute for full production coverage. Normal staged and exact hosted
+qualification remain pending; the two independently reviewed lambda rows are
+conditional whole-case candidates. The detailed bounds, lifecycle,
+panic and cancellation contract is in `NET-02-async-subscription-callbacks.md`.
+
+
+Independent final callback review passed a fresh-source/fresh-target intended
+serial profile of 165 library, 111 unchanged interop and 11 public tests, release
+nine pure plus eleven public controls, both unchanged native originals and
+all-target Clippy with six freshly built canonical peers. A required correction
+restored native waitUntil readiness to 10 seconds/10 ms; only the completion
+condition remains untimed natively and explicitly bounded to one second in Rust.
+The corrected eleven public controls passed independent debug/release replay.
+An exploratory default-parallel native-header failure and an unchanged-base
+publisher-header reproduction remain separate from that qualification; service
+header failure was not separately baseline-reproduced. No original assertion or
+deadline changed to obtain the serial pass. Only the two selected lambda cases
+are candidate whole-case ports (111/7/300 to 113/7/298), conditional on normal
+full staged and exact hosted qualification. The detailed contract records the
+setup correction, original replay scope and remaining global/raw-inline limits.

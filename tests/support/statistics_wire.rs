@@ -103,6 +103,7 @@ fn admission_node(capacity: usize) -> (Node, Receiver<Command>) {
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
             services,
+            subscription_dispatcher: Mutex::new(Weak::new()),
         },
         rx,
     )

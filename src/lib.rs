@@ -12,8 +12,8 @@ pub use config::Config;
 pub use gz_msgs::discovery::discovery::publisher::Scope;
 pub use names::{as_valid_topic, decompose_fully_qualified_topic, qualified_name};
 pub use runtime::{
-    AdvertiseOptions, CallbackRequest, CallbackService, Message, MessageInfo, Node,
-    OneWayCallbackService, PendingResponse, Publisher, ReceivedMessage, Request, Service,
+    AdvertiseOptions, CallbackRequest, CallbackService, CallbackSubscription, Message, MessageInfo,
+    Node, OneWayCallbackService, PendingResponse, Publisher, ReceivedMessage, Request, Service,
     ServiceOptions, ServiceProviderInfo, ServiceTypeResolution, ServiceTypes, Statistics,
     SubscribeOptions, Subscription, TopicEndpointTypes, TopicPublisherInfo, TopicSubscriberInfo,
 };

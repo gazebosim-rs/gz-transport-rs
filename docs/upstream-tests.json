@@ -3849,10 +3849,12 @@
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadLambda",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubSameThreadLambda",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_same_thread_lambda_callback"
+      ],
+      "review": "Independent integration reviewer; fresh source/target and six freshly built canonical peers passed intended serial 165 library + 111 unchanged interop + 11 public callback controls, release 9 pure + 11 public, both unchanged native originals and all-target Clippy. Final native 10s/10ms readiness correction independently replayed all 11 public tests in debug/release. Source/lifetime/assertion review approved; normal staged/exact hosted qualification remains required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3861,17 +3863,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete single-Node Int32 data 5 on /foo: successful publisher and typed callback registration, native 10000ms/10ms HasConnections readiness, successful publication, callback data assertion, mutex acquired after publication and executed=true completion. Rust retains an owned callback handle through the fixture and uses an explicit one-second completion bound for the native untimed condition wait. Only this selected asynchronous case is mapped; process-global ordering and raw inline execution remain open.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-async-subscription-callbacks.md; tests/subscription_callbacks.rs; tests/subscription_callback_peer.cc; mandatory unchanged native original filters and canonical linkage audit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubSameThreadLambdaMessageInfo",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.PubSubSameThreadLambdaMessageInfo",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_pub_sub_same_thread_lambda_message_info_callback"
+      ],
+      "review": "Independent integration reviewer; fresh source/target and six freshly built canonical peers passed intended serial 165 library + 111 unchanged interop + 11 public callback controls, release 9 pure + 11 public, both unchanged native originals and all-target Clippy. Final native 10s/10ms readiness correction independently replayed all 11 public tests in debug/release. Source/lifetime/assertion review approved; normal staged/exact hosted qualification remains required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3880,8 +3885,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete single-Node Int32 data 5 on /foo: successful publisher and typed callback registration, native 10000ms/10ms readiness, mutex held before successful publication, callback topic/data/normalized partition/canonical type/intra-process predicates in original order and executed=true completion. Rust retains the owned handle and uses a one-second completion bound for the native untimed condition wait. Process-global ordering and raw inline execution remain open.",
+      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit.",
+      "evidence": "docs/NET-02-async-subscription-callbacks.md; tests/subscription_callbacks.rs; tests/subscription_callback_peer.cc; mandatory unchanged native original filters and canonical linkage audit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.MoveSubscriber",

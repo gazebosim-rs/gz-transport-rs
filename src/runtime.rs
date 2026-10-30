@@ -23,6 +23,11 @@ use std::{
 };
 use uuid::Uuid;
 
+#[path = "subscription_callback.rs"]
+mod subscription_callback;
+pub use subscription_callback::CallbackSubscription;
+use subscription_callback::{MessageDestination, SubscriptionDispatcher};
+
 /// Local application loss/error counters. Native PUB high-water-mark loss is not observable.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Statistics {
@@ -1173,7 +1178,7 @@ struct LocalInterest {
     active: Weak<AtomicBool>,
     stopped: Weak<AtomicBool>,
     owner_dead: Weak<AtomicBool>,
-    tx: Option<SyncSender<ReceivedMessage>>,
+    tx: Option<MessageDestination>,
     throttle: Option<Arc<SubscriptionThrottle>>,
     retired_at: Option<Instant>,
 }
@@ -1217,6 +1222,7 @@ pub struct Node {
     topics: Mutex<HashMap<String, Weak<AtomicBool>>>,
     subscriptions: Mutex<Vec<(String, Weak<AtomicBool>)>>,
     services: Arc<Mutex<Vec<LocalService>>>,
+    subscription_dispatcher: Mutex<Weak<SubscriptionDispatcher>>,
 }
 impl Node {
     fn identity(&self) -> Result<&WorkerIdentity, Error> {
@@ -1273,6 +1279,7 @@ impl Node {
             topics: Mutex::new(HashMap::new()),
             subscriptions: Mutex::new(Vec::new()),
             services,
+            subscription_dispatcher: Mutex::new(Weak::new()),
         })
     }
     fn topic(&self, topic: &str) -> Result<String, Error> {
@@ -1443,7 +1450,17 @@ impl Node {
         type_name: &str,
         options: SubscribeOptions,
     ) -> Result<Subscription, Error> {
+        self.subscribe_destination(topic, type_name, options, None)
+    }
+    fn subscribe_destination(
+        &self,
+        topic: &str,
+        type_name: &str,
+        options: SubscribeOptions,
+        wake: Option<Weak<SyncSender<()>>>,
+    ) -> Result<Subscription, Error> {
         let (tx, rx) = mpsc::sync_channel(self.config.capacity);
+        let tx = MessageDestination::new(tx, wake);
         let lease = self.reserve()?;
         let topic = self.remapped_topic(topic)?;
         let (_, path) = decompose_fully_qualified_topic(&topic)?;
@@ -1704,6 +1721,8 @@ impl Node {
             .lock()
             .map_err(|_| Error::Native("local interest cache poisoned".into()))?
             .refresh();
+        drop(subscriptions);
+        self.wake_subscription_callbacks();
         Ok(())
     }
     /// Register one service per qualified topic on this Node. A rejected duplicate
@@ -2569,11 +2588,13 @@ impl Node {
     /// Cancel all pending operations; the owner joins the worker on shutdown/drop.
     pub fn cancel(&self) {
         self.sender.stop.store(true, Ordering::Release);
+        self.wake_subscription_callbacks();
     }
 }
 impl Drop for Node {
     fn drop(&mut self) {
         self.owner_dead.store(true, Ordering::Release);
+        self.wake_subscription_callbacks();
         for (_, active) in self
             .subscriptions
             .get_mut()
@@ -2620,7 +2641,7 @@ enum Command {
     Subscribe(
         String,
         String,
-        SyncSender<ReceivedMessage>,
+        MessageDestination,
         Arc<AtomicBool>,
         SubscribeOptions,
         Option<Arc<SubscriptionThrottle>>,
@@ -2703,7 +2724,7 @@ struct Pending {
 struct SubscriberState {
     topic: String,
     type_name: String,
-    tx: SyncSender<ReceivedMessage>,
+    tx: MessageDestination,
     active: Arc<AtomicBool>,
     options: SubscribeOptions,
     throttle: Option<Arc<SubscriptionThrottle>>,

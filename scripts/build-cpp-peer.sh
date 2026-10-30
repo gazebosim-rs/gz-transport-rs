@@ -14,3 +14,4 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/topic_statistics_peer.cc -o artifacts
 # Clock interposition is scoped to the pure metric helper child by its Rust test.
 c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/topic_metric_clock.cc -o artifacts/topic-metric-clock.so
 c++ -std=c++17 -Wall -Wextra -Werror tests/topic_metric_peer.cc -o artifacts/topic-metric-peer $(pkg-config --cflags --libs gz-transport) -ldl -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
+c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/subscription_callback_peer.cc -o artifacts/subscription-callback-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
