@@ -1415,3 +1415,23 @@ EIO and ambiguous-name errors and checked-add-overflow controls were rechecked.
 Independent bounded source/gate/prose review is complete. Full strict staged
 and exact hosted qualification remain pending. No ledger credit follows. See the
 [interface and NSS contract](NET-02-interface-selection.md).
+
+
+## Application-owned signal termination originals
+
+The separate signal candidate preserves pinned `NodeTest.SigIntTermination` and
+`NodeTest.SigTermTermination`, including the complete `createInfinitePublisher`
+helper. Each child installs an application-owned signal action, then starts the
+publisher thread with Int32 data 5 on `/foo`. Successful registration and every
+publication remain required. It raises the selected signal after 500 ms, sleeps
+10 ms after every publication, joins the thread, and requires fewer than 200
+iterations. There is no readiness wait or alternate loop bound.
+
+Author debug and release replay passed both ports (three harness test functions,
+including the inert child entry point), workspace Clippy and 42 tools; the two
+unchanged canonical native originals also passed. Independent reviewer
+`/root/integration_reviewer` used a fresh source export and owned target for
+debug 3, release 3, native 2 and 42 tools, all passing with no findings and all
+processes exited. Exactly two reviewed candidate ledger rows give conditional
+totals 119 faithful, 7 partial and 292 pending; full normal staged and exact hosted
+qualification remain pending. See the [signal contract](NET-02-signal-termination.md).

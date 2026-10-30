@@ -4760,10 +4760,12 @@
       "id": "UNIT_Node_TEST:NodeTest.SigIntTermination",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SigIntTermination",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "sigint_termination_original"
+      ],
+      "review": "/root/integration_reviewer; fresh own source export/target passed debug 3 and release 3 child harness controls, all 42 tools and both unchanged canonical native originals. Complete helper/body, lock scope, native filters, flag resets,500 ms/10 ms timing, every publish result,count < 200 and join reviewed with no findings. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4772,17 +4774,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete SIGINT original and createInfinitePublisher helper: reset application flag, install handler, start publisher thread, Int32 data 5 on /foo, require successful advertisement and every publication, sleep10 ms after each publish, observe signal flag, require count < 200, reset and join. Parent raises SIGINT after500 ms. No native readiness wait or Transport Interrupted() assertion exists.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust uses a separately isolated application child, safe maintained signal-hook atomic flag instead of the native mutex signal handler, explicit unique partition and held reusable discovery ports. A 6-second parent failure watchdog bounds the otherwise untimed join; the original iteration assertion and timings remain unchanged. No implicit Transport signal handler/runtime API is introduced.",
+      "evidence": "docs/NET-02-signal-termination.md; both unchanged native originals are added to scripts/verify.py. Author debug/release 3, native 2, workspace Clippy and 42 tools pass; independent fresh export/target debug 3/release 3/native 2/42 tools pass. Helper entry is inert outside its marked child. Candidate totals 119 faithful / 7 partial / 292 pending remain conditional on full normal staged and exact hosted success; no broader signal, callback preemption or whole-NET credit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.SigTermTermination",
       "target": "UNIT_Node_TEST",
       "case": "NodeTest.SigTermTermination",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "sigterm_termination_original"
+      ],
+      "review": "/root/integration_reviewer; fresh own source export/target passed debug 3 and release 3 child harness controls, all 42 tools and both unchanged canonical native originals. Complete helper/body, lock scope, native filters, flag resets,500 ms/10 ms timing, every publish result,count < 200 and join reviewed with no findings. Normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -4791,8 +4796,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete SIGTERM original and createInfinitePublisher helper: reset application flag, install handler, start publisher thread, Int32 data 5 on /foo, require successful advertisement and every publication, sleep10 ms after each publish, observe signal flag, require count < 200, reset and join. Parent raises SIGTERM after500 ms. No native readiness wait or Transport Interrupted() assertion exists.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust uses a separately isolated application child, safe maintained signal-hook atomic flag instead of the native mutex signal handler, explicit unique partition and held reusable discovery ports. A 6-second parent failure watchdog bounds the otherwise untimed join; the original iteration assertion and timings remain unchanged. No implicit Transport signal handler/runtime API is introduced.",
+      "evidence": "docs/NET-02-signal-termination.md; both unchanged native originals are added to scripts/verify.py. Author debug/release 3, native 2, workspace Clippy and 42 tools pass; independent fresh export/target debug 3/release 3/native 2/42 tools pass. Helper entry is inert outside its marked child. Candidate totals 119 faithful / 7 partial / 292 pending remain conditional on full normal staged and exact hosted success; no broader signal, callback preemption or whole-NET credit."
     },
     {
       "id": "UNIT_Node_TEST:NodeTest.PubSubWrongTypesOnPublish",

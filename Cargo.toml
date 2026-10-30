@@ -22,5 +22,8 @@ nix = { version = "=0.31.3", default-features = false, features = ["hostname", "
 [target.'cfg(all(target_os = "linux", target_env = "gnu"))'.dependencies]
 gz-transport-nss = { path = "nss", version = "=0.1.0" }
 
+[target.'cfg(unix)'.dev-dependencies]
+signal-hook = { version = "=0.4.5", default-features = false }
+
 [lints.rust]
 unsafe_code = "forbid"
