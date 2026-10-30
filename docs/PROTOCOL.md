@@ -89,8 +89,10 @@ handoff, not callback execution; no application-level acknowledgement exists.
 
 The library uses zmq 0.10.0 / zmq-sys 0.12.0, which builds unmodified libzmq 4.3.4.
 The independently built C++ reference links system libzmq 4.3.5. Native dependency
-code is outside handwritten Rust coverage; no owned Rust FFI or unsafe code is
-used. Unix identity lookup uses unmodified nix0.31.3 safe system bindings.
+code is outside handwritten Rust coverage. The parent package forbids unsafe
+Rust; the separately owned, covered first-A NSS boundary has a narrow audited
+GNU libc interface. See [interface setup](NET-02-interface-selection.md).
+Unix identity/inventory lookup also uses unmodified nix0.31.3 safe bindings.
 Preserving native ZeroMQ is deliberate: replacing it with an unrelated
 Rust-only messaging bus would break existing clients.
 
@@ -99,7 +101,8 @@ Rust-only messaging bus would break existing clients.
 `Node::new(Config)` creates sockets then transfers their exclusive ownership to
 one named IO thread. The library installs no runtime. Config is explicit and its
 default interface is loopback; callers select an externally reachable IPv4
-interface when needed. No environment variables are implicitly captured.
+interface when needed. Explicit Linux GNU Config::from_env also offers native
+first-A/interface setup. No environment variables are implicitly captured.
 `Node::cancel(&self)` is safe across threads. `shutdown(&mut self)` and Drop cancel
 and join the worker. Socket linger is zero; polling is nonblocking, with a 2ms idle
 interval. A simulator does not await a socket while stepping.
@@ -164,8 +167,8 @@ This is a first interoperable NET-01 slice, not complete transport parity. Pendi
 HOST advertisement controls and actual multi-host qualification; process-wide
 multi-node discovery identity;
 END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; broader relay topology/GZ_RELAY;
-IPv6 and all-interface routing; automatic interface selection, exceptional NSS
-fallback and Windows default identity; topic throttling and
+IPv6 and all-interface routing; automatic interface selection on other platforms,
+exceptional partition NSS fallback and Windows default identity; topic throttling and
 aggregate statistics and metric publication; authentication; complete
 legacy CLI grammar; SQLite log record/read/replay and performance qualification.
 Each remains retained in the 418-case runtime ledger and non-gtest inventory.

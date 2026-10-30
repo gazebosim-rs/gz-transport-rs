@@ -1,0 +1,720 @@
+{
+  "scope": "Canonical NetUtils stable controlled hostname/resolver/interface inputs; explicit invalid raw GZ_IP retains Rust admission errors.",
+  "native_revision": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+  "native_source_sha256": "ff488d409a8323e72bcb9d9cd41a2e00fc59120cb56bfa1f0ba36ee78bd50a51",
+  "cases": [
+    {
+      "name": "explicit-overrides-host-and-inventory-selection",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "203.0.113.9",
+      "override": "127.0.0.2",
+      "expected_host": "127.0.0.2",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        0,
+        0,
+        1
+      ],
+      "stdout": "HOST 127.0.0.2\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 0 0 1 1 2 1\n",
+      "rust_error": null
+    },
+    {
+      "name": "explicit-raw-invalid-is-returned-native",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": "bad host value",
+      "expected_host": "bad host value",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        0,
+        0,
+        1
+      ],
+      "stdout": "HOST bad host value\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 0 0 1 1 2 1\n",
+      "rust_error": "InvalidConfig"
+    },
+    {
+      "name": "explicit-unspecified-is-returned-native",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": "0.0.0.0",
+      "expected_host": "0.0.0.0",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        0,
+        0,
+        1
+      ],
+      "stdout": "HOST 0.0.0.0\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 0 0 1 1 2 1\n",
+      "rust_error": "InvalidConfig"
+    },
+    {
+      "name": "empty-override-falls-through",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "203.0.113.9",
+      "override": "",
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "empty-hostname",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        0,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 0 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "localhost-hostname",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "localhost",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        0,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 0 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "hostname-error",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "!fail",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        0,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 0 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "resolver-error",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "preferred-host-can-reorder-public-interfaces",
+      "rows": [
+        "1,4097,198.51.100.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "203.0.113.9",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "198.51.100.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 198.51.100.2 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "first-resolved-private-does-not-try-second",
+      "rows": [
+        "1,4097,198.51.100.2",
+        "2,4097,203.0.113.9",
+        "3,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "192.168.1.2,203.0.113.9",
+      "override": null,
+      "expected_host": "198.51.100.2",
+      "expected_interfaces": [
+        "198.51.100.2",
+        "203.0.113.9",
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 198.51.100.2\nINTERFACES 198.51.100.2 203.0.113.9 192.168.1.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "first-resolved-ineligible-does-not-try-second",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "198.51.100.2,203.0.113.9",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        3
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 192.168.1.2 203.0.113.9\nCALLS 1 1 3 3 6 3\n",
+      "rust_error": null
+    },
+    {
+      "name": "preferred-127-dot-zero-prefix-rejected",
+      "rows": [
+        "1,4097,198.51.100.2",
+        "2,4097,127.0.2.3"
+      ],
+      "hostname": "fixture",
+      "resolved": "127.0.2.3",
+      "override": null,
+      "expected_host": "198.51.100.2",
+      "expected_interfaces": [
+        "198.51.100.2",
+        "127.0.2.3"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 198.51.100.2\nINTERFACES 198.51.100.2 127.0.2.3\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "preferred-other-127-prefix-not-rejected",
+      "rows": [
+        "1,4097,198.51.100.2",
+        "2,4097,127.1.2.3"
+      ],
+      "hostname": "fixture",
+      "resolved": "127.1.2.3",
+      "override": null,
+      "expected_host": "127.1.2.3",
+      "expected_interfaces": [
+        "198.51.100.2",
+        "127.1.2.3"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 127.1.2.3\nINTERFACES 198.51.100.2 127.1.2.3\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "native-does-not-classify-172-private",
+      "rows": [
+        "1,4097,198.51.100.2",
+        "2,4097,172.16.2.3"
+      ],
+      "hostname": "fixture",
+      "resolved": "172.16.2.3",
+      "override": null,
+      "expected_host": "172.16.2.3",
+      "expected_interfaces": [
+        "198.51.100.2",
+        "172.16.2.3"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 172.16.2.3\nINTERFACES 198.51.100.2 172.16.2.3\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "native-10-prefix-private",
+      "rows": [
+        "1,4097,10.2.3.4",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "10.2.3.4",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "10.2.3.4",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 10.2.3.4 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "native-linklocal-prefix-private",
+      "rows": [
+        "1,4097,169.254.1.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "169.254.1.2",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "169.254.1.2",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 169.254.1.2 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "only-private-preserves-inventory-order",
+      "rows": [
+        "1,4097,10.2.3.4",
+        "2,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "10.2.3.4",
+      "expected_interfaces": [
+        "10.2.3.4",
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 10.2.3.4\nINTERFACES 10.2.3.4 192.168.1.2\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "fallback-not-all-127-rejected",
+      "rows": [
+        "1,4097,127.0.2.3",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "127.0.2.3",
+      "expected_interfaces": [
+        "127.0.2.3",
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 127.0.2.3\nINTERFACES 127.0.2.3 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "exact-localhost-filter",
+      "rows": [
+        "1,4097,127.0.0.1",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "ipv6-first-consumes-index",
+      "rows": [
+        "1,4097,::1",
+        "1,4097,203.0.113.9",
+        "2,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "192.168.1.2",
+      "expected_interfaces": [
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 192.168.1.2\nINTERFACES 192.168.1.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "down-first-consumes-index",
+      "rows": [
+        "1,4096,203.0.113.9",
+        "1,4097,198.51.100.2",
+        "2,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "192.168.1.2",
+      "expected_interfaces": [
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 192.168.1.2\nINTERFACES 192.168.1.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "no-multicast-first-consumes-index",
+      "rows": [
+        "1,1,203.0.113.9",
+        "1,4097,198.51.100.2",
+        "2,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "192.168.1.2",
+      "expected_interfaces": [
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 192.168.1.2\nINTERFACES 192.168.1.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "loopback-first-consumes-index",
+      "rows": [
+        "1,4097,127.0.0.1",
+        "1,4097,203.0.113.9",
+        "2,4097,192.168.1.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "192.168.1.2",
+      "expected_interfaces": [
+        "192.168.1.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 192.168.1.2\nINTERFACES 192.168.1.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "unknown-family-does-not-consume-index",
+      "rows": [
+        "1,4097,unknown",
+        "1,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9\nCALLS 1 1 2 2 2 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "null-address-does-not-consume-index",
+      "rows": [
+        "1,4097,null",
+        "1,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9\nCALLS 1 1 2 2 2 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "failed-index-skipped",
+      "rows": [
+        "-1,4097,198.51.100.2",
+        "2,4097,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9\nCALLS 1 1 2 2 4 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "address-dedup-across-different-indices",
+      "rows": [
+        "1,4097,203.0.113.9",
+        "2,4097,203.0.113.9",
+        "3,4097,198.51.100.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9",
+        "198.51.100.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9 198.51.100.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "index-dedup-preserves-first-address",
+      "rows": [
+        "1,4097,192.168.1.2",
+        "1,4097,203.0.113.9",
+        "2,4097,198.51.100.2"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "198.51.100.2",
+      "expected_interfaces": [
+        "192.168.1.2",
+        "198.51.100.2"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 198.51.100.2\nINTERFACES 192.168.1.2 198.51.100.2\nCALLS 1 1 2 2 6 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "loopback-flag-alone-is-not-a-filter",
+      "rows": [
+        "1,4105,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "203.0.113.9",
+      "expected_interfaces": [
+        "203.0.113.9"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 203.0.113.9\nINTERFACES 203.0.113.9\nCALLS 1 1 2 2 2 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "empty-inventory-fallback",
+      "rows": [],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "127.0.0.1",
+      "expected_interfaces": [
+        "127.0.0.1"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 127.0.0.1\nINTERFACES 127.0.0.1\nCALLS 1 1 2 2 0 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "only-ipv6-fallback",
+      "rows": [
+        "1,4097,2001:db8::1"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "127.0.0.1",
+      "expected_interfaces": [
+        "127.0.0.1"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 127.0.0.1\nINTERFACES 127.0.0.1\nCALLS 1 1 2 2 2 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "all-flags-filtered-fallback",
+      "rows": [
+        "1,0,203.0.113.9"
+      ],
+      "hostname": "fixture",
+      "resolved": "",
+      "override": null,
+      "expected_host": "127.0.0.1",
+      "expected_interfaces": [
+        "127.0.0.1"
+      ],
+      "expected_calls": [
+        1,
+        1,
+        2
+      ],
+      "stdout": "HOST 127.0.0.1\nINTERFACES 127.0.0.1\nCALLS 1 1 2 2 2 2\n",
+      "rust_error": null
+    },
+    {
+      "name": "automatic-selected-unspecified-remains-invalid",
+      "rows": [
+        "1,4097,0.0.0.0"
+      ],
+      "hostname": "localhost",
+      "resolved": "",
+      "override": null,
+      "expected_host": "0.0.0.0",
+      "expected_interfaces": [
+        "0.0.0.0"
+      ],
+      "expected_calls": [
+        1,
+        0,
+        2
+      ],
+      "rust_error": "InvalidConfig"
+    }
+  ]
+}

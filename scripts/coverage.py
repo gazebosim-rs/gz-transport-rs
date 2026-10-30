@@ -11,6 +11,16 @@ def above_95(covered, count):
     return count > 0 and 0 <= covered <= count and covered * 100 > count * 95
 
 
+def owned_crates(manifest):
+    groups = manifest.get('owned_crates', {manifest['crate']: manifest['production_files']})
+    if not isinstance(groups, dict) or not groups or any(not isinstance(files, list) or not files for files in groups.values()):
+        raise ValueError('Missing owned crate source inventories')
+    flattened = [name for files in groups.values() for name in files]
+    if len(flattened) != len(set(flattened)) or set(flattened) != set(manifest['production_files']):
+        raise ValueError('Owned crate inventories must partition all production files')
+    return groups
+
+
 def check(report, manifest, root):
     if report.get('type') != 'llvm.coverage.json.export':
         raise ValueError('Missing LLVM coverage export')
@@ -27,7 +37,7 @@ def check(report, manifest, root):
                 if filename in files:
                     raise ValueError('Duplicate owned LLVM source')
                 files[filename] = file
-            elif path.is_relative_to(root) and not (path.is_relative_to(root / 'tests') and path.suffix == '.rs'):
+            elif path.is_relative_to(root) and not (path.suffix == '.rs' and any(path.is_relative_to(root / directory) for directory in manifest.get('test_roots', ['tests']))):
                 raise ValueError(f'Unaccounted owned LLVM input: {path}')
     totals = {metric: {'covered': 0, 'count': 0} for metric in ('lines', 'regions')}
     for filename in expected:
@@ -42,6 +52,17 @@ def check(report, manifest, root):
     for metric, values in totals.items():
         if not above_95(**values):
             raise ValueError(f'{manifest["crate"]}/{manifest["profile"]}/{metric}: {values} must be strictly >95%')
+    groups = owned_crates(manifest)
+    if 'owned_crates' in manifest:
+        per_crate = {}
+        for crate, names in groups.items():
+            per_crate[crate] = {}
+            for metric in ('lines', 'regions'):
+                values = {key: sum(files[str((root / name).resolve())]['summary'][metric][key] for name in names) for key in ('covered', 'count')}
+                if not above_95(**values):
+                    raise ValueError(f'{crate}/{manifest["profile"]}/{metric}: {values} must be strictly >95%')
+                per_crate[crate][metric] = values
+        totals['crates'] = per_crate
     return totals
 
 

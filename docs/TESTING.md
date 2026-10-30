@@ -1382,3 +1382,36 @@ unchanged socket tests passing outside sandbox. Full normal staged coverage and
 exact hosted qualification remain pending. No ledger row
 changes. The retained native environment study is separate from this typed API;
 see [initial relay configuration](NET-02-relay-configuration.md).
+
+## Bounded native interface setup candidate
+
+The separate candidate keeps the parent unsafe prohibition and introduces one
+small owned GNU NSS boundary using the existing locked libc version. Both
+production libraries have explicit inventories, normal compiler-input audits,
+workspace instrumentation, separate >95% line/region and changed-line gates,
+and aggregate coverage. Existing thresholds, exclusions and original test bodies
+are unchanged. Forty-two tooling controls include small-crate aggregate masking,
+normal source smuggling, real Git nss hunks and immutable container identity
+rejection. These author controls do not substitute for the ordinary staged gate.
+
+The private boundary/policy had independent safety/value review. Production
+author serial regressions pass 312 Rust tests: 191 library, 111 unchanged interop,
+two configuration-process, three public interface and five sys checks, using
+the canonical SDK and authorized loopback. All peers exited. The portable
+immutable Ubuntu 24.04 runner passes 22 actual glibc 2.39 NSS fixtures in debug
+and release, including the visible 64 KiB bound difference. Both normal
+compiler-input audits pass. Focused diagnostics report sys 81/81 lines and
+120/122 regions; interfaces 94/97 lines and 137/143 regions. These are not full
+crate/repository acceptance measurements. A separate source-export consumer
+type-checks without patches or external version changes; dependency/compiler
+caches were reused, so it is not a remote-Git or fresh-cache claim.
+Production review added a paired 33rd case for native automatic selection of
+0.0.0.0: Rust keeps its existing InvalidConfig result. All earlier cases and the
+admission guard remain unchanged; no fallback address is substituted.
+The reviewer used fresh owned source/binaries for the 22 actual NSS fixtures,
+and independently replayed the latest author-built parent corpus/error tests;
+that parent replay is not a fresh parent-crate build. The inherited inventory
+EIO and ambiguous-name errors and checked-add-overflow controls were rechecked.
+Independent bounded source/gate/prose review is complete. Full strict staged
+and exact hosted qualification remain pending. No ledger credit follows. See the
+[interface and NSS contract](NET-02-interface-selection.md).

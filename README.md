@@ -194,12 +194,17 @@ Default configuration binds loopback, with an explicit IPv4 interface for remote
 use. There is no hidden async runtime or implicit environment capture. Opt in through
 `Config::from_env()` or apply an injected lookup with `with_environment`; pending
 wire modes return explicit Unsupported errors.
+On Linux GNU, from_env selects the native preferred first-A or eligible interface
+when GZ_IP is absent/empty. Its synchronous setup and separately owned bounded
+NSS boundary are described in [interface selection](docs/NET-02-interface-selection.md).
+The parent package still forbids unsafe Rust; both owned crates are covered.
 
-Run `scripts/bootstrap.sh`, then
+Run `scripts/bootstrap.sh` and `python3 scripts/nss-reference.py --prepare`, then
 `python3 scripts/verify.py verify --profile zeromq-linux` on the native reference
 runner. The same authoritative runner verifies an isolated staged snapshot in
 the pre-commit hook and CI. It requires strictly >95% handwritten production
-line **and** region coverage, no missing files, a real C++ peer, and original
+line **and** region coverage for each owned crate and the aggregate, no missing
+files, a real C++ peer, isolated native NSS qualification, and original
 mapped assertions. Missing native infrastructure fails the gate.
 See [testing and evidence](docs/TESTING.md).
 The [discovery forwarding contract](docs/NET-02-discovery-relay.md) describes

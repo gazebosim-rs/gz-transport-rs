@@ -38,7 +38,10 @@ pending. nix's User API decodes NSS names lossily, so a replacement character in
 an NSS result returns Unsupported instead of silently selecting a changed
 identity; this includes a literal replacement character from an otherwise valid
 NSS name. Raw-byte NSS fidelity remains pending. An explicit UTF8 USER is preserved.
-Automatic interface selection and Windows identity are also pending;
+Linux GNU from_env automatic interface selection now has a separate
+[bounded first-A and inventory contract](NET-02-interface-selection.md).
+Explicit defaults and injected bases retain their interface. Other platform
+interface selection and Windows identity remain unqualified;
 non-Unix automatic identity returns Unsupported. Topic namespace remains an API
 setting, as in upstream.
 

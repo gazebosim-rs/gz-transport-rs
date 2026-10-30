@@ -35,6 +35,8 @@ jobs:
       - run: rustup toolchain install 1.94.1 --profile minimal --component rustfmt,clippy,llvm-tools-preview
       - name: Build immutable native reference sources
         run: python3 scripts/bootstrap-reference.py --jobs 2
+      - name: Prepare immutable network-none GNU NSS reference
+        run: python3 scripts/nss-reference.py --prepare
       - name: Verify real C++ peers and strict owned coverage
         run: python3 scripts/verify.py verify --profile zeromq-linux
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -44,6 +46,8 @@ jobs:
           path: |
             artifacts/evidence.json
             artifacts/production-inputs.json
+            artifacts/gz-transport-nss-production-inputs.json
+            artifacts/nss-reference.json
             artifacts/coverage.json
             artifacts/coverage.lcov
             artifacts/coverage.profdata

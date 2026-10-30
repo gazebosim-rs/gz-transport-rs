@@ -18,3 +18,8 @@ c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/subscription_callback_peer.c
 c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/owned_subscriber_peer.cc -o artifacts/owned-subscriber-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
 c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/raw_subscription_peer.cc -o artifacts/raw-subscription-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
 c++ -std=c++17 -Wall -Wextra -Werror -I "${GZ_REFERENCE_SOURCE:-$(pwd)/../gz-transport}/src" tests/discovery_relay_peer.cc -o artifacts/discovery-relay-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
+# First-A qualification creates no Nodes. Interposition is child-only.
+c++ -std=c++17 -Wall -Wextra -Werror tests/interface_selection_peer.cc -o artifacts/interface-selection-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
+c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/interface_inputs.cc -o artifacts/interface-inputs.so -ldl
+c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/nss_failure.cc -o artifacts/nss-failure.so -ldl
+cc -std=c11 -Wall -Wextra -Werror -O2 tests/nss_peer.c -o artifacts/nss-peer

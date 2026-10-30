@@ -172,6 +172,9 @@ impl Config {
     /// Capture recognized process configuration explicitly, before worker startup.
     /// Without GZ_PARTITION, Unix uses hostname:USER (UID account lookup if USER
     /// is absent). System identity lookup runs synchronously in the caller.
+    /// On Linux GNU, absent/empty GZ_IP selects the native preferred first-A or
+    /// eligible interface. NSS may block this setup call; never call it per step.
+    /// Explicit Config/default and with_environment keep their selected interface.
     pub fn from_env() -> Result<Self, Error> {
         let values = VARIABLES
             .iter()
@@ -188,7 +191,17 @@ impl Config {
         if !values.contains_key("GZ_PARTITION") {
             config.partition = default_partition()?;
         }
-        config.with_environment(|key| values.get(key).cloned())
+        let config = config.with_environment(|key| values.get(key).cloned())?;
+        #[cfg(all(target_os = "linux", target_env = "gnu"))]
+        let config = {
+            let mut config = config;
+            if values.get("GZ_IP").is_none_or(String::is_empty) {
+                config.interface = crate::interfaces::automatic_interface()?;
+                config.validate()?;
+            }
+            config
+        };
+        Ok(config)
     }
     /// Apply Gazebo environment settings to an explicit base configuration.
     /// Unsupported wire modes are errors, so configuration cannot silently fall back.

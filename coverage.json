@@ -4,7 +4,8 @@
   "profile": "zeromq-linux",
   "toolchain": "1.94.1",
   "production_roots": [
-    "src"
+    "src",
+    "nss/src"
   ],
   "production_files": [
     "src/lib.rs",
@@ -14,12 +15,35 @@
     "src/subscription_callback.rs",
     "src/sample_statistics.rs",
     "src/topic_statistics.rs",
-    "src/config.rs"
+    "src/config.rs",
+    "src/interfaces.rs",
+    "nss/src/lib.rs"
   ],
   "exclusions": [],
   "required_runners": [
     "linux-x86_64-multicast",
-    "pinned-cpp-peer"
+    "pinned-cpp-peer",
+    "glibc-2.39-network-none"
   ],
-  "dependency_native_code": "zmq-sys 0.12.0 uses unmodified libzmq 4.3.4; not handwritten Gazebo production code"
+  "dependency_native_code": "zmq-sys 0.12.0 uses unmodified libzmq 4.3.4; not handwritten Gazebo production code",
+  "test_roots": [
+    "tests",
+    "nss/tests"
+  ],
+  "owned_crates": {
+    "gz-transport": [
+      "src/lib.rs",
+      "src/names.rs",
+      "src/protocol.rs",
+      "src/runtime.rs",
+      "src/subscription_callback.rs",
+      "src/sample_statistics.rs",
+      "src/topic_statistics.rs",
+      "src/config.rs",
+      "src/interfaces.rs"
+    ],
+    "gz-transport-nss": [
+      "nss/src/lib.rs"
+    ]
+  }
 }

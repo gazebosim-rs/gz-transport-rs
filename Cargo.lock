@@ -218,10 +218,18 @@ name = "gz-transport"
 version = "0.1.0"
 dependencies = [
  "gz-msgs",
+ "gz-transport-nss",
  "nix",
  "socket2",
  "uuid",
  "zmq",
+]
+
+[[package]]
+name = "gz-transport-nss"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

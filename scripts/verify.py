@@ -14,7 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from coverage import check, changed_check
+from coverage import check, changed_check, owned_crates
 from inventory import collect
 from reference import check_ledger, check_mapped_tests, enabled_features
 
@@ -91,11 +91,11 @@ def source_changes(root, production_files, base=None):
         return {p: source_line_numbers(root / p) for p in production_files}
     if base:
         run(['git', 'cat-file', '-e', f'{base}^{{commit}}'], cwd=root, capture_output=True)
-    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base or 'HEAD', '--', 'src'], cwd=root).decode('utf-8')
+    diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base or 'HEAD', '--', 'src', 'nss/src'], cwd=root).decode('utf-8')
     if not base and not diff and subprocess.run(['git', 'rev-parse', '--verify', 'HEAD^'], cwd=root, capture_output=True).returncode == 0:
-        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src'], cwd=root).decode('utf-8')
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', 'HEAD^', 'HEAD', '--', 'src', 'nss/src'], cwd=root).decode('utf-8')
     changed = changed_lines(diff)
-    tracked = set(subprocess.check_output(['git', 'ls-files', '-z', '--', 'src'], cwd=root).decode('utf-8').split('\0'))
+    tracked = set(subprocess.check_output(['git', 'ls-files', '-z', '--', 'src', 'nss/src'], cwd=root).decode('utf-8').split('\0'))
     for filename in set(production_files) - tracked:
         changed[filename] = source_line_numbers(root / filename)
     return changed
@@ -189,7 +189,7 @@ def staged():
             env.pop(name, None)
         env.update(CARGO_TARGET_DIR=str(ROOT / 'target/staged'), GZ_REFERENCE_SOURCE=os.environ.get('GZ_REFERENCE_SOURCE', str(ROOT.parent / 'gz-transport')))
         base = head or subprocess.check_output(['git', 'mktree'], cwd=ROOT, input='', text=True).strip()
-        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src'], cwd=ROOT).decode('utf-8')
+        diff = subprocess.check_output(['git', 'diff', '--no-ext-diff', '--unified=0', base, tree, '--', 'src', 'nss/src'], cwd=ROOT).decode('utf-8')
         changed_file = Path(directory) / 'changed-lines.json'
         changed_file.write_text(json.dumps({name: sorted(lines) for name, lines in changed_lines(diff).items()}))
         env['GZ_CHANGED_LINES_FILE'] = str(changed_file)
@@ -209,37 +209,51 @@ def staged():
 
 
 def check_layout(root, metadata, manifest):
-    if manifest['crate'] != 'gz-transport' or manifest['production_roots'] != ['src'] or manifest['exclusions']:
+    expected = {'gz-transport': ('Cargo.toml', 'src')}
+    tests = ['tests']
+    if 'owned_crates' in manifest:
+        expected['gz-transport-nss'] = ('nss/Cargo.toml', 'nss/src')
+        tests.append('nss/tests')
+        groups = owned_crates(manifest)
+        if set(groups) != set(expected) or any(not all(Path(name).is_relative_to(prefix) for name in groups[crate]) for crate, (_, prefix) in expected.items()):
+            raise ValueError('Unreviewed owned crate source partition')
+    if manifest['crate'] != 'gz-transport' or manifest['production_roots'] != [prefix for _, prefix in expected.values()] or manifest['exclusions'] or manifest.get('test_roots', ['tests']) != tests:
         raise ValueError('Unreviewed production layout or exclusions')
-    if manifest['required_runners'] != ['linux-x86_64-multicast', 'pinned-cpp-peer'] or (platform.system(), platform.machine()) != ('Linux', 'x86_64'):
+    runners = ['linux-x86_64-multicast', 'pinned-cpp-peer']
+    if 'owned_crates' in manifest:
+        runners.append('glibc-2.39-network-none')
+    if manifest['required_runners'] != runners or (platform.system(), platform.machine()) != ('Linux', 'x86_64'):
         raise ValueError('Required native runner unavailable or matrix changed')
     owned = [package for package in metadata['packages'] if package['source'] is None]
-    if len(owned) != 1:
+    if len(owned) != len(expected) or {package['name'] for package in owned} != set(expected):
         raise ValueError('Additional local packages require production coverage support')
-    package = owned[0]
-    if package['name'] != 'gz-transport' or Path(package['manifest_path']).resolve() != root / 'Cargo.toml' or metadata['workspace_members'] != [package['id']]:
+    if set(metadata['workspace_members']) != {package['id'] for package in owned} or len(metadata['workspace_members']) != len(owned):
         raise ValueError('Unreviewed Cargo package or workspace')
-    if package['features']:
-        raise ValueError('Feature profiles require explicit coverage support')
-    if package['license'] != 'Apache-2.0':
-        raise ValueError('Owned package must remain Apache-2.0')
-    libraries = 0
-    for target in package['targets']:
-        path = Path(target['src_path']).resolve()
-        if target['kind'] == ['lib'] and target['crate_types'] == ['lib'] and path == root / 'src/lib.rs':
-            libraries += 1
-        elif target['kind'] != ['test'] or not path.is_relative_to(root / 'tests'):
-            raise ValueError('Unaccounted Cargo target requires production coverage support')
-    if libraries != 1:
-        raise ValueError('Exactly one production library is required')
+    for package in owned:
+        relative, prefix = expected[package['name']]
+        if Path(package['manifest_path']).resolve() != root / relative:
+            raise ValueError('Unreviewed Cargo package or workspace')
+        if package['features']:
+            raise ValueError('Feature profiles require explicit coverage support')
+        if package['license'] != 'Apache-2.0':
+            raise ValueError('Owned package must remain Apache-2.0')
+        libraries = 0
+        for target in package['targets']:
+            path = Path(target['src_path']).resolve()
+            if target['kind'] == ['lib'] and target['crate_types'] == ['lib'] and path == root / prefix / 'lib.rs':
+                libraries += 1
+            elif target['kind'] != ['test'] or not path.is_relative_to(root / Path(relative).parent / 'tests'):
+                raise ValueError('Unaccounted Cargo target requires production coverage support')
+        if libraries != 1:
+            raise ValueError('Exactly one production library is required per owned package')
     for directory, children, files in os.walk(root):
         if Path(directory) == root:
             children[:] = [name for name in children if name not in ('.git', 'target', 'artifacts')]
         for name in files:
             path = (Path(directory) / name).resolve()
-            if name.endswith('.rs') and not (path.is_relative_to(root / 'src') or path.is_relative_to(root / 'tests')):
+            if name.endswith('.rs') and not any(path.is_relative_to(root / prefix) for prefix in [*manifest['production_roots'], *tests]):
                 raise ValueError(f'Unaccounted owned Rust source: {path}')
-    return package
+    return next(package for package in owned if package['name'] == 'gz-transport')
 
 
 def depinfo_inputs(text, root, production_files):
@@ -265,17 +279,17 @@ def depinfo_inputs(text, root, production_files):
     return sorted(str(path.relative_to(root)) for path in expected)
 
 
-def production_inputs(root, production_files, package_id, env, artifact_dir):
+def production_inputs(root, production_files, package_id, env, artifact_dir, package_name='gz-transport'):
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    proof = artifact_dir / 'production-inputs.json'
+    proof = artifact_dir / ('production-inputs.json' if package_name == 'gz-transport' else f'{package_name}-production-inputs.json')
     proof.unlink(missing_ok=True)
     probe_env = dict(env, RUSTFLAGS='')
     probe_env.pop('CARGO_ENCODED_RUSTFLAGS', None)
     probe_env.pop('RUSTC_WORKSPACE_WRAPPER', None)
     # Cargo's timestamp cache can miss a changed module graph after restored
     # mtimes. Clean only this package's normal dev outputs, keeping dependencies.
-    run(['cargo', 'clean', '--package', 'gz-transport', '--profile', 'dev'], cwd=root, env=probe_env)
-    output = subprocess.check_output(['cargo', 'rustc', '--locked', '--lib', '--message-format=json'], cwd=root, env=probe_env).decode('utf-8')
+    run(['cargo', 'clean', '--package', package_name, '--profile', 'dev'], cwd=root, env=probe_env)
+    output = subprocess.check_output(['cargo', 'rustc', '--locked', '--lib', '--package', package_name, '--message-format=json'], cwd=root, env=probe_env).decode('utf-8')
     artifacts = [json.loads(line) for line in output.split('\n') if line]
     libraries = [record for record in artifacts if record.get('reason') == 'compiler-artifact' and record['package_id'] == package_id and record['target']['kind'] == ['lib'] and not record['profile']['test']]
     if len(libraries) != 1 or libraries[0]['fresh']:
@@ -297,7 +311,9 @@ def verify(profile):
     if profile != manifest['profile']:
         raise ValueError(f'Missing required coverage profile: {profile}')
     inputs_paths = [*manifest['production_files'], 'Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', 'coverage.json', 'docs/upstream-tests.json', 'docs/reference-catalog.json', 'docs/reference-lock.json']
-    inputs_paths += [str(p.relative_to(ROOT)) for directory in ['tests', 'scripts'] for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts]
+    if 'owned_crates' in manifest:
+        inputs_paths.extend(['nss/Cargo.toml', 'docs/nss-reference.json'])
+    inputs_paths += [str(p.relative_to(ROOT)) for directory in [*manifest.get('test_roots', ['tests']), 'scripts'] for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts]
     inputs = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in inputs_paths}
     os.chdir(ROOT)
     env = dict(os.environ, RUSTUP_TOOLCHAIN=manifest['toolchain'])
@@ -305,10 +321,12 @@ def verify(profile):
     prefix = Path(env.get('GZ_REFERENCE_PREFIX', '/home/nkoenig/local')).resolve()
     env['LD_LIBRARY_PATH'] = str(prefix / 'lib') + ':' + env.get('LD_LIBRARY_PATH', '')
     metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=ROOT, env=env, text=True))
-    package = check_layout(ROOT, metadata, manifest)
-    run(['cargo', 'fmt', '--check'], env=env)
-    library_inputs = production_inputs(ROOT, manifest['production_files'], package['id'], env, ROOT / 'artifacts')
-    run(['cargo', 'clippy', '--locked', '--all-targets', '--', '-D', 'warnings'], env=env)
+    check_layout(ROOT, metadata, manifest)
+    run(['cargo', 'fmt', '--all', '--check'], env=env)
+    groups = owned_crates(manifest)
+    packages = {package['name']: package for package in metadata['packages'] if package['source'] is None}
+    library_inputs = {name: production_inputs(ROOT, files, packages[name]['id'], env, ROOT / 'artifacts', name) for name, files in groups.items()}
+    run(['cargo', 'clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings'], env=env)
     run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py'], env=env)
     run(['bash', 'scripts/build-cpp-peer.sh'], env=env)
     # Every native helper must resolve all Gazebo libraries inside this SDK.
@@ -321,7 +339,8 @@ def verify(profile):
                                ('subscription-callback-peer', 'subscription-callback-linkage.txt'),
                                ('owned-subscriber-peer', 'owned-subscriber-linkage.txt'),
                                ('raw-subscription-peer', 'raw-subscription-linkage.txt'),
-                               ('discovery-relay-peer', 'discovery-relay-linkage.txt')):
+                               ('discovery-relay-peer', 'discovery-relay-linkage.txt'),
+                               ('interface-selection-peer', 'interface-selection-linkage.txt')):
         linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts' / peer)], env=env, text=True)
         (ROOT / 'artifacts' / linkage_file).write_text(linkage)
         linked = re.findall(r'libgz-[^ ]+\s+=>\s+(\S+)', linkage)
@@ -371,8 +390,22 @@ def verify(profile):
     # content digest prevents reuse after an instrumentation wrapper change.
     env.update(RUSTFLAGS='', RUSTC_WORKSPACE_WRAPPER=str(wrapper), CARGO_TARGET_DIR=str(target), LLVM_PROFILE_FILE=str(profiles / '%m-%p.profraw'))
     with (artifacts / 'test-build.jsonl').open('w') as output:
-        run(['cargo', 'test', '--locked', '--message-format=json', '--', '--test-threads=1'], stdout=output, env=env)
+        run(['cargo', 'test', '--locked', '--workspace', '--message-format=json', '--', '--test-threads=1'], stdout=output, env=env)
     check_mapped_tests(ledger, (artifacts / 'test-build.jsonl').read_bytes().decode('utf-8'))
+    records = []
+    for line in (artifacts / 'test-build.jsonl').read_bytes().decode('utf-8').split('\n'):
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    nss_tests = [record['executable'] for record in records if record.get('reason') == 'compiler-artifact'
+                 and record.get('package_id') == packages['gz-transport-nss']['id']
+                 and record.get('target', {}).get('kind') == ['test']
+                 and Path(record['target']['src_path']).resolve() == ROOT / 'nss/tests/lookup.rs'
+                 and record.get('profile', {}).get('test') and record.get('executable')]
+    if len(nss_tests) != 1:
+        raise ValueError('Missing unique owned NSS qualification test executable')
+    run([sys.executable, 'scripts/nss-reference.py', '--test-executable', nss_tests[0], '--profiles', str(profiles)], env=env)
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], env=env, text=True).strip())
     host = re.search(r'^host: (.+)$', subprocess.check_output(['rustc', '-vV'], env=env, text=True), re.M)[1]
     llvm = sysroot / 'lib/rustlib' / host / 'bin'
@@ -404,6 +437,7 @@ def verify(profile):
     else:
         changed = {p: source_line_numbers(ROOT / p) for p in manifest['production_files']}
     changed_totals = changed_check(lcov, changed, ROOT, manifest['production_files'])
+    changed_totals['crates'] = {name: changed_check(lcov, {path: lines for path, lines in changed.items() if path in files}, ROOT, files) for name, files in groups.items()}
     evidence = {'profile': profile, 'toolchain': manifest['toolchain'], 'inputs': inputs, 'totals': totals, 'changed_lines': changed_totals, 'upstream_sha': sha, 'reference': reference_counts, 'production_inputs': library_inputs, 'cpp_libraries_sha256': {Path(path).name:hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in libraries}, 'runner': subprocess.check_output(['uname', '-a'], text=True).strip()}
     validate_evidence(evidence, ROOT, profile)
     (artifacts / 'evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')

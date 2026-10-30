@@ -1,0 +1,13 @@
+[package]
+name = "gz-transport-nss"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "Apache-2.0"
+description = "Narrow owned GNU NSS first-IPv4 boundary for Gazebo setup"
+
+[dependencies]
+libc = "=0.2.191"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"

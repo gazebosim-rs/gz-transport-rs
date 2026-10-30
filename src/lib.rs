@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Gazebo's ZeroMQ transport. Each [`Node`] owns one bounded IO worker.
 mod config;
+#[cfg(unix)]
+mod interfaces;
 mod names;
 mod protocol;
 mod runtime;

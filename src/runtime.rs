@@ -1,5 +1,9 @@
 // Copyright (C) 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
+#[cfg(unix)]
+use crate::interfaces::local_interfaces;
+#[cfg(all(test, unix))]
+use crate::interfaces::{LocalInterface, eligible_interfaces};
 use crate::{Config, Error, decompose_fully_qualified_topic, protocol, qualified_name};
 use gz_msgs::discovery::{
     Discovery,
@@ -3036,66 +3040,6 @@ fn receive_publication_frames(
         cancelled,
         |index, size| !statistics_wire || index != 4 || size == 16,
     )
-}
-#[cfg(unix)]
-struct LocalInterface {
-    index: Option<u32>,
-    address: IpAddr,
-    multicast: bool,
-    up: bool,
-}
-
-#[cfg(unix)]
-fn eligible_interfaces(records: Vec<LocalInterface>) -> Vec<Ipv4Addr> {
-    let mut seen = HashSet::new();
-    let mut addresses = Vec::new();
-    for record in records {
-        let Some(index) = record.index else { continue };
-        // Native deduplicates interface indices before family/flag filtering.
-        if !seen.insert(index) {
-            continue;
-        }
-        if let IpAddr::V4(ip) = record.address
-            && ip != Ipv4Addr::LOCALHOST
-            && record.multicast
-            && record.up
-            && !addresses.contains(&ip)
-        {
-            addresses.push(ip);
-        }
-    }
-    if addresses.is_empty() {
-        addresses.push(Ipv4Addr::LOCALHOST);
-    }
-    addresses
-}
-
-#[cfg(unix)]
-fn local_interfaces() -> Result<Vec<Ipv4Addr>, Error> {
-    use nix::{
-        ifaddrs::getifaddrs,
-        net::if_::{InterfaceFlags, if_nametoindex},
-    };
-    let mut records = Vec::new();
-    for interface in getifaddrs().map_err(|error| Error::Native(error.to_string()))? {
-        let address = interface.address.and_then(|address| {
-            address
-                .as_sockaddr_in()
-                .map(|v4| IpAddr::V4(v4.ip()))
-                .or_else(|| address.as_sockaddr_in6().map(|v6| IpAddr::V6(v6.ip())))
-        });
-        let Some(address) = address else { continue };
-        if interface.interface_name.contains('\u{fffd}') {
-            return Err(Error::Unsupported("ambiguous interface name encoding"));
-        }
-        records.push(LocalInterface {
-            index: if_nametoindex(interface.interface_name.as_str()).ok(),
-            address,
-            multicast: interface.flags.contains(InterfaceFlags::IFF_MULTICAST),
-            up: interface.flags.contains(InterfaceFlags::IFF_UP),
-        });
-    }
-    Ok(eligible_interfaces(records))
 }
 
 impl Worker {

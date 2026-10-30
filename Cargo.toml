@@ -6,6 +6,10 @@ rust-version = "1.94"
 license = "Apache-2.0"
 description = "Interoperable Gazebo transport with explicit IO ownership"
 
+[workspace]
+members = ["nss"]
+resolver = "3"
+
 [dependencies]
 zmq = "=0.10.0"
 socket2 = { version = "=0.6.5", features = ["all"] }
@@ -14,6 +18,9 @@ gz-msgs = { version = "=0.1.0", git = "https://github.com/gazebosim-rs/gz-msgs-r
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "=0.31.3", default-features = false, features = ["hostname", "user", "net", "time"] }
+
+[target.'cfg(all(target_os = "linux", target_env = "gnu"))'.dependencies]
+gz-transport-nss = { path = "nss", version = "=0.1.0" }
 
 [lints.rust]
 unsafe_code = "forbid"
