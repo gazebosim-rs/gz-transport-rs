@@ -2200,10 +2200,12 @@
       "id": "UNIT_Clock_TEST:TestAllTimeBases/NetworkClockTest.Functionality/0",
       "target": "UNIT_Clock_TEST",
       "case": "TestAllTimeBases/NetworkClockTest.Functionality/0",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "network_clock_sim_functionality_original"
+      ],
+      "review": "/root/integration_reviewer; fresh source export/owned target and fresh canonical helper passed corrected debug/release each 2 pure, 7 public, 2 native/wire controls. Reproduced all 63 native states and 13 setter inputs across 3 bases in both wire directions per profile; unchanged native 3, 42 tools and Clippy passed. Full source/original/atomic/codec/ownership/rollback audit has no remaining findings. Prior release QueueFull was a diagnosed new-fixture assumption; bounded five-command headroom correction preserves all lifecycle predicates and capacity-one control. Ordinary full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Clock_TEST.cc",
@@ -2212,17 +2214,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete SIM Functionality and MakeClockMessage setup: /clock with selected base, initially not-ready; publish empty Clock, sleep 100 ms, remain not-ready; publish sim=54321/12345, real=108642/0, system=217284/0 (seconds/nanoseconds), sleep 100 ms, ready and exact 54321 s + 12345 ns; SetTime 54321 s + 24690 ns, sleep 100 ms, exact final value. No readiness poll replaces any original sleep/assertion. Rust additionally checks successful admission.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. An explicitly configured Rust owner Node replaces the private Node owned by native NetworkClock; the separate publishing Node shares its held ephemeral discovery ports and isolated partition. Typed Rust enum prevents invalid variants; existing asynchronous shared dispatcher supplies actual self-observation. Only original waited predicates are claimed, not native inline return timing/global identity. WallClock and BadNetworkClock stay pending.",
+      "evidence": "docs/NET-02-network-clock.md; native three original filters added to unchanged mandatory verifier. Native helper/value fixture has 63 actual complete states, signed/missing/unnormalized/zero and int32/i64 narrowing edges, exact opaque remote bytes and fresh native observer counts. Constructor bounds/rollback, payload rejection, coherent retained values, malformed/overflow error counters, shared-dispatch real-exit cleanup, retirement and other-callback survival are tested. Focused 63/63 lines and 86/86 regions is diagnostic only; candidate 122/7/289 requires full strict staged/exact hosted success. No new dependency, Node-statistics policy, runtime Metric or broad clock-family credit."
     },
     {
       "id": "UNIT_Clock_TEST:TestAllTimeBases/NetworkClockTest.Functionality/1",
       "target": "UNIT_Clock_TEST",
       "case": "TestAllTimeBases/NetworkClockTest.Functionality/1",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "network_clock_real_functionality_original"
+      ],
+      "review": "/root/integration_reviewer; fresh source export/owned target and fresh canonical helper passed corrected debug/release each 2 pure, 7 public, 2 native/wire controls. Reproduced all 63 native states and 13 setter inputs across 3 bases in both wire directions per profile; unchanged native 3, 42 tools and Clippy passed. Full source/original/atomic/codec/ownership/rollback audit has no remaining findings. Prior release QueueFull was a diagnosed new-fixture assumption; bounded five-command headroom correction preserves all lifecycle predicates and capacity-one control. Ordinary full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Clock_TEST.cc",
@@ -2231,17 +2236,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete REAL Functionality and MakeClockMessage setup: /clock with selected base, initially not-ready; publish empty Clock, sleep 100 ms, remain not-ready; publish sim=27160/0, real=54321/12345, system=108642/0 (seconds/nanoseconds), sleep 100 ms, ready and exact 54321 s + 12345 ns; SetTime 54321 s + 24690 ns, sleep 100 ms, exact final value. No readiness poll replaces any original sleep/assertion. Rust additionally checks successful admission.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. An explicitly configured Rust owner Node replaces the private Node owned by native NetworkClock; the separate publishing Node shares its held ephemeral discovery ports and isolated partition. Typed Rust enum prevents invalid variants; existing asynchronous shared dispatcher supplies actual self-observation. Only original waited predicates are claimed, not native inline return timing/global identity. WallClock and BadNetworkClock stay pending.",
+      "evidence": "docs/NET-02-network-clock.md; native three original filters added to unchanged mandatory verifier. Native helper/value fixture has 63 actual complete states, signed/missing/unnormalized/zero and int32/i64 narrowing edges, exact opaque remote bytes and fresh native observer counts. Constructor bounds/rollback, payload rejection, coherent retained values, malformed/overflow error counters, shared-dispatch real-exit cleanup, retirement and other-callback survival are tested. Focused 63/63 lines and 86/86 regions is diagnostic only; candidate 122/7/289 requires full strict staged/exact hosted success. No new dependency, Node-statistics policy, runtime Metric or broad clock-family credit."
     },
     {
       "id": "UNIT_Clock_TEST:TestAllTimeBases/NetworkClockTest.Functionality/2",
       "target": "UNIT_Clock_TEST",
       "case": "TestAllTimeBases/NetworkClockTest.Functionality/2",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "network_clock_system_functionality_original"
+      ],
+      "review": "/root/integration_reviewer; fresh source export/owned target and fresh canonical helper passed corrected debug/release each 2 pure, 7 public, 2 native/wire controls. Reproduced all 63 native states and 13 setter inputs across 3 bases in both wire directions per profile; unchanged native 3, 42 tools and Clippy passed. Full source/original/atomic/codec/ownership/rollback audit has no remaining findings. Prior release QueueFull was a diagnosed new-fixture assumption; bounded five-command headroom correction preserves all lifecycle predicates and capacity-one control. Ordinary full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Clock_TEST.cc",
@@ -2250,8 +2258,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete SYS Functionality and MakeClockMessage setup: /clock with selected base, initially not-ready; publish empty Clock, sleep 100 ms, remain not-ready; publish sim=13580/0, real=27160/0, system=54321/12345 (seconds/nanoseconds), sleep 100 ms, ready and exact 54321 s + 12345 ns; SetTime 54321 s + 24690 ns, sleep 100 ms, exact final value. No readiness poll replaces any original sleep/assertion. Rust additionally checks successful admission.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. An explicitly configured Rust owner Node replaces the private Node owned by native NetworkClock; the separate publishing Node shares its held ephemeral discovery ports and isolated partition. Typed Rust enum prevents invalid variants; existing asynchronous shared dispatcher supplies actual self-observation. Only original waited predicates are claimed, not native inline return timing/global identity. WallClock and BadNetworkClock stay pending.",
+      "evidence": "docs/NET-02-network-clock.md; native three original filters added to unchanged mandatory verifier. Native helper/value fixture has 63 actual complete states, signed/missing/unnormalized/zero and int32/i64 narrowing edges, exact opaque remote bytes and fresh native observer counts. Constructor bounds/rollback, payload rejection, coherent retained values, malformed/overflow error counters, shared-dispatch real-exit cleanup, retirement and other-callback survival are tested. Focused 63/63 lines and 86/86 regions is diagnostic only; candidate 122/7/289 requires full strict staged/exact hosted success. No new dependency, Node-statistics policy, runtime Metric or broad clock-family credit."
     },
     {
       "id": "UNIT_Descriptor_TEST:Descriptor.ConstructHasNothing",

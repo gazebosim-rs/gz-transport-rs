@@ -5,6 +5,7 @@ mod config;
 #[cfg(unix)]
 mod interfaces;
 mod names;
+mod network_clock;
 mod protocol;
 mod runtime;
 mod sample_statistics;
@@ -13,6 +14,7 @@ mod topic_statistics;
 pub use config::Config;
 pub use gz_msgs::discovery::discovery::publisher::Scope;
 pub use names::{as_valid_topic, decompose_fully_qualified_topic, qualified_name};
+pub use network_clock::{ClockTimeBase, NetworkClock};
 pub use runtime::{
     AdvertiseOptions, CallbackRequest, CallbackService, CallbackSubscription, Message, MessageInfo,
     Node, OneWayCallbackService, PendingResponse, Publisher, ReceivedMessage, Request, Service,

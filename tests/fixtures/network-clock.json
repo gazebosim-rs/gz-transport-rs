@@ -1,0 +1,481 @@
+{
+  "scope": "Actual SDK NetworkClock values/serialized messages, no malformed native arithmetic; not timing/performance evidence",
+  "compiler": "c++ (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0",
+  "source_sha256": "1428476f9d2b66aad843f94354913257ed6969053604880d7e455f10b6fecc3c",
+  "peer_sha256": "b99207158d012ad9d1a2eb41bcd40797e980b1f0d68215e10f0122c10deec2a1",
+  "cases": [
+    {
+      "base": "sim",
+      "records": [
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 0,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 1,
+          "wire_hex": "2200"
+        },
+        {
+          "command": "SET 1",
+          "ready": true,
+          "time_ns": 1,
+          "observed_messages": 2,
+          "wire_hex": "22021001"
+        },
+        {
+          "command": "SET -1",
+          "ready": true,
+          "time_ns": -1,
+          "observed_messages": 3,
+          "wire_hex": "220b10ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 1000000001",
+          "ready": true,
+          "time_ns": 1000000001,
+          "observed_messages": 4,
+          "wire_hex": "220408011001"
+        },
+        {
+          "command": "SET -1000000001",
+          "ready": true,
+          "time_ns": -1000000001,
+          "observed_messages": 5,
+          "wire_hex": "221608ffffffffffffffffff0110ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 54321000012345",
+          "ready": true,
+          "time_ns": 54321000012345,
+          "observed_messages": 6,
+          "wire_hex": "220708b1a80310b960"
+        },
+        {
+          "command": "SET 54321000024690",
+          "ready": true,
+          "time_ns": 54321000024690,
+          "observed_messages": 7,
+          "wire_hex": "220808b1a80310f2c001"
+        },
+        {
+          "command": "SET 2147483647999999999",
+          "ready": true,
+          "time_ns": 2147483647999999999,
+          "observed_messages": 8,
+          "wire_hex": "220c08ffffffff0710ff93ebdc03"
+        },
+        {
+          "command": "SET 2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 9,
+          "wire_hex": "220b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 10,
+          "wire_hex": "220b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483649000000000",
+          "ready": true,
+          "time_ns": 2147483647000000000,
+          "observed_messages": 11,
+          "wire_hex": "220608ffffffff07"
+        },
+        {
+          "command": "SET 9223372036854775807",
+          "ready": true,
+          "time_ns": 633437444854775807,
+          "observed_messages": 12,
+          "wire_hex": "220c0884fa85ae0210ffafcb9703"
+        },
+        {
+          "command": "SET -9223372036854775808",
+          "ready": true,
+          "time_ns": -633437444854775808,
+          "observed_messages": 13,
+          "wire_hex": "221608fc85fad1fdffffffff011080d0b4e8fcffffffff01"
+        },
+        {
+          "command": "STAMP -3 7",
+          "ready": true,
+          "time_ns": -2999999993,
+          "observed_messages": 14,
+          "wire_hex": "220d08fdffffffffffffffff011007"
+        },
+        {
+          "command": "STAMP 3 -7",
+          "ready": true,
+          "time_ns": 2999999993,
+          "observed_messages": 15,
+          "wire_hex": "220d080310f9ffffffffffffffff01"
+        },
+        {
+          "command": "STAMP 0 2147483647",
+          "ready": true,
+          "time_ns": 2147483647,
+          "observed_messages": 16,
+          "wire_hex": "220610ffffffff07"
+        },
+        {
+          "command": "STAMP 0 -2147483648",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 17,
+          "wire_hex": "220b1080808080f8ffffffff01"
+        },
+        {
+          "command": "MSG -",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 18,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "2200"
+        },
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "2200"
+        }
+      ],
+      "stdout": "READY\nSTATE 0 0 0 -\nSTATE 0 0 1 2200\nSTATE 1 1 2 22021001\nSTATE 1 -1 3 220b10ffffffffffffffffff01\nSTATE 1 1000000001 4 220408011001\nSTATE 1 -1000000001 5 221608ffffffffffffffffff0110ffffffffffffffffff01\nSTATE 1 54321000012345 6 220708b1a80310b960\nSTATE 1 54321000024690 7 220808b1a80310f2c001\nSTATE 1 2147483647999999999 8 220c08ffffffff0710ff93ebdc03\nSTATE 1 -2147483648000000000 9 220b0880808080f8ffffffff01\nSTATE 1 -2147483648000000000 10 220b0880808080f8ffffffff01\nSTATE 1 2147483647000000000 11 220608ffffffff07\nSTATE 1 633437444854775807 12 220c0884fa85ae0210ffafcb9703\nSTATE 1 -633437444854775808 13 221608fc85fad1fdffffffff011080d0b4e8fcffffffff01\nSTATE 1 -2999999993 14 220d08fdffffffffffffffff011007\nSTATE 1 2999999993 15 220d080310f9ffffffffffffffff01\nSTATE 1 2147483647 16 220610ffffffff07\nSTATE 1 -2147483648 17 220b1080808080f8ffffffff01\nSTATE 1 -2147483648 18 -\nSTATE 0 0 19 2200\nSTATE 0 0 19 2200\n",
+      "stderr": "Sim time not present in clock message\n",
+      "exit": 0
+    },
+    {
+      "base": "real",
+      "records": [
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 0,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 1,
+          "wire_hex": "1a00"
+        },
+        {
+          "command": "SET 1",
+          "ready": true,
+          "time_ns": 1,
+          "observed_messages": 2,
+          "wire_hex": "1a021001"
+        },
+        {
+          "command": "SET -1",
+          "ready": true,
+          "time_ns": -1,
+          "observed_messages": 3,
+          "wire_hex": "1a0b10ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 1000000001",
+          "ready": true,
+          "time_ns": 1000000001,
+          "observed_messages": 4,
+          "wire_hex": "1a0408011001"
+        },
+        {
+          "command": "SET -1000000001",
+          "ready": true,
+          "time_ns": -1000000001,
+          "observed_messages": 5,
+          "wire_hex": "1a1608ffffffffffffffffff0110ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 54321000012345",
+          "ready": true,
+          "time_ns": 54321000012345,
+          "observed_messages": 6,
+          "wire_hex": "1a0708b1a80310b960"
+        },
+        {
+          "command": "SET 54321000024690",
+          "ready": true,
+          "time_ns": 54321000024690,
+          "observed_messages": 7,
+          "wire_hex": "1a0808b1a80310f2c001"
+        },
+        {
+          "command": "SET 2147483647999999999",
+          "ready": true,
+          "time_ns": 2147483647999999999,
+          "observed_messages": 8,
+          "wire_hex": "1a0c08ffffffff0710ff93ebdc03"
+        },
+        {
+          "command": "SET 2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 9,
+          "wire_hex": "1a0b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 10,
+          "wire_hex": "1a0b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483649000000000",
+          "ready": true,
+          "time_ns": 2147483647000000000,
+          "observed_messages": 11,
+          "wire_hex": "1a0608ffffffff07"
+        },
+        {
+          "command": "SET 9223372036854775807",
+          "ready": true,
+          "time_ns": 633437444854775807,
+          "observed_messages": 12,
+          "wire_hex": "1a0c0884fa85ae0210ffafcb9703"
+        },
+        {
+          "command": "SET -9223372036854775808",
+          "ready": true,
+          "time_ns": -633437444854775808,
+          "observed_messages": 13,
+          "wire_hex": "1a1608fc85fad1fdffffffff011080d0b4e8fcffffffff01"
+        },
+        {
+          "command": "STAMP -3 7",
+          "ready": true,
+          "time_ns": -2999999993,
+          "observed_messages": 14,
+          "wire_hex": "1a0d08fdffffffffffffffff011007"
+        },
+        {
+          "command": "STAMP 3 -7",
+          "ready": true,
+          "time_ns": 2999999993,
+          "observed_messages": 15,
+          "wire_hex": "1a0d080310f9ffffffffffffffff01"
+        },
+        {
+          "command": "STAMP 0 2147483647",
+          "ready": true,
+          "time_ns": 2147483647,
+          "observed_messages": 16,
+          "wire_hex": "1a0610ffffffff07"
+        },
+        {
+          "command": "STAMP 0 -2147483648",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 17,
+          "wire_hex": "1a0b1080808080f8ffffffff01"
+        },
+        {
+          "command": "MSG -",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 18,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "1a00"
+        },
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "1a00"
+        }
+      ],
+      "stdout": "READY\nSTATE 0 0 0 -\nSTATE 0 0 1 1a00\nSTATE 1 1 2 1a021001\nSTATE 1 -1 3 1a0b10ffffffffffffffffff01\nSTATE 1 1000000001 4 1a0408011001\nSTATE 1 -1000000001 5 1a1608ffffffffffffffffff0110ffffffffffffffffff01\nSTATE 1 54321000012345 6 1a0708b1a80310b960\nSTATE 1 54321000024690 7 1a0808b1a80310f2c001\nSTATE 1 2147483647999999999 8 1a0c08ffffffff0710ff93ebdc03\nSTATE 1 -2147483648000000000 9 1a0b0880808080f8ffffffff01\nSTATE 1 -2147483648000000000 10 1a0b0880808080f8ffffffff01\nSTATE 1 2147483647000000000 11 1a0608ffffffff07\nSTATE 1 633437444854775807 12 1a0c0884fa85ae0210ffafcb9703\nSTATE 1 -633437444854775808 13 1a1608fc85fad1fdffffffff011080d0b4e8fcffffffff01\nSTATE 1 -2999999993 14 1a0d08fdffffffffffffffff011007\nSTATE 1 2999999993 15 1a0d080310f9ffffffffffffffff01\nSTATE 1 2147483647 16 1a0610ffffffff07\nSTATE 1 -2147483648 17 1a0b1080808080f8ffffffff01\nSTATE 1 -2147483648 18 -\nSTATE 0 0 19 1a00\nSTATE 0 0 19 1a00\n",
+      "stderr": "Real time not present in clock message\n",
+      "exit": 0
+    },
+    {
+      "base": "system",
+      "records": [
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 0,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 1,
+          "wire_hex": "1200"
+        },
+        {
+          "command": "SET 1",
+          "ready": true,
+          "time_ns": 1,
+          "observed_messages": 2,
+          "wire_hex": "12021001"
+        },
+        {
+          "command": "SET -1",
+          "ready": true,
+          "time_ns": -1,
+          "observed_messages": 3,
+          "wire_hex": "120b10ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 1000000001",
+          "ready": true,
+          "time_ns": 1000000001,
+          "observed_messages": 4,
+          "wire_hex": "120408011001"
+        },
+        {
+          "command": "SET -1000000001",
+          "ready": true,
+          "time_ns": -1000000001,
+          "observed_messages": 5,
+          "wire_hex": "121608ffffffffffffffffff0110ffffffffffffffffff01"
+        },
+        {
+          "command": "SET 54321000012345",
+          "ready": true,
+          "time_ns": 54321000012345,
+          "observed_messages": 6,
+          "wire_hex": "120708b1a80310b960"
+        },
+        {
+          "command": "SET 54321000024690",
+          "ready": true,
+          "time_ns": 54321000024690,
+          "observed_messages": 7,
+          "wire_hex": "120808b1a80310f2c001"
+        },
+        {
+          "command": "SET 2147483647999999999",
+          "ready": true,
+          "time_ns": 2147483647999999999,
+          "observed_messages": 8,
+          "wire_hex": "120c08ffffffff0710ff93ebdc03"
+        },
+        {
+          "command": "SET 2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 9,
+          "wire_hex": "120b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483648000000000",
+          "ready": true,
+          "time_ns": -2147483648000000000,
+          "observed_messages": 10,
+          "wire_hex": "120b0880808080f8ffffffff01"
+        },
+        {
+          "command": "SET -2147483649000000000",
+          "ready": true,
+          "time_ns": 2147483647000000000,
+          "observed_messages": 11,
+          "wire_hex": "120608ffffffff07"
+        },
+        {
+          "command": "SET 9223372036854775807",
+          "ready": true,
+          "time_ns": 633437444854775807,
+          "observed_messages": 12,
+          "wire_hex": "120c0884fa85ae0210ffafcb9703"
+        },
+        {
+          "command": "SET -9223372036854775808",
+          "ready": true,
+          "time_ns": -633437444854775808,
+          "observed_messages": 13,
+          "wire_hex": "121608fc85fad1fdffffffff011080d0b4e8fcffffffff01"
+        },
+        {
+          "command": "STAMP -3 7",
+          "ready": true,
+          "time_ns": -2999999993,
+          "observed_messages": 14,
+          "wire_hex": "120d08fdffffffffffffffff011007"
+        },
+        {
+          "command": "STAMP 3 -7",
+          "ready": true,
+          "time_ns": 2999999993,
+          "observed_messages": 15,
+          "wire_hex": "120d080310f9ffffffffffffffff01"
+        },
+        {
+          "command": "STAMP 0 2147483647",
+          "ready": true,
+          "time_ns": 2147483647,
+          "observed_messages": 16,
+          "wire_hex": "120610ffffffff07"
+        },
+        {
+          "command": "STAMP 0 -2147483648",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 17,
+          "wire_hex": "120b1080808080f8ffffffff01"
+        },
+        {
+          "command": "MSG -",
+          "ready": true,
+          "time_ns": -2147483648,
+          "observed_messages": 18,
+          "wire_hex": "-"
+        },
+        {
+          "command": "SET 0",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "1200"
+        },
+        {
+          "command": "GET",
+          "ready": false,
+          "time_ns": 0,
+          "observed_messages": 19,
+          "wire_hex": "1200"
+        }
+      ],
+      "stdout": "READY\nSTATE 0 0 0 -\nSTATE 0 0 1 1200\nSTATE 1 1 2 12021001\nSTATE 1 -1 3 120b10ffffffffffffffffff01\nSTATE 1 1000000001 4 120408011001\nSTATE 1 -1000000001 5 121608ffffffffffffffffff0110ffffffffffffffffff01\nSTATE 1 54321000012345 6 120708b1a80310b960\nSTATE 1 54321000024690 7 120808b1a80310f2c001\nSTATE 1 2147483647999999999 8 120c08ffffffff0710ff93ebdc03\nSTATE 1 -2147483648000000000 9 120b0880808080f8ffffffff01\nSTATE 1 -2147483648000000000 10 120b0880808080f8ffffffff01\nSTATE 1 2147483647000000000 11 120608ffffffff07\nSTATE 1 633437444854775807 12 120c0884fa85ae0210ffafcb9703\nSTATE 1 -633437444854775808 13 121608fc85fad1fdffffffff011080d0b4e8fcffffffff01\nSTATE 1 -2999999993 14 120d08fdffffffffffffffff011007\nSTATE 1 2999999993 15 120d080310f9ffffffffffffffff01\nSTATE 1 2147483647 16 120610ffffffff07\nSTATE 1 -2147483648 17 120b1080808080f8ffffffff01\nSTATE 1 -2147483648 18 -\nSTATE 0 0 19 1200\nSTATE 0 0 19 1200\n",
+      "stderr": "System time not present in clock message\n",
+      "exit": 0
+    }
+  ],
+  "libraries": {
+    "libgz-transport.so.16": "bc5f7f5be430acba74cc7213b5141b414afa513adbbd62c824119d3316ca9a76",
+    "libgz-msgs.so.13": "18039affff238c6f1db7fbe304ef2375e3bae2dd91fbc5e72aba61534f40442b",
+    "libgz-utils.so.5": "5bfa7b6196734ae9b4b038b1918c08268070e8a6a954936d585e00999be24c79"
+  },
+  "copyright": "Copyright (C) 2026 Open Source Robotics Foundation",
+  "license": "Apache-2.0",
+  "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26"
+}

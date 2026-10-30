@@ -26,6 +26,10 @@ An owned `TopicStatistics` value adds explicit-time samples and bounded sender
 history; see [topic statistics](docs/NET-01-topic-statistics.md). Its bounded
 `fill_metric` formatter appends native typed values without publishing them; see
 [metric values](docs/NET-01-metric-values.md).
+`NetworkClock` attaches a selected SIM/REAL/SYS clock to an existing Node, using
+its bounded shared callbacks and canonical publication. See the [owned network
+clock contract](docs/NET-02-network-clock.md) for signed samples, native setter
+width, admission and retirement.
 `Node::subscribe_typed_callback` adds explicitly owned asynchronous canonical
 callbacks with a demand-created shared dispatcher; see the
 [callback contract](docs/NET-02-async-subscription-callbacks.md).

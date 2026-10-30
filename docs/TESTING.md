@@ -1435,3 +1435,36 @@ debug 3, release 3, native 2 and 42 tools, all passing with no findings and all
 processes exited. Exactly two reviewed candidate ledger rows give conditional
 totals 119 faithful, 7 partial and 292 pending; full normal staged and exact hosted
 qualification remain pending. See the [signal contract](NET-02-signal-termination.md).
+
+
+## Selected owned NetworkClock candidate
+
+A separate NetworkClock candidate retains all three pinned SIM/REAL/SYS
+Functionality original bodies, including every distinct MakeClockMessage field
+and all three 100 ms sleeps. Author debug and release each passed seven public
+controls, two pure tests and two native/wire controls; all three unchanged native
+originals passed.
+The actual SDK helper records and replays 63 value/wire states. Separate
+bidirectional C++/Rust tests require remote opaque receipt and fresh native
+observer counts, including negative/zero and native int32-second narrowing
+boundaries. No malformed native signed-overflow oracle is invoked.
+
+Teardown, payload and admission controls passed, including blocked shared
+dispatch cleanup, other-callback survival, retirement errors and unchanged
+retained state. Focused diagnostic module coverage is 63/63 executable lines and
+86/86 regions; aggregate/full staged coverage has not been claimed. Independent
+review found one fixture setup assumption: four async registration commands
+could fill the capacity-four queue before initial publication. The corrected
+shared-teardown fixture reserves five slots for that bounded batch, preserving
+all lifecycle predicates, deadlines and the separate capacity-one rollback
+control. The failed release log remains evidence, not a pass.
+
+Independent reviewer `/root/integration_reviewer` used fresh source/target and a
+freshly compiled canonical helper. Corrected debug/release each passed two pure,
+seven public and two native/wire controls; unchanged native originals three,
+Clippy and 42 tools also passed. Same-dispatcher cleanup deferral and sparse
+diagnostics are explicitly scoped. Exactly three reviewed candidate ledger rows
+give conditional totals 122 faithful, 7 partial and 289 pending; the full normal
+staged and exact hosted checks remain pending. The
+[clock contract](NET-02-network-clock.md) records caller ownership, sparse-message
+diagnostic disposition and the historical setter width.

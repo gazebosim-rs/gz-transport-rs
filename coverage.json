@@ -17,7 +17,8 @@
     "src/topic_statistics.rs",
     "src/config.rs",
     "src/interfaces.rs",
-    "nss/src/lib.rs"
+    "nss/src/lib.rs",
+    "src/network_clock.rs"
   ],
   "exclusions": [],
   "required_runners": [
@@ -40,7 +41,8 @@
       "src/sample_statistics.rs",
       "src/topic_statistics.rs",
       "src/config.rs",
-      "src/interfaces.rs"
+      "src/interfaces.rs",
+      "src/network_clock.rs"
     ],
     "gz-transport-nss": [
       "nss/src/lib.rs"

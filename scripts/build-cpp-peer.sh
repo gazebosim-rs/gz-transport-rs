@@ -23,3 +23,6 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/interface_selection_peer.cc -o artifa
 c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/interface_inputs.cc -o artifacts/interface-inputs.so -ldl
 c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/nss_failure.cc -o artifacts/nss-failure.so -ldl
 cc -std=c11 -Wall -Wextra -Werror -O2 tests/nss_peer.c -o artifacts/nss-peer
+
+# NetworkClock values and bidirectional Clock messages use the actual SDK.
+c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/network_clock_peer.cc -o artifacts/network-clock-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
