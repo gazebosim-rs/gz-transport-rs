@@ -94,8 +94,10 @@ version and ownership policies with the pinned source. The failure test injects
 missing sequence ownership and a nonblocking socket failure, not a clock failure.
 Strict normal staged coverage and exact hosted qualification remain required.
 No ledger rows gain credit from this slice.
-Aggregate `TopicStatistics`, metric publications, native
+Runtime topic aggregation, metric publications, native
 global identities and broad statistics or NET-01 parity remain open; operational
 `Node::statistics()` counters retain their existing meaning.
 The separate [SampleStatistics value](NET-01-sample-statistics.md) implements
 scalar sample accumulation without changing this transport profile.
+The [standalone TopicStatistics value](NET-01-topic-statistics.md) uses explicit
+times and bounded sender history; it is not connected to this receive path.

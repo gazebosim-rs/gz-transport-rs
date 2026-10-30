@@ -1,0 +1,61 @@
+# Copyright (C) 2026 Open Source Robotics Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Pure native study input values; reception time is an explicit Rust translation.
+RESET original_drop
+ADD 10 666f6f 1 0
+ADD 20 666f6f 2 1
+ADD 30 666f6f 3 3
+ADD 40 666f6f 4 5
+ADD 50 666f6f 5 6
+RESET gap_events
+ADD 10 61 1 0
+ADD 20 61 2 100
+ADD 30 61 3 500
+ADD 40 61 4 501
+RESET zero_sentinel
+ADD 10 61 0 17
+ADD 20 61 1 18
+ADD 30 61 2 19
+ADD 40 61 0 90
+ADD 50 61 1 300
+ADD 60 61 2 301
+RESET new_sender
+ADD 10 61 1 700
+ADD 20 62 2 1
+ADD 30 63 3 0
+ADD 40 63 4 1
+ADD 50 61 5 701
+RESET duplicates_and_backward
+ADD 10 61 1 5
+ADD 20 61 2 5
+ADD 30 61 3 4
+ADD 40 61 4 5
+RESET wrap
+ADD 10 61 1 18446744073709551615
+ADD 20 61 2 0
+ADD 30 61 3 1
+RESET sender_identity
+ADD 10 - 1 0
+ADD 20 - 2 2
+ADD 30 58 3 1
+ADD 40 78 4 0
+ADD 50 58 5 2
+RESET stamp_wrap
+ADD 10 61 18446744073709551615 0
+ADD 20 61 0 1
+ADD 30 61 5 900
+ADD 40 61 4 901
+RESET exact_bytes
+ADD 10 61 1 0
+ADD 20 6100 2 1
+ADD 30 ff 3 0
+ADD 40 ff 4 1
+ADD 50 6100 5 2
+ADD 60 61 6 1
+RESET copy_original
+ADD 10 61 1 0
+ADD 20 61 2 1
+SAVE independent
+ADD 30 61 3 3
+LOAD independent
+ADD 30 61 3 2

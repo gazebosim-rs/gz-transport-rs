@@ -1068,7 +1068,6 @@ including the final distinct-port setup. Only those six value originals gain
 candidate faithful-port credit; normal staged coverage and exact hosted
 qualification remain required before acceptance.
 
-
 The [statistics transport profile](NET-01-statistics-wire.md) has separate exact
 configuration, wire-frame, mode-domain, history and lifecycle controls. The
 previous explicit statistics=1 Unsupported input moves into a complete positive
@@ -1093,7 +1092,8 @@ remain required; metric and global-identity work stays open.
 The [SampleStatistics value](NET-01-sample-statistics.md) preserves the complete
 native MinMax and AvgStdDev scalar cases, including the original 1e-3 tolerance.
 The normal gate also runs all four unchanged native TopicsStatistics originals;
-Constructor and DroppedMsg remain pending because topic aggregation is absent.
+Constructor and DroppedMsg belong to the separate bounded topic value and
+receive no credit from this scalar slice.
 A separate pure native helper emits every scalar getter from exact input bits.
 The retained 604-state corpus, all reduced library underflow counterexamples and
 43,122 longer adversarial states are compared against that helper. It creates
@@ -1105,5 +1105,23 @@ operational counter/runtime behavior changes. Independent fresh source/target
 and canonical helper review passed two private and six public/native tests in
 both debug and release, four unchanged native originals and independently
 rebuilt five-version/six-reduction library controls. Only MinMax/AvgStdDev gain
-candidate faithful-port credit; normal strict staged coverage and exact hosted
-qualification remain required before acceptance.
+faithful-port credit from that scalar slice. Its normal staged hook and exact
+hosted checks passed at published `3c718b5`; the linked contract records counts.
+
+The [owned TopicStatistics value](NET-01-topic-statistics.md) has separate
+complete Constructor and DroppedMsg ports with explicit Rust limits/reception
+times. The original sender, stamps, sequences and all drop predicates remain.
+Its actual pure native helper covers 58 input/copy commands: all drop/sample
+counts, publication values and complete empty constructor fields are compared.
+Nonempty native reception/age getter values come from its hidden clock; Rust
+uses explicit times and tests those numerical policies deterministically,
+without claiming actual clock equality. Admission controls prove cardinality
+and total sender-byte failures precede all mutation, preserve known-sender
+progress, and keep exact binary identities/deep-copy ownership. Source-defined
+overflow controls do not claim impossible allocations or 2^64 native updates.
+Independent fresh source/target/helper review passed four private plus six new
+public/native checks and six unchanged scalar checks in both debug and release,
+all 58 native commands, two unchanged originals and an additional age-wrap
+control. Only complete Constructor/DroppedMsg gain candidate credit; no Node
+integration is included, and normal staged/exact hosted qualification remains
+required before acceptance.

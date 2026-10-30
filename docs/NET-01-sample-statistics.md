@@ -92,15 +92,19 @@ two-ULP guarantee.
 The native `TopicsStatistics.MinMax` and `TopicsStatistics.AvgStdDev` bodies
 have complete Rust ports, retaining all values, assertions and the original
 third-sample 1e-3 tolerance. The scalar constructor checks are supplemental:
-`TopicsStatistics.Constructor` also requires TopicStatistics values and remains
-pending. `TopicsStatistics.DroppedMsg` remains pending. TopicStatistics sender
-maps, clocks, timing aggregation, Metric formatting/publication, runtime
-integration and broader NET-01/statistics completion are outside this slice.
+`TopicsStatistics.Constructor` and `TopicsStatistics.DroppedMsg` belong to the
+separate [bounded TopicStatistics value](NET-01-topic-statistics.md); neither
+gains credit from this scalar slice. TopicStatistics sender maps, clocks,
+timing aggregation, Metric formatting/publication, runtime integration and
+broader NET-01/statistics completion are outside this scalar slice.
 Independent review used a fresh source export, target and canonical helper:
 two private and six public/native tests pass in both debug and release,
 including all 604 retained, 16 reduced and 43,122 longer native getter states.
 All four unchanged native originals also pass. The reviewer separately rebuilt
 all five evaluated library versions and reproduced all six recorded zero/nonzero
 counterexamples in both profiles. No findings remain. Only MinMax and AvgStdDev
-gain candidate faithful-port credit (105/7/306 becomes 107/7/304); acceptance
-still requires the strict normal staged gate and exact hosted checks.
+gain faithful-port credit (105/7/306 became 107/7/304). The normal staged hook
+passed 398 Rust checks and 24 tooling checks with 4231/4313 production lines,
+5997/6212 regions and all 41 changed executable lines covered. Published
+`3c718b5700e36d764a671706b2ca2ed143a3db65` passed
+[exact hosted checks](https://github.com/gazebosim-rs/gz-transport-rs/actions/runs/41005912032).

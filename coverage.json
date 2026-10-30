@@ -12,6 +12,7 @@
     "src/protocol.rs",
     "src/runtime.rs",
     "src/sample_statistics.rs",
+    "src/topic_statistics.rs",
     "src/config.rs"
   ],
   "exclusions": [],
