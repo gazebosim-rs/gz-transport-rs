@@ -1125,3 +1125,31 @@ all 58 native commands, two unchanged originals and an additional age-wrap
 control. Only complete Constructor/DroppedMsg gain candidate credit; no Node
 integration is included, and normal staged/exact hosted qualification remains
 required before acceptance.
+
+
+The value-only `TopicStatistics::fill_metric` controls in `tests/topic_metric.rs`
+check native enum/name/order/unit/default fields, zero-period infinity, prefix
+and header preservation, repeated append and exact/one-short/zero encoded-byte
+budgets. Prefix unit lengths0/1/127/128/4096 exercise replacement accounting;
+failed budgets preserve complete protobuf bytes. A private synthetic scalar
+control checks NaN/infinities and encoded floating-point bits without claiming
+those states arise from unsigned topic timestamp inputs.
+
+The new pure `topic-metric-peer` is linked against the selected canonical SDK
+and audited alongside the other helpers. Only its child process receives the
+test `topic-metric-clock.so` preload. That helper verifies actual steady-clock
+milliseconds20/30/38, passthrough realtime and all native populated getter values
+before producing four complete FillMessage wires (empty, populated, prefixed,
+repeated). Rust matches every byte and roundtrips through generated Metric.
+This is controlled-clock value/encoding evidence, not runtime timing, delivery
+or unchanged-original evidence. Old uncontrolled/native-original fixtures remain
+unchanged. No Node behavior, dependency, exclusion or ledger credit changes.
+
+The independent Metric review used a fresh source/target and rebuilt canonical
+helpers, passing sixteen public/native and five private checks in both profiles.
+All four complete SDK wires match; active native assertions, actual clock and
+linkage checks were inspected. The final retained nested negative-zero bit
+assertion passes the reviewer's debug/release overlay. An additional
+reviewer-only Unicode/varint-prefix budget control passes actual encoded-byte
+checks, without claiming that extra fixture is committed. No findings remain;
+the normal staged coverage gate and exact hosted checks are still pending.

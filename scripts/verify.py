@@ -276,7 +276,8 @@ def verify(profile):
     for peer, linkage_file in (('cpp-peer', 'cpp-linkage.txt'),
                                ('service-scope-peer', 'service-scope-linkage.txt'),
                                ('sample-statistics-peer', 'sample-statistics-linkage.txt'),
-                               ('topic-statistics-peer', 'topic-statistics-linkage.txt')):
+                               ('topic-statistics-peer', 'topic-statistics-linkage.txt'),
+                               ('topic-metric-peer', 'topic-metric-linkage.txt')):
         linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts' / peer)], env=env, text=True)
         (ROOT / 'artifacts' / linkage_file).write_text(linkage)
         linked = re.findall(r'libgz-[^ ]+\s+=>\s+(\S+)', linkage)

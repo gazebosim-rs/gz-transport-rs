@@ -23,7 +23,9 @@ history and separate metric API limits are in the [statistics transport contract
 `SampleStatistics` provides owned scalar sample values independently of Node
 counters; see [scalar statistics and numeric compatibility](docs/NET-01-sample-statistics.md).
 An owned `TopicStatistics` value adds explicit-time samples and bounded sender
-history; see [topic statistics](docs/NET-01-topic-statistics.md).
+history; see [topic statistics](docs/NET-01-topic-statistics.md). Its bounded
+`fill_metric` formatter appends native typed values without publishing them; see
+[metric values](docs/NET-01-metric-values.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).

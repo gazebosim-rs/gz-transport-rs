@@ -8,7 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 `TopicStatistics` is an owned value with explicit reception times and bounded
 sender history. It reuses three `SampleStatistics` values for publication
 periods, reception periods and message age. It does not read clocks, attach to
-a Node, retain received wire metadata or format/publish metric messages. Node's
+a Node or retain received wire metadata. Its optional
+[bounded metric formatter](NET-01-metric-values.md) appends owned typed values
+without publishing messages. Node's
 existing operational `Statistics` counters and sender-side wire sequence history
 keep their existing contracts.
 
@@ -92,4 +94,4 @@ future-publication age-wrap control. Source ownership, bounds, copy semantics
 and the explicit-time setup translation have no remaining findings. Only
 Constructor and DroppedMsg gain candidate whole-case credit (107/7/304 becomes
 109/7/302); acceptance still requires the normal staged coverage gate and exact
-hosted checks. Runtime clock/receive/Metric integration remains outside the slice.
+hosted checks. Runtime clock/receive/Metric publisher integration remains outside the slice.

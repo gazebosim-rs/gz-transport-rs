@@ -126,3 +126,37 @@ fn arithmetic_guards_and_drop_counter_wrap_are_source_boundaries() {
     stats.update_at(2, "a", 2, 5).unwrap();
     assert_eq!(0, stats.dropped_msg_count());
 }
+
+#[test]
+fn metric_nonfinite_scalar_values_preserve_generated_double_encoding() {
+    let mut stats = TopicStatistics::new(0, 0);
+    // Synthetic scalar state checks the formatting boundary independently of
+    // the public topic input's finite unsigned-millisecond domain.
+    stats.publication.update(f64::NAN);
+    stats.reception.update(f64::INFINITY);
+    stats.age.update(f64::NEG_INFINITY);
+    let before = stats.clone();
+    let mut metric = Metric::default();
+    stats.fill_metric(&mut metric, usize::MAX).unwrap();
+    assert_same(&stats, &before);
+    assert!(metric.statistics_groups[0].statistics[0].value.is_nan());
+    assert_eq!(
+        0.0_f64.to_bits(),
+        metric.statistics_groups[1].statistics[0].value.to_bits()
+    );
+    assert_eq!(
+        f64::NEG_INFINITY,
+        metric.statistics_groups[2].statistics[0].value
+    );
+    let bytes = metric.encode_to_vec();
+    let decoded = Metric::decode(bytes.as_slice()).unwrap();
+    for (expected, actual) in metric
+        .statistics_groups
+        .iter()
+        .zip(&decoded.statistics_groups)
+    {
+        for (expected, actual) in expected.statistics.iter().zip(&actual.statistics) {
+            assert_eq!(expected.value.to_bits(), actual.value.to_bits());
+        }
+    }
+}

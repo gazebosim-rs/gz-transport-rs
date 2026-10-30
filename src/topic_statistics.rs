@@ -1,6 +1,10 @@
 // Copyright (C) 2020, 2026 Open Source Robotics Foundation
 // SPDX-License-Identifier: Apache-2.0
 use crate::{Error, SampleStatistics};
+use gz_msgs::{
+    msgs::{Metric, Statistic, StatisticsGroup, statistic::DataType},
+    prost::Message,
+};
 use std::collections::HashMap;
 
 /// Owned bounded topic samples, with explicit native-epoch millisecond inputs.
@@ -89,6 +93,81 @@ impl TopicStatistics {
         Ok(())
     }
 
+    /// Append native metric values while preserving the existing header and lists.
+    ///
+    /// The unit becomes "milliseconds". The final protobuf encoded size must not
+    /// exceed `max_encoded_bytes`; QueueFull leaves the message unchanged.
+    /// This formats owned samples only: it reads no clocks and publishes nothing.
+    pub fn fill_metric(&self, metric: &mut Metric, max_encoded_bytes: usize) -> Result<(), Error> {
+        let mut additions = Metric {
+            unit: "milliseconds".into(),
+            statistics: vec![statistic(
+                DataType::SampleCount,
+                "dropped_message_count",
+                self.dropped as f64,
+            )],
+            ..Default::default()
+        };
+        for (name, sample, frequency) in [
+            ("publication_statistics", self.publication, true),
+            ("reception_statistics", self.reception, true),
+            ("age_statistics", self.age, false),
+        ] {
+            let names = if frequency {
+                [
+                    "avg_hz",
+                    "min_period",
+                    "max_period",
+                    "period_standard_devation",
+                ]
+            } else {
+                ["avg_age", "min_age", "max_age", "age_standard_devation"]
+            };
+            let values = [
+                if frequency {
+                    1000.0 / sample.avg()
+                } else {
+                    sample.avg()
+                },
+                sample.min(),
+                sample.max(),
+                sample.std_dev(),
+            ];
+            additions.statistics_groups.push(StatisticsGroup {
+                name: name.into(),
+                statistics: [
+                    DataType::Average,
+                    DataType::Minimum,
+                    DataType::Maximum,
+                    DataType::Stddev,
+                ]
+                .into_iter()
+                .zip(names)
+                .zip(values)
+                .map(|((kind, name), value)| statistic(kind, name, value))
+                .collect(),
+                ..Default::default()
+            });
+        }
+        // Replace only the unit's encoded contribution. The fixed additions
+        // need no copy of the caller's potentially large prefix.
+        let previous_unit_bytes = if metric.unit.is_empty() {
+            0
+        } else {
+            gz_msgs::prost::encoding::string::encoded_len(2, &metric.unit)
+        };
+        let final_bytes = (metric.encoded_len() - previous_unit_bytes)
+            .checked_add(additions.encoded_len())
+            .ok_or(Error::QueueFull)?;
+        if final_bytes > max_encoded_bytes {
+            return Err(Error::QueueFull);
+        }
+        metric.unit = additions.unit;
+        metric.statistics.extend(additions.statistics);
+        metric.statistics_groups.extend(additions.statistics_groups);
+        Ok(())
+    }
+
     pub fn dropped_msg_count(&self) -> u64 {
         self.dropped
     }
@@ -103,6 +182,15 @@ impl TopicStatistics {
 
     pub fn age_statistics(&self) -> SampleStatistics {
         self.age
+    }
+}
+
+fn statistic(kind: DataType, name: &str, value: f64) -> Statistic {
+    Statistic {
+        r#type: kind.into(),
+        name: name.into(),
+        value,
+        ..Default::default()
     }
 }
 
