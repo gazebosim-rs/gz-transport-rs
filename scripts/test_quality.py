@@ -315,8 +315,70 @@ Path('artifacts/proof').write_text('isolated child ran')
 class ChangedSourcePolicy(unittest.TestCase):
     def test_changed_line_ranges_include_new_files(self):
         from verify import changed_lines
-        diff='+++ b/src/lib.rs\n@@ -2 +2,2 @@\n+++ b/src/config.rs\n@@ -0,0 +1,3 @@\n+++ b/src/deletion.rs\n@@ -4,2 +4,0 @@\n'
+        diff='--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -2 +2,2 @@\n-old\n+new\n+more\n--- /dev/null\n+++ b/src/config.rs\n@@ -0,0 +1,3 @@\n+a\n+b\n+c\n--- a/src/deletion.rs\n+++ b/src/deletion.rs\n@@ -4,2 +4,0 @@\n-a\n-b\n'
         self.assertEqual(changed_lines(diff),{'src/lib.rs':{2,3},'src/config.rs':{1,2,3},'src/deletion.rs':set()})
+
+
+    def test_raw_string_header_data_cannot_redirect_later_hunks(self):
+        import difflib
+        from verify import changed_lines
+        before = ['pub fn first() {\n', '    let _ = "old";\n', '}\n', '\n',
+                  'pub fn unchanged() {}\n', '\n', 'pub fn second() { old(); }\n']
+        after = ['pub fn first() {\n', '    let _ = r#"\n', '++ b/src/names.rs\n',
+                 '"#;\n', '}\n', '\n', 'pub fn unchanged() {}\n', '\n',
+                 'pub fn second() { uncovered(); }\n']
+        diff = ''.join(difflib.unified_diff(before, after,
+                       fromfile='a/src/lib.rs', tofile='b/src/lib.rs', n=0))
+        selected = changed_lines(diff)
+        self.assertEqual(selected, {'src/lib.rs': {2, 3, 4, 9}})
+        root = Path('/tmp/transport-header-scope')
+        lcov = (f'SF:{root}/src/lib.rs\nDA:2,1\nDA:9,0\n'
+                f'SF:{root}/src/names.rs\nDA:9,1\n')
+        owned = ['src/lib.rs', 'src/names.rs']
+        # The actual old selector redirected lib.rs line9 to names.rs. This
+        # synthetic LCOV isolates the omission; it is not LLVM/native evidence.
+        old_selection = {'src/lib.rs': {2, 3, 4}, 'src/names.rs': {9}}
+        self.assertEqual(changed_check(lcov, old_selection, root, owned),
+                         {'covered': 2, 'count': 2})
+        with self.assertRaises(ValueError):
+            changed_check(lcov, selected, root, owned)
+
+    def test_hunk_data_context_deletion_and_no_newline_markers(self):
+        from verify import changed_lines
+        diff = ('diff --git a/src/a.rs b/src/a.rs\n'
+                'index 1111111..2222222 100644\n'
+                '--- a/src/a.rs\n+++ b/src/a.rs\n'
+                '@@ -1,2 +1,3 @@\n +++ b/src/decoy.rs\n-old\n+@@ fake\n+changed\n'
+                '@@ -8 +9 @@\n-old\n\\ No newline at end of file\n'
+                '+new\n\\ No newline at end of file\n'
+                'diff --git a/src/gone.rs b/src/gone.rs\n'
+                'deleted file mode 100644\n--- a/src/gone.rs\n+++ /dev/null\n'
+                '@@ -1,2 +0,0 @@\n-a\n-b\n'
+                'diff --git a/src/mode.rs b/src/mode.rs\n'
+                'old mode 100644\nnew mode 100755\n'
+                '--- /dev/null\n+++ b/src/new file.rs\n@@ -0,0 +1 @@\n+created\n')
+        self.assertEqual(changed_lines(diff),
+                         {'src/a.rs': {1, 2, 3, 9}, 'src/new file.rs': {1}})
+        self.assertEqual(changed_lines(''), {})
+
+    def test_incomplete_or_malformed_diff_fails_closed(self):
+        from verify import changed_lines
+        header = '--- a/src/a.rs\n+++ b/src/a.rs\n'
+        cases = [
+            '+++ b/src/a.rs\n',
+            '--- a/src/a.rs\n',
+            '@@ -1 +1 @@\n-old\n+new\n',
+            header + '@@@ -1 +1 @@@\n',
+            header + '@@ -1 +1,2 @@\n-old\n+new\n',
+            header + '@@ -1 +1 @@\n-old\n+new\n+extra\n',
+            header + '@@ -1 +1 @@\n!unexpected\n',
+            header + '@@ -1 +1 @@\n-old\n+++ b/src/decoy.rs\n+extra\n',
+            '--- a/src/a.rs\n+++ /dev/null\n@@ -1 +1 @@\n-old\n+new\n',
+            '--- a/src/a.rs\n+++ "b/src/quoted.rs"\n',
+        ]
+        for diff in cases:
+            with self.subTest(diff=diff), self.assertRaises(ValueError):
+                changed_lines(diff)
 
 
 class WorkspaceInstrumentationPolicy(unittest.TestCase):

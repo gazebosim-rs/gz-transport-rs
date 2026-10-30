@@ -33,7 +33,7 @@ builds a genuine C++ peer linked to libgz-transport, executes the original
 TopicUtilsTest.testFullyQualifiedName, NodeTest.ServiceWithoutOutputCallAsync and
 NodeOptionsTest.accessors assertions, and runs Rust unit/integration
 cases with LLVM instrumentation of owned workspace packages only. LLVM warnings
-are fatal; unmodified dependencies do not enter the production denominator. Each of five handwritten production files must
+are fatal; unmodified dependencies do not enter the production denominator. Each owned handwritten production file must
 appear in the report with a nonempty denominator. Integer comparisons enforce
 strictly >95% lines and regions for the sole crate and repository independently;
 no production exclusions exist. Changed executable lines also require >95%.
@@ -1184,3 +1184,40 @@ remain and all processes exited. Exactly DestructionOrder and MoveSubscriber
 are candidate whole-case ports, conditionally changing 109/7/302 to 111/7/300;
 normal staged and exact hosted qualification remain pending. This is an additive
 slice after the separately qualified formatter, preserving its helper/prose.
+
+
+The changed-line selector consumes each unified hunk's old/new line counts
+before interpreting metadata. Added raw-string data such as `++ b/src/names.rs`
+appears as `+++ b/src/names.rs` in a patch, but remains hunk data and cannot
+redirect a later hunk. The implementation reuses the coordinator's reviewed
+hunk-state parser, preserving Transport's existing empty-set result for
+partial deletion-only hunks. Both staged and ordinary/push-range source
+selection use it; normal callers continue requesting zero context. Malformed
+or truncated counts, content outside hunks, missing old/new headers and
+unsupported quoted new paths fail closed. Coverage thresholds, production
+ownership and exclusions are unchanged.
+
+The new pure regression derives a real diff from syntactically valid Rust
+raw-string data.
+The original selector misattributes a later executable lib.rs line to names.rs;
+its recorded wrong selection accepts two of two synthetic LCOV changed lines,
+while the correct selection rejects the uncovered real line (one of two).
+This is isolated selector/LCOV evidence, not native or LLVM execution evidence.
+Reinstating the actual original function makes the new control fail. The full
+27-tool suite passes with the repaired parser. Context/data markers, omitted
+counts, no-newline records, multiple files, file deletion/mode-only changes,
+new paths with spaces and ten malformed/truncated inputs are covered. The old
+range fixture now supplies its declared hunk bodies, preserving its original
+expected line sets and assertion. Old and repaired selectors agree exactly on
+the accepted formatter's actual a57ad9f-to-fa92d2a source diff. This bounded check
+does not claim a retrospective audit of every accepted slice. No production,
+wire, dependency or ledger changes; independent review and the normal full
+staged/exact hosted checks remain required.
+
+Independent review of a fresh export passed all 27 tooling checks. An additional
+reviewer-only real-Git, raw-string, two-hunk control retained the actual changed
+source lines; deletion-only compatibility and malformed/quoted rejection were
+also checked. That extra Git control is review evidence rather than a claim
+that it is a committed fixture. Source ownership, thresholds and prior expected
+sets/assertions are unchanged, and no findings remain. The normal full staged
+gate and exact hosted qualification remain pending for this tooling slice.

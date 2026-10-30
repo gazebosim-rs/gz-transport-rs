@@ -34,14 +34,48 @@ def validate_evidence(evidence, root, profile):
 
 
 def changed_lines(diff):
-    changed, filename = {}, None
+    result, path = {}, None
+    old_left = new_left = 0
+    have_file = expect_new = False
     for line in diff.splitlines():
-        if line.startswith('+++ b/'):
-            filename = line[6:]
-        elif line.startswith('@@') and filename:
-            start, _, count = re.search(r'\+(\d+)(,(\d+))?', line).groups()
-            changed.setdefault(filename, set()).update(range(int(start), int(start) + int(count or 1)))
-    return changed
+        if line == "\\ No newline at end of file":
+            continue
+        if old_left or new_left:
+            prefix = line[:1]
+            if prefix not in ("+", "-", " "):
+                raise ValueError("incomplete changed-line hunk")
+            old_left -= prefix != "+"
+            new_left -= prefix != "-"
+            if old_left < 0 or new_left < 0:
+                raise ValueError("changed-line hunk exceeds its counts")
+            continue
+        if line.startswith("diff --git "):
+            path, have_file, expect_new = None, False, False
+        elif line.startswith("--- "):
+            path, have_file, expect_new = None, False, True
+        elif line.startswith("+++ "):
+            if not expect_new:
+                raise ValueError("changed-line file header without old path")
+            name = line[4:].removesuffix("\t")
+            if name != "/dev/null" and not name.startswith("b/"):
+                raise ValueError("unsupported quoted diff path")
+            path = None if name == "/dev/null" else name[2:]
+            have_file, expect_new = True, False
+        elif line.startswith("@@"):
+            match = re.fullmatch(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?", line)
+            if not match or not have_file:
+                raise ValueError("invalid changed-line hunk")
+            old_left, new_left = int(match[2] or 1), int(match[4] or 1)
+            start = int(match[3])
+            if path is None and new_left:
+                raise ValueError("changed lines without a file")
+            if path is not None:
+                result.setdefault(path, set()).update(range(start, start + new_left))
+        elif line.startswith(("+", "-", " ")):
+            raise ValueError("changed-line content outside a hunk")
+    if old_left or new_left or expect_new:
+        raise ValueError("incomplete changed-line diff")
+    return result
 
 
 def source_changes(root, production_files, base=None):
