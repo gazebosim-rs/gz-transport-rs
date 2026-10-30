@@ -12,8 +12,8 @@ pub use names::{as_valid_topic, decompose_fully_qualified_topic, qualified_name}
 pub use runtime::{
     AdvertiseOptions, CallbackRequest, CallbackService, Message, MessageInfo, Node,
     OneWayCallbackService, PendingResponse, Publisher, ReceivedMessage, Request, Service,
-    ServiceProviderInfo, ServiceTypeResolution, ServiceTypes, Statistics, SubscribeOptions,
-    Subscription, TopicEndpointTypes, TopicPublisherInfo, TopicSubscriberInfo,
+    ServiceOptions, ServiceProviderInfo, ServiceTypeResolution, ServiceTypes, Statistics,
+    SubscribeOptions, Subscription, TopicEndpointTypes, TopicPublisherInfo, TopicSubscriberInfo,
 };
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.

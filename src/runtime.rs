@@ -628,11 +628,7 @@ impl AdvertiseOptions {
 }
 impl std::fmt::Display for AdvertiseOptions {
     fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let scope = match self.scope {
-            Scope::Process => "Process",
-            Scope::Host => "Host",
-            Scope::All => "All",
-        };
+        let scope = scope_name(self.scope);
         writeln!(output, "Advertise options:\n\tScope: {scope}")?;
         if self.throttled() {
             writeln!(
@@ -643,6 +639,41 @@ impl std::fmt::Display for AdvertiseOptions {
         } else {
             writeln!(output, "\tThrottled? No")
         }
+    }
+}
+/// Discovery eligibility for an admitted service. This is not access control.
+/// Options are copied on admission; changing the source value cannot change a lease.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ServiceOptions {
+    scope: Scope,
+}
+impl Default for ServiceOptions {
+    fn default() -> Self {
+        Self { scope: Scope::All }
+    }
+}
+impl ServiceOptions {
+    pub fn scope(&self) -> Scope {
+        self.scope
+    }
+    pub fn set_scope(&mut self, scope: Scope) {
+        self.scope = scope;
+    }
+}
+impl std::fmt::Display for ServiceOptions {
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            output,
+            "Advertise options:\n\tScope: {}",
+            scope_name(self.scope)
+        )
+    }
+}
+fn scope_name(scope: Scope) -> &'static str {
+    match scope {
+        Scope::Process => "Process",
+        Scope::Host => "Host",
+        Scope::All => "All",
     }
 }
 /// Per-subscription local-delivery policy. The default receives publications
@@ -1626,6 +1657,22 @@ impl Node {
         request_type: &str,
         response_type: &str,
     ) -> Result<Service, Error> {
+        self.serve_with_options(
+            topic,
+            request_type,
+            response_type,
+            ServiceOptions::default(),
+        )
+    }
+    /// Admit a queued service with immutable discovery scope. Process scope is
+    /// reachable by admitted local routing; inspection remains worker-only.
+    pub fn serve_with_options(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        options: ServiceOptions,
+    ) -> Result<Service, Error> {
         let topic = self.remapped_topic(topic)?;
         let mut services = self
             .services
@@ -1654,6 +1701,7 @@ impl Node {
             topic.clone(),
             request_type.into(),
             response_type.into(),
+            options.scope,
             tx,
             lease.active.clone(),
         ))?;
@@ -1689,10 +1737,48 @@ impl Node {
     {
         self.serve_oneway_with_spawner(topic, request_type, callback, spawn_callback)
     }
+    /// Register a one-way callback with immutable service discovery scope.
+    pub fn serve_oneway_callback_with_options<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        options: ServiceOptions,
+        callback: F,
+    ) -> Result<OneWayCallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(), Error> + Send + Sync + 'static,
+    {
+        self.serve_oneway_options_with_spawner(
+            topic,
+            request_type,
+            options,
+            callback,
+            spawn_callback,
+        )
+    }
     fn serve_oneway_with_spawner<F>(
         &self,
         topic: &str,
         request_type: &str,
+        callback: F,
+        spawn: CallbackSpawner,
+    ) -> Result<OneWayCallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(), Error> + Send + Sync + 'static,
+    {
+        self.serve_oneway_options_with_spawner(
+            topic,
+            request_type,
+            ServiceOptions::default(),
+            callback,
+            spawn,
+        )
+    }
+    fn serve_oneway_options_with_spawner<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        options: ServiceOptions,
         callback: F,
         spawn: CallbackSpawner,
     ) -> Result<OneWayCallbackService, Error>
@@ -1717,7 +1803,7 @@ impl Node {
             }
         }
         let permit = self.sender.callback_permit(&self.sender.callback_threads)?;
-        let service = self.serve(topic, request_type, EMPTY_TYPE)?;
+        let service = self.serve_with_options(topic, request_type, EMPTY_TYPE, options)?;
         let state = Arc::new(OneWayCallbackState {
             callback: Box::new(callback),
             active: service._lease.active.clone(),
@@ -1782,6 +1868,27 @@ impl Node {
             spawn_callback,
         )
     }
+    /// Register an owned response callback with immutable discovery scope.
+    pub fn serve_callback_with_options<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        options: ServiceOptions,
+        callback: F,
+    ) -> Result<CallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync + 'static,
+    {
+        self.serve_callback_options_with_spawner(
+            topic,
+            request_type,
+            response_type,
+            options,
+            callback,
+            spawn_callback,
+        )
+    }
     fn serve_callback_with_spawner<F>(
         &self,
         topic: &str,
@@ -1793,10 +1900,31 @@ impl Node {
     where
         F: Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync + 'static,
     {
+        self.serve_callback_options_with_spawner(
+            topic,
+            request_type,
+            response_type,
+            ServiceOptions::default(),
+            callback,
+            spawn,
+        )
+    }
+    fn serve_callback_options_with_spawner<F>(
+        &self,
+        topic: &str,
+        request_type: &str,
+        response_type: &str,
+        options: ServiceOptions,
+        callback: F,
+        spawn: CallbackSpawner,
+    ) -> Result<CallbackService, Error>
+    where
+        F: Fn(&[u8]) -> Result<(Vec<u8>, bool), Error> + Send + Sync + 'static,
+    {
         self.remapped_topic(topic)?;
         callback_types(request_type, response_type)?;
         let permit = self.sender.callback_permit(&self.sender.callback_threads)?;
-        let service = self.serve(topic, request_type, response_type)?;
+        let service = self.serve_with_options(topic, request_type, response_type, options)?;
         let state = Arc::new(ResponseCallbackState {
             callback: Box::new(callback),
             active: service._lease.active.clone(),
@@ -2445,6 +2573,7 @@ enum Command {
         String,
         String,
         String,
+        Scope,
         Arc<SyncSender<Request>>,
         Arc<AtomicBool>,
     ),
@@ -3439,12 +3568,12 @@ impl Worker {
                     self.register_subscriber(&peer);
                 }
             }
-            Command::Serve(topic, request_type, response_type, tx, active) => {
+            Command::Serve(topic, request_type, response_type, scope, tx, active) => {
                 self.cleanup();
                 if !active.load(Ordering::Acquire) {
                     return;
                 }
-                let p = self.wire_publisher(
+                let mut p = self.wire_publisher(
                     topic,
                     PubType::SrvPub(ServicePublisher {
                         socket_id: self.router_id.clone(),
@@ -3452,7 +3581,10 @@ impl Worker {
                         response_type,
                     }),
                 );
-                self.announce(1, protocol::advertisement(&self.process, p.clone()));
+                p.scope = scope.into();
+                if scope != Scope::Process {
+                    self.announce(1, protocol::advertisement(&self.process, p.clone()));
+                }
                 self.services.push(ServiceState {
                     publisher: p,
                     tx,
@@ -4050,7 +4182,11 @@ impl Worker {
                 } else {
                     self.services
                         .iter()
-                        .filter(|s| s.active.load(Ordering::Acquire))
+                        .filter(|s| {
+                            s.active.load(Ordering::Acquire)
+                                && s.publisher.scope != i32::from(Scope::Process)
+                                && (s.publisher.scope != i32::from(Scope::Host) || local)
+                        })
                         .map(|s| s.publisher.clone())
                         .collect()
                 };

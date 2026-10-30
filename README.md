@@ -14,6 +14,9 @@ Ordinary Node destruction retains its worker while a Publisher handle survives;
 that handle can continue publishing, while Node-owned subscriptions, services
 and requests retire. Explicit `cancel()` and `shutdown()` still cancel all
 handles. See the [bounded ownership contract](docs/NET-02-publisher-after-node-drop.md).
+`ServiceOptions` adds immutable All, Host or Process service discovery scope
+through the three explicit option entry points; existing methods keep All.
+Native scoped heartbeat packets are preserved. See [service scope](docs/NET-01-service-scopes.md).
 One service per qualified topic is also allowed on each Node. Duplicate service
 registration returns `AlreadyAdvertised` and preserves the original receiver; see
 the [explicit native API disposition](docs/NET-02-service-ownership.md).

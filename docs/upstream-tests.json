@@ -1846,10 +1846,12 @@
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvDefConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvDefConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_default_constructor"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1858,17 +1860,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Default service Scope is All.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvCopyConstructor",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvCopyConstructor",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_copy_constructor"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1877,17 +1882,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Set the first service options to Host, copy its value and require equality.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvAssignmentOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvAssignmentOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_assignment"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1896,17 +1904,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Set the first service options to Process, assign to the second value and require equality.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvEqualityOp",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvEqualityOp",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_equality"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1915,17 +1926,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Process versus default All preserves both false equality and true inequality; after setting the second to Process, preserve true equality and false inequality.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvStreamInsertion",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvStreamInsertion",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_stream_insertion"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1934,17 +1948,20 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Default service options stream exactly Advertise options: newline, tab Scope: All and final newline, without a message-rate line.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_AdvertiseOptions_TEST:AdvertiseOptionsTest.srvAccessors",
       "target": "UNIT_AdvertiseOptions_TEST",
       "case": "AdvertiseOptionsTest.srvAccessors",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "original_service_options_accessors"
+      ],
+      "review": "/root/sdformat_owner; independently compared all six native assertions and scope policy, rebuilt both canonical SDK helpers and replayed 136 library plus 42 public/native Rust tests and six unchanged native originals. No findings; normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/AdvertiseOptions_TEST.cc",
@@ -1953,8 +1970,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Default Scope All changes to Host through the setter and getter.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK. Rust owned Copy and value assignment map native service-option construction and assignment. Network scope remains the bounded explicit-interface profile; no global process identity or physical multihost equivalence.",
+      "evidence": "docs/NET-01-service-scopes.md; independently reviewed native six and Rust 136+42, actual eight-field packet and data controls across all three scopes, preserved Process heartbeat and default-All legacy entry points. Mandatory verifier includes all six originals; acceptance requires the normal staged gate and exact hosted CI."
     },
     {
       "id": "UNIT_Batch_TEST:Batch.DefaultNoMessages",

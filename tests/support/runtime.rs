@@ -1481,6 +1481,7 @@ fn discovery_lifecycle_and_capacity() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         active.clone(),
     ));
@@ -1632,6 +1633,7 @@ fn local_request_overload_and_reply_routes() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         active,
     ));
@@ -1695,6 +1697,7 @@ fn unmatched_request_uses_later_typed_local_service_once() {
         "/service".into(),
         "wrong".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(wrong_tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -1710,6 +1713,7 @@ fn unmatched_request_uses_later_typed_local_service_once() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -1734,6 +1738,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         EMPTY_TYPE.into(),
+        Scope::All,
         Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -1750,6 +1755,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -1767,6 +1773,7 @@ fn late_local_service_retains_oneway_and_queue_bounds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -1784,6 +1791,7 @@ fn service_frames_validate_type_node_topic_and_request_correlation() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(tx),
         active.clone(),
     ));
@@ -2158,6 +2166,7 @@ fn oneway_wire_provider_does_not_enqueue_or_connect_a_reply() {
         "/oneway".into(),
         "req".into(),
         EMPTY_TYPE.into(),
+        Scope::All,
         Arc::new(tx),
         Arc::new(AtomicBool::new(true)),
     ));
@@ -2203,6 +2212,7 @@ fn expired_local_requests_never_enter_the_service_queue() {
             "/service".into(),
             "req".into(),
             response_type.into(),
+            Scope::All,
             Arc::new(tx),
             Arc::new(AtomicBool::new(true)),
         ));
@@ -2798,6 +2808,7 @@ fn service_signature_snapshot_filters_lifetimes_channels_and_kinds() {
         "/service".into(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(requests),
         active.clone(),
     ));
@@ -4758,6 +4769,7 @@ fn service_info_records_preserve_metadata_multiplicity_and_filter_stale_inputs()
         topic.clone(),
         "req".into(),
         "rep".into(),
+        Scope::All,
         Arc::new(mpsc::sync_channel(1).0),
         active.clone(),
     ));
@@ -7476,4 +7488,152 @@ fn admitted_service_queue_does_not_execute_a_failed_callback_registration() {
     assert_eq!(provider.sender.slots.load(Ordering::Acquire), 0);
     assert_eq!(provider.sender.callback_threads.load(Ordering::Acquire), 0);
     assert!(provider.advertised_services().unwrap().is_empty());
+}
+
+#[test]
+fn service_scope_controls_preserve_initial_subscribe_and_withdrawal_policy() {
+    for scope in [Scope::All, Scope::Host, Scope::Process] {
+        let (mut worker, _commands) = state(4);
+        let receiver = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        receiver
+            .set_read_timeout(Some(Duration::from_millis(20)))
+            .unwrap();
+        worker.config.multicast = Ipv4Addr::LOCALHOST;
+        worker.config.service_port = receiver.local_addr().unwrap().port();
+        let active = Arc::new(AtomicBool::new(true));
+        let (tx, _requests) = mpsc::sync_channel(1);
+        worker.command(Command::Serve(
+            "/scope".into(),
+            "req".into(),
+            "rep".into(),
+            scope,
+            Arc::new(tx),
+            active.clone(),
+        ));
+        let mut bytes = vec![0; protocol::MAX_DATAGRAM];
+        if scope == Scope::Process {
+            assert!(receiver.recv(&mut bytes).is_err());
+        } else {
+            let n = receiver.recv(&mut bytes).unwrap();
+            let msg = protocol::decode(&bytes[..n]).unwrap();
+            assert_eq!(msg.r#type, Type::Advertise as i32);
+            let Some(DiscContents::Pub(p)) = msg.disc_contents else {
+                panic!()
+            };
+            assert_eq!(p.scope, scope as i32);
+        }
+        for (source, local) in [
+            (Ipv4Addr::LOCALHOST, true),
+            (Ipv4Addr::new(198, 51, 100, 2), false),
+        ] {
+            worker.discovery(
+                1,
+                protocol::discovery(
+                    "requester",
+                    Type::Subscribe,
+                    Some(DiscContents::Sub(Subscriber {
+                        topic: "/scope".into(),
+                    })),
+                ),
+                source.into(),
+            );
+            if scope == Scope::Process || (scope == Scope::Host && !local) {
+                assert!(receiver.recv(&mut bytes).is_err());
+            } else {
+                let n = receiver.recv(&mut bytes).unwrap();
+                let msg = protocol::decode(&bytes[..n]).unwrap();
+                assert_eq!(msg.r#type, Type::Advertise as i32);
+                let Some(DiscContents::Pub(p)) = msg.disc_contents else {
+                    panic!()
+                };
+                assert_eq!(p.scope, scope as i32);
+            }
+        }
+        active.store(false, Ordering::Release);
+        worker.cleanup();
+        if scope == Scope::Process {
+            assert!(receiver.recv(&mut bytes).is_err());
+        } else {
+            let n = receiver.recv(&mut bytes).unwrap();
+            let msg = protocol::decode(&bytes[..n]).unwrap();
+            assert_eq!(msg.r#type, Type::Unadvertise as i32);
+            let Some(DiscContents::Pub(p)) = msg.disc_contents else {
+                panic!()
+            };
+            assert_eq!(p.scope, scope as i32);
+        }
+        assert!(worker.services.is_empty());
+    }
+}
+
+#[test]
+fn scoped_service_options_preserve_duplicate_cancel_and_spawn_rollback() {
+    let (mut worker, commands) = state(2);
+    let node = service_registry_node(&worker);
+    let mut options = ServiceOptions::default();
+    options.set_scope(Scope::Process);
+    assert!(matches!(
+        node.serve_with_options("bad name", "req", "rep", options),
+        Err(Error::InvalidName)
+    ));
+    let service = node
+        .serve_with_options("/scope", "req", "rep", options)
+        .unwrap();
+    assert!(matches!(
+        node.serve_with_options("/scope", "other", "other", ServiceOptions::default()),
+        Err(Error::AlreadyAdvertised)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 1);
+    worker.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert_eq!(
+        worker.service_provider_info(&node.topic("/scope").unwrap())[0].scope,
+        Scope::Process
+    );
+    drop(service);
+    worker.cleanup();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let entries = calls.clone();
+    assert!(matches!(
+        node.serve_callback_options_with_spawner(
+            "/failed",
+            "req",
+            "rep",
+            options,
+            move |_| {
+                entries.fetch_add(1, Ordering::AcqRel);
+                Ok((vec![], true))
+            },
+            callback_spawn_failure
+        ),
+        Err(Error::Native(_))
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    worker.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert!(worker.services.is_empty());
+    let entries = calls.clone();
+    assert!(matches!(
+        node.serve_oneway_options_with_spawner(
+            "/failed",
+            "req",
+            options,
+            move |_| {
+                entries.fetch_add(1, Ordering::AcqRel);
+                Ok(())
+            },
+            callback_spawn_failure
+        ),
+        Err(Error::Native(_))
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
+    assert_eq!(node.sender.callback_threads.load(Ordering::Acquire), 0);
+    worker.command(commands.recv_timeout(Duration::from_secs(1)).unwrap());
+    assert!(worker.services.is_empty());
+    assert_eq!(calls.load(Ordering::Acquire), 0);
+    node.cancel();
+    assert!(matches!(
+        node.serve_with_options("/stopped", "req", "rep", options),
+        Err(Error::Shutdown)
+    ));
+    assert_eq!(node.sender.slots.load(Ordering::Acquire), 0);
 }

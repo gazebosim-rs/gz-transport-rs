@@ -1050,3 +1050,20 @@ Author-only handoff and sender-retention negatives remain separate evidence.
 Resumed/merged author coverage is diagnostic only; the single normal staged hook
 must run from scratch and exact hosted CI must pass before acceptance. No
 upstream row or accepted count changes for this queue slice.
+
+
+The bounded service-scope slice adds six unchanged native srv option originals,
+separate Rust value/format controls and actual three-scope data/packet evidence.
+The dedicated scope C++ peer uses an actual admitted service record and the
+pinned native Discovery template with an explicit controlled heartbeat interval;
+its eight fields, initial/Subscribe/heartbeat/withdrawal packets and local data
+are asserted. Real native remote requests distinguish All/Host from Process,
+while Rust local queue and callback forms preserve Int32(5). Process periodic
+packets remain mandatory; worker-only views reject them. Private controls retain
+legacy All constructors and test Host locality, rollback and cancellation.
+Both native helper linkages are checked against the selected SDK. See the
+[service scope contract](NET-01-service-scopes.md). Independent source/assertion
+review passed 136 library, 42 public/native and six unchanged native checks,
+including the final distinct-port setup. Only those six value originals gain
+candidate faithful-port credit; normal staged coverage and exact hosted
+qualification remain required before acceptance.

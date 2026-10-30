@@ -183,6 +183,25 @@ int main(int argc, char **argv) {
     std::cout << added << ' ' << duplicate << ' ' << found << '\n' << output;
     return 0;
   }
+  if (mode == "request-service-scope") {
+    gz::transport::Node caller;
+    std::vector<gz::transport::ServicePublisher> providers;
+    bool visible=caller.ServiceInfo(topic,providers);
+    const bool expected=value!="process";
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+    while (expected && !visible) {
+      if(std::chrono::steady_clock::now()>=deadline)return 162;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      visible=caller.ServiceInfo(topic,providers);
+    }
+    if(visible!=expected || providers.size()!=(expected?1u:0u))return 163;
+    if(expected && providers.front().Options().Scope()!=(value=="host"?gz::transport::Scope_t::HOST:gz::transport::Scope_t::ALL))return 164;
+    gz::msgs::Int32 request,reply;request.set_data(5);bool result=false;
+    const bool returned=caller.Request(topic,request,expected?2000:300,reply,result);
+    if(returned!=expected || (expected && (!result || reply.data()!=5)))return 165;
+    std::cout << "visible=" << visible << " returned=" << returned << " result=" << result << " data=" << reply.data() << std::endl;
+    return 0;
+  }
   if (mode == "service-local-process-scope") {
     gz::transport::Node owner, caller;
     gz::transport::AdvertiseServiceOptions options;
