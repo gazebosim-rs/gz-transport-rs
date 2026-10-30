@@ -2162,10 +2162,12 @@
       "id": "UNIT_Clock_TEST:ClockTest.WallClock",
       "target": "UNIT_Clock_TEST",
       "case": "ClockTest.WallClock",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "wall_clock_original"
+      ],
+      "review": "/root/bevy_rendering_owner; fresh 8cc archive plus 13-path overlay and own target passed debug 2 private and 5 public/native controls, including all 7 actual selected-SDK value cases and child failures; unchanged native ClockTest.WallClock passed 1/1. Pinned source/library hashes and actual canonical Gazebo linkage checked; all reviewed paths match. Independent release/full staged/hosted replay is not claimed. Ordinary full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Clock_TEST.cc",
@@ -2174,8 +2176,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete Linux original: successful owned clock construction translates non-null WallClock::Instance acquisition; is_ready true; record signed nanoseconds, sleep the unchanged 100000000 ns, require end-start >=100000000 ns. No changed tolerance or substituted readiness wait. Controlled zero also preserves native always-ready behavior.",
+      "configuration": "Pinned Linux x86_64 canonical SDK. Explicit owned Rust construction replaces the private native singleton acquisition; no process-global pointer identity/shared-anchor equivalence is claimed. Reuses std SystemTime whole-second UTC anchor and Instant; signed floor, monotonic progress and later-realtime-step independence are qualified. Explicit Rust clock/read/range errors exclude unchecked native error/overflow domains; no Windows scheduler claim.",
+      "evidence": "docs/NET-02-wall-clock.md; mandatory native ClockTest.WallClock filter and rebuilt pure SDK helper. Seven controlled time_t/realtime/monotonic observations preserve full stdout/stderr and provenance; no host pre-1970 clock observation or native error execution claimed. Author debug/release each 2 private and 5 public/native, 42 tools and Clippy pass; focused module 38/38 lines,70/70 regions and changed 35/35 are diagnostic only. Candidate 123 faithful/7 partial/288 pending is conditional on full strict staged/exact hosted success. No Node, thread, dependency, runtime statistics or broader clock-family credit."
     },
     {
       "id": "UNIT_Clock_TEST:ClockTest.BadNetworkClock",

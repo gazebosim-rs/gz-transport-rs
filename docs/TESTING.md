@@ -1468,3 +1468,28 @@ give conditional totals 122 faithful, 7 partial and 289 pending; the full normal
 staged and exact hosted checks remain pending. The
 [clock contract](NET-02-network-clock.md) records caller ownership, sparse-message
 diagnostic disposition and the historical setter width.
+
+
+## Owned WallClock candidate
+
+The separate value-only candidate adds `WallClock` through standard SystemTime
+and Instant, retaining pinned native whole-second anchoring, negative floor,
+zero readiness and monotonic progress. It creates no Node/thread/endpoint and
+changes no dependency, configuration, old test body or statistics policy.
+See [the contract](NET-02-wall-clock.md) for explicit per-object ownership and
+OS-error/range dispositions.
+
+Author debug/release each pass two private and five public/native checks,
+including seven freshly replayed controlled SDK cases and child-only failure
+controls; the unchanged native `ClockTest.WallClock` passes independently of
+those synthetic clocks. All-target Clippy and 42 Python controls pass. Focused
+module coverage is 38/38 lines and 70/70 regions, diagnostic only. Complete
+upstream predicates and the 100 ms sleep/minimum elapsed assertion are retained.
+Independent review now passes two private plus five public/native debug checks
+from a fresh accepted-8cc archive with the complete thirteen-path overlay and
+own target; all seven controlled SDK values and unchanged native original1 pass.
+Source/library hashes and actual canonical Gazebo linkage were checked. This is
+independent debug focused evidence, not fresh release/full-gate acceptance.
+Exactly the whole `ClockTest.WallClock` row is a conditional faithful candidate:
+122/7/289 becomes123/7/288 only after the normal full staged gate and exact
+hosted CI succeed. No other original or runtime statistics credit is proposed.

@@ -1,0 +1,220 @@
+{
+  "license": "Apache-2.0",
+  "copyright": "Copyright (C) 2018, 2026 Open Source Robotics Foundation",
+  "scope": "Controlled-clock value parity only; actual SDK WallClock, no Nodes, network timing or native clock-error execution",
+  "upstream_sha": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+  "compiler": "c++ (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0",
+  "source_sha256": "7aae6d9a7c420cba4a2bd63b0fa9062136e4825d70134e3a20805d63afa9c75a",
+  "control_source_sha256": "b62044f1f77a24e5af0166770c35907d0b24540d5692bc923f721903820e2b8e",
+  "native_clock_source_sha256": "ad97cae7efdc3e62f63c2167eda18dbd8d6671b1175dbce8f1f60f6b9f7f8b04",
+  "libraries": {
+    "libgz-transport.so.16": "bc5f7f5be430acba74cc7213b5141b414afa513adbbd62c824119d3316ca9a76",
+    "libgz-msgs.so.13": "18039affff238c6f1db7fbe304ef2375e3bae2dd91fbc5e72aba61534f40442b",
+    "libgz-utils.so.5": "5bfa7b6196734ae9b4b038b1918c08268070e8a6a954936d585e00999be24c79"
+  },
+  "cases": [
+    {
+      "input": {
+        "utc_ns": 13900000000,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 13012345678 13200000000 13900000000 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": 13012345678,
+        "last_ns": 13200000000,
+        "real_before_ns": 13900000000,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": 13012345678,
+        "last_ns": 13200000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": 0,
+        "mono_ns": [
+          0,
+          0,
+          200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 0 200000000 0 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": 0,
+        "last_ns": 200000000,
+        "real_before_ns": 0,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": 0,
+        "last_ns": 200000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": -1,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 -987654322 -800000000 -1 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000,
+        "real_before_ns": -1,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": -100000000,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 -987654322 -800000000 -100000000 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000,
+        "real_before_ns": -100000000,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": -1000000000,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 -987654322 -800000000 -1000000000 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000,
+        "real_before_ns": -1000000000,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": -987654322,
+        "last_ns": -800000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": -1900000000,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 -1987654322 -1800000000 -1900000000 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": -1987654322,
+        "last_ns": -1800000000,
+        "real_before_ns": -1900000000,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": -1987654322,
+        "last_ns": -1800000000
+      }
+    },
+    {
+      "input": {
+        "utc_ns": 60999999999,
+        "mono_ns": [
+          17000000000,
+          17012345678,
+          17200000000
+        ],
+        "next_utc_ns": 100900000000
+      },
+      "stdout": "1 60012345678 60200000000 60999999999 100900000000 1 3 2 1\n",
+      "stderr": "",
+      "native": {
+        "ready": true,
+        "first_ns": 60012345678,
+        "last_ns": 60200000000,
+        "real_before_ns": 60999999999,
+        "real_after_ns": 100900000000,
+        "time_calls": 1,
+        "mono_calls": 3,
+        "real_calls": 2,
+        "same_instance": true
+      },
+      "rust": {
+        "ready": true,
+        "first_ns": 60012345678,
+        "last_ns": 60200000000
+      }
+    }
+  ]
+}

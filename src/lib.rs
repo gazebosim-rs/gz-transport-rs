@@ -10,6 +10,7 @@ mod protocol;
 mod runtime;
 mod sample_statistics;
 mod topic_statistics;
+mod wall_clock;
 
 pub use config::Config;
 pub use gz_msgs::discovery::discovery::publisher::Scope;
@@ -23,6 +24,7 @@ pub use runtime::{
 };
 pub use sample_statistics::SampleStatistics;
 pub use topic_statistics::TopicStatistics;
+pub use wall_clock::WallClock;
 
 /// Errors are explicit: no global executor, unbounded retry, or silent fallback.
 #[derive(Debug, Clone, PartialEq, Eq)]

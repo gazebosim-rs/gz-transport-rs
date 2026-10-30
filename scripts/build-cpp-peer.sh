@@ -26,3 +26,7 @@ cc -std=c11 -Wall -Wextra -Werror -O2 tests/nss_peer.c -o artifacts/nss-peer
 
 # NetworkClock values and bidirectional Clock messages use the actual SDK.
 c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/network_clock_peer.cc -o artifacts/network-clock-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
+
+# WallClock observation is pure and its interposition is scoped to child reads.
+c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/wall_clock_control.cc -o artifacts/wall-clock-control.so -ldl
+c++ -std=c++17 -Wall -Wextra -Werror tests/wall_clock_peer.cc -o artifacts/wall-clock-peer $(pkg-config --cflags --libs gz-transport) -ldl -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
