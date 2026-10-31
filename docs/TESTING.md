@@ -1549,3 +1549,41 @@ no findings. Initial sandbox socket and wrong compiler dependency-directory
 failures are excluded setup; proper fresh-source host runs qualify. Exactly
 BoolOperatorTest is conditional: accepted 124/7/287 becomes 125/7/286 only after
 the ordinary full staged and exact hosted checks. No other row gains credit.
+
+# Scoped publisher retirement and recreation
+
+`scoped_publisher_recreation_original_uses_actual_native_subscriber` retains
+pinned `twoProcPubSub.PubSubTwoProcsScopedPub`: one Node and two scoped Vector3d
+`/foo` publishers, exact values `(1, 2, 3)`, native 10 s / 10 ms registration
+readiness and the 100 ms pause after immediate Publisher destruction. The
+unchanged native auxiliary checks both typed/raw subscription success, exact
+values, descriptor/parse validity, unsubscription and actual callback flags.
+Rust successful factory/admission results and the atomic known-interest snapshot
+are the API translation. No worker-query flush or new readiness wait precedes
+Drop. Child exit status is additionally checked rather than discarded.
+
+The separate private control verifies generic END while no Publisher exists,
+capacity-one reuse, a fresh cache with no retired interest and late-old-reader
+isolation. A second private control holds an accepted publication in the
+capacity-one command queue, drops the Publisher, executes cleanup first and only
+then processes that command. An established external ZeroMQ receiver checks the
+exact single four-frame publication, raw bytes and typed Vector3d decode. This
+adds no flush/barrier to the original public test; the command owns its payload
+independently of the retired advertisement. All existing withdrawal, BYE and
+snapshot controls remain unchanged.
+See [the bounded contract](NET-02-scoped-publisher-interest.md).
+
+Author qualification passes public one/private two in debug and release, the
+unchanged native original one, all 42 tools and workspace all-target Clippy.
+Native peers use unique held discovery ports; the original's own partition reset
+does not erase those inherited overrides. Per-child and outer process bounds
+retain the reference predicates and guarantee cleanup. No timing or general
+delivery claim is made. No production defect was reproduced or fix invented.
+Independent fresh-source/owned-debug-target review passes public one/private one
+and the unchanged native original one under held unique ports, with source and
+gate review finding no issues. The added queued/drop/cleanup private control
+also passes independently on the fresh-source overlay and owned debug target.
+Initial sandbox EPERM was excluded setup and
+authorized host execution passed. Reviewer release/full-gate execution is not
+claimed. Exactly this original row is conditional: accepted 125/7/286 becomes
+126/7/285 only after the normal full staged and exact hosted checks.

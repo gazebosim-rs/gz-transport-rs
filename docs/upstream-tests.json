@@ -948,10 +948,12 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubTwoProcsScopedPub",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubTwoProcsScopedPub",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "scoped_publisher_recreation_original_uses_actual_native_subscriber"
+      ],
+      "review": "/root/bevy_rendering_owner; fresh accepted 6e3184a archive plus five exact paths and reviewer-owned debug target passed public one, private cache one and separately the unchanged native original one under held unique discovery ports with XML/process-group watchdog. Complete source, auxiliary assertions, cached membership API translation and additive gate reviewed with no findings. Initial default-sandbox EPERM is excluded setup; the authorized host replay passed. The additional deterministic queued/drop/cleanup private control passed separately on the reviewer fresh-source overlay/owned debug target, with exact four-frame bytes and typed decode. Independent release/full staged/hosted checks are not claimed; author public one/private two debug/release controls, 42 tools and Clippy pass. Final normal staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -960,8 +962,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete scoped-publisher original retains one Node and two iterations, each starting an actual unchanged native subscriber before successful Vector3d /foo advertisement, native 10 s / 10 ms HasConnections readiness, successful publication of exact x=1/y=2/z=3, Publisher destruction before the original 100 ms pause and child join. Native child retains typed/raw subscription success, descriptor and ParseFromArray success, all exact values, successful unsubscribe and both actual callback flags. Rust fallible factory/admission results and connection_snapshot known-registration read are the explicit API translation; no flush, extra readiness wait or query barrier is inserted before Publisher Drop. Child status/watchdog is an additional bounded cleanup assertion, not discarded original failure.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ reference, one retained Rust Node and the unchanged twoProcsPubSubSingleSubscriber_aux executable. Child-only UUID partition, loopback and held distinct ephemeral discovery ports are fixture translations; exact topic /foo and values are unchanged. Full native original resets partition but preserves inherited unique port overrides, with a 50 s outer process-group watchdog. No global process identity, authentication, universal delivery, latency/performance or shutdown-liveness equivalence claimed.",
+      "evidence": "docs/NET-02-scoped-publisher-interest.md and mandatory unchanged scoped native filter. Author public one/private two passed debug/release, unchanged native original one, 42 tools and workspace Clippy pass. Independent fresh-source/debug-target public one/private cache one/native one passed; the added queued/drop/cleanup private one passed separately on the reviewer fresh-source overlay/owned debug target. Private supplements cover generic END after all publishers retire, capacity-one reuse, late-old-reader isolation and an accepted command held until after publisher Drop plus cleanup, with actual four-frame bytes and typed decode; no extra original credit. No production defect reproduced or fix invented. Only this row is a conditional candidate: accepted 125 faithful / 7 partial / 286 pending becomes 126 / 7 / 285 after full staged and exact source-bound hosted success."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubTwoProcsMixedSubscribers",

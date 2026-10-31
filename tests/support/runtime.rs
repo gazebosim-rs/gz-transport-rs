@@ -8020,3 +8020,180 @@ fn statistics_wire_metadata_errors_are_observable_without_losing_local_delivery(
     assert_eq!(counters.queue_drops, 0);
     assert_eq!(counters.malformed_frames, 0);
 }
+
+#[test]
+fn cached_interest_retires_remote_reader_after_last_publisher_is_gone() {
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
+    };
+    let publisher = node.advertise("/scoped", "T").unwrap();
+    worker.command(commands.recv().unwrap());
+    let mut old = worker.subscriber_publisher(&publisher.topic, "T");
+    old.process_uuid = "reader-process".into();
+    old.node_uuid = "old-reader".into();
+    if let Some(PubType::MsgPub(info)) = &mut old.pub_type {
+        info.ctrl = worker.process.clone();
+    }
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "reader-process",
+            Type::NewConnection,
+            Some(DiscContents::Pub(old.clone())),
+        ),
+    );
+    assert_eq!(publisher.connection_snapshot(), Ok(true));
+    drop(publisher);
+    worker.cleanup();
+    assert!(worker.advertisements.is_empty());
+    // Retirement of the publisher alone is not subscriber withdrawal. The
+    // actual generic END must work even with no current advertisement.
+    assert_eq!(worker.remote_subscribers.len(), 1);
+    if let Some(PubType::MsgPub(info)) = &mut old.pub_type {
+        info.ctrl.clear();
+    }
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "reader-process",
+            Type::EndConnection,
+            Some(DiscContents::Pub(old.clone())),
+        ),
+    );
+    assert!(worker.remote_subscribers.is_empty());
+    let replacement = node.advertise("/scoped", "T").unwrap();
+    assert_eq!(replacement.connection_snapshot(), Ok(false));
+    worker.command(commands.recv().unwrap());
+    assert_eq!(replacement.connection_snapshot(), Ok(false));
+
+    let mut next = old.clone();
+    next.node_uuid = "next-reader".into();
+    if let Some(PubType::MsgPub(info)) = &mut next.pub_type {
+        info.ctrl = worker.process.clone();
+    }
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "reader-process",
+            Type::NewConnection,
+            Some(DiscContents::Pub(next.clone())),
+        ),
+    );
+    assert_eq!(replacement.connection_snapshot(), Ok(true));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "reader-process",
+            Type::EndConnection,
+            Some(DiscContents::Pub(old)),
+        ),
+    );
+    assert_eq!(replacement.connection_snapshot(), Ok(true));
+    worker.discovered(
+        0,
+        protocol::discovery(
+            "reader-process",
+            Type::EndConnection,
+            Some(DiscContents::Pub(next)),
+        ),
+    );
+    assert_eq!(replacement.connection_snapshot(), Ok(false));
+    assert!(worker.remote_subscribers.is_empty());
+}
+
+#[test]
+fn admitted_publication_survives_publisher_drop_and_cleanup_before_command() {
+    use gz_msgs::prost::Message as _;
+    let (mut worker, commands) = state(1);
+    let node = Node {
+        sender: worker.sender.clone(),
+        lifetime: Arc::new(WorkerLifetime {
+            stop: worker.sender.stop.clone(),
+            worker: Mutex::new(None),
+        }),
+        owner_dead: worker.owner_dead.clone(),
+        local_interest: Arc::new(Mutex::new(LocalInterestCache::default())),
+        config: worker.config.clone(),
+        topics: Mutex::new(HashMap::new()),
+        subscriptions: Mutex::new(Vec::new()),
+        services: worker.sender.identity.get().unwrap().services.clone(),
+        subscription_dispatcher: Mutex::new(Weak::new()),
+    };
+    let publisher = node
+        .advertise_typed::<gz_msgs::msgs::Vector3d>("/foo")
+        .unwrap();
+    worker.command(commands.recv().unwrap());
+    let topic = publisher.topic.clone();
+    let context = zmq::Context::new();
+    let receiver = context.socket(zmq::SUB).unwrap();
+    receiver.set_subscribe(topic.as_bytes()).unwrap();
+    receiver.connect(&worker.address).unwrap();
+    receiver.set_rcvtimeo(1000).unwrap();
+    // Establish this supplemental test's actual wire receiver before freezing
+    // command processing. Probes are not publications admitted by Publisher.
+    let deadline = Instant::now() + Duration::from_secs(1);
+    loop {
+        worker
+            .publisher
+            .send_multipart([topic.as_bytes(), b"probe"], 0)
+            .unwrap();
+        if receiver.poll(zmq::POLLIN, 10).unwrap() != 0 {
+            assert_eq!(receiver.recv_multipart(0).unwrap()[1], b"probe");
+            break;
+        }
+        assert!(Instant::now() < deadline);
+    }
+    while receiver.poll(zmq::POLLIN, 0).unwrap() != 0 {
+        receiver.recv_multipart(0).unwrap();
+    }
+    let value = gz_msgs::msgs::Vector3d {
+        x: 1.0,
+        y: 2.0,
+        z: 3.0,
+        ..Default::default()
+    };
+    publisher.publish_typed(&value).unwrap();
+    // No worker thread runs in this fixture: the accepted command stays queued
+    // until after the exact cleanup-first ordering in Worker::run is exercised.
+    drop(publisher);
+    worker.cleanup();
+    assert!(worker.advertisements.is_empty());
+    let command = commands.try_recv().unwrap();
+    assert!(
+        matches!(&command, Command::Publish(_, _, bytes, Some(_)) if *bytes == value.encode_to_vec())
+    );
+    assert!(commands.try_recv().is_err());
+    worker.command(command);
+    let frames = loop {
+        let frames = receiver.recv_multipart(0).unwrap();
+        if frames.len() == 4 {
+            break frames;
+        }
+        // Previously sent readiness probes can still be in flight, but TCP
+        // orders all of them before the single queued publication.
+        assert_eq!(frames, [topic.as_bytes().to_vec(), b"probe".to_vec()]);
+    };
+    assert_eq!(frames.len(), 4);
+    assert_eq!(frames[0], topic.as_bytes());
+    assert_eq!(frames[1], worker.address.as_bytes());
+    assert_eq!(frames[2], value.encode_to_vec());
+    assert_eq!(frames[3], b"gz.msgs.Vector3d");
+    assert_eq!(
+        gz_msgs::msgs::Vector3d::decode(frames[2].as_slice()).unwrap(),
+        value
+    );
+    assert_eq!(worker.sender.counters.snapshot().send_failures, 0);
+    assert_eq!(receiver.poll(zmq::POLLIN, 20).unwrap(), 0);
+}
