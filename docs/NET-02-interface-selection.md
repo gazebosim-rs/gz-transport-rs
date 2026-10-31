@@ -9,7 +9,8 @@ GZ_PARTITION is absent. Config::default remains loopback, with_environment
 preserves its explicit base and Node::new reads no environment. Recognized
 configuration is validated before automatic setup. Existing invalid,
 unspecified and non-Unicode override errors remain; native's raw invalid GZ_IP
-return is not admitted by the Rust IPv4 API. GZ_RELAY remains Unsupported.
+return is not admitted by the Rust IPv4 API. Legacy GZ_RELAY is documented in the
+[separate bounded relay contract](NET-02-legacy-relay.md).
 The same existing unspecified-address guard applies after automatic selection:
 if native's first eligible choice is 0.0.0.0, Rust returns InvalidConfig instead
 of accepting it or silently substituting a later interface. A paired controlled

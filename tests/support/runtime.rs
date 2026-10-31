@@ -262,6 +262,50 @@ fn configured_relay_seeds_exist_before_first_announcement_on_both_channels() {
 }
 
 #[test]
+fn legacy_and_typed_seeds_are_merged_before_the_first_announcement() {
+    let first = Ipv4Addr::new(127, 0, 0, 2);
+    let second = Ipv4Addr::new(127, 0, 0, 3);
+    let config = Config {
+        capacity: 3,
+        discovery_relays: vec![second, first],
+        ..Default::default()
+    }
+    .with_environment(|key| (key == "GZ_RELAY").then(|| "127.2:0177.0.0.2".into()))
+    .unwrap();
+    let (mut worker, _) = service_state(Config {
+        message_port: 0,
+        service_port: 0,
+        ..config.clone()
+    });
+    // service_state permits port zero; announce must use its actual bound ports.
+    worker.config.message_port = worker.udp[0].local_addr().unwrap().port();
+    worker.config.service_port = worker.udp[1].local_addr().unwrap().port();
+    assert_eq!(
+        worker.discovery_relays,
+        [vec![first, second], vec![first, second]]
+    );
+    assert!(worker.config.discovery_relays.is_empty());
+    assert_eq!(worker.config.discovery_relays.capacity(), 0);
+    assert!(worker.config.legacy_discovery_relays.addresses().is_empty());
+    assert_eq!(config.legacy_discovery_relays.addresses(), [first]);
+    for channel in 0..2 {
+        let observer = relay_observer(&worker, channel, false);
+        worker.announce(
+            channel,
+            protocol::discovery(&worker.process, Type::Heartbeat, None),
+        );
+        let mut frame = [0; 4096];
+        let length = observer.recv(&mut frame).unwrap();
+        let message = protocol::decode(&frame[..length]).unwrap();
+        assert_eq!(message.process_uuid, worker.process);
+        assert!(message.flags.unwrap().relay);
+    }
+    worker.discovery_relays[0].push(Ipv4Addr::LOCALHOST);
+    assert_eq!(worker.discovery_relays[1], vec![first, second]);
+    assert_eq!(config.discovery_relays, vec![second, first]);
+}
+
+#[test]
 fn publication_rate_boundaries_keep_epoch_fractional_and_sub_nanosecond_periods() {
     let epoch = Duration::ZERO;
     assert!(PublicationThrottle::new(u64::MAX).is_none());

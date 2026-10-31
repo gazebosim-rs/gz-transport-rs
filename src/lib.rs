@@ -12,7 +12,7 @@ mod sample_statistics;
 mod topic_statistics;
 mod wall_clock;
 
-pub use config::Config;
+pub use config::{Config, LegacyRelaySeeds};
 pub use gz_msgs::discovery::discovery::publisher::Scope;
 pub use names::{as_valid_topic, decompose_fully_qualified_topic, qualified_name};
 pub use network_clock::{ClockTimeBase, NetworkClock};

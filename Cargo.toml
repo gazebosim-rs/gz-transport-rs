@@ -11,6 +11,7 @@ members = ["nss"]
 resolver = "3"
 
 [dependencies]
+url = "=2.5.8"
 zmq = "=0.10.0"
 socket2 = { version = "=0.6.5", features = ["all"] }
 uuid = { version = "=1.23.1", features = ["v4"] }

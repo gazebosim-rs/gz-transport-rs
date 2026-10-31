@@ -166,7 +166,7 @@ or a process-global registry. See the [API and timing contract](NET-01-service-t
 This is a first interoperable NET-01 slice, not complete transport parity. Pending:
 HOST advertisement controls and actual multi-host qualification; process-wide
 multi-node discovery identity;
-END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; broader relay topology/GZ_RELAY;
+END_CONNECTION / SUBSCRIBERS_REQ/REP bookkeeping; broader relay topology;
 IPv6 and all-interface routing; automatic interface selection on other platforms,
 exceptional partition NSS fallback and Windows default identity; topic throttling and
 aggregate statistics and metric publication; authentication; complete
@@ -197,3 +197,8 @@ raw `Message` fields, byte forwarding and receive method remain compatible.
 Independent Rust Nodes in the same process still use the socket path; native
 process-global delivery reports true there, so the broader origin contract is
 explicitly incomplete. See [received metadata](NET-01-message-info.md).
+
+
+Legacy GZ_RELAY numeric capture is separately covered by the
+[bounded environment contract](NET-02-legacy-relay.md), including native invalid
+conversion and explicit Rust setup bounds; global relay identity remains open.

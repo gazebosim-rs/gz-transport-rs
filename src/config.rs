@@ -2,10 +2,45 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{Error, qualified_name};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     net::Ipv4Addr,
     time::{Duration, Instant},
 };
+
+/// Native-permissive GZ_RELAY addresses, populated only by environment capture.
+/// Invalid numeric tokens intentionally become broadcast, unlike typed seeds.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LegacyRelaySeeds(Vec<Ipv4Addr>);
+impl LegacyRelaySeeds {
+    pub fn addresses(&self) -> &[Ipv4Addr] {
+        &self.0
+    }
+}
+
+// Bound parsing and retained data before any worker/socket is created.
+const MAX_RELAY_ENV_BYTES: usize = 64 * 1024;
+
+fn legacy_relay_address(input: &str) -> Ipv4Addr {
+    // GNU inet_addr stops at the first ASCII whitespace after the number.
+    let input = input
+        .split(|c| matches!(c, ' ' | '\t'..='\r'))
+        .next()
+        .unwrap();
+    // WHATWG permits a trailing dot and bare hex prefix; GNU inet_addr does not.
+    // Restrict Host's domain/IDNA/percent normalization to native numeric syntax.
+    if input.ends_with('.')
+        || input
+            .bytes()
+            .any(|c| !c.is_ascii_hexdigit() && !matches!(c, b'x' | b'X' | b'.'))
+        || input.split('.').any(|part| part == "0x" || part == "0X")
+    {
+        return Ipv4Addr::BROADCAST;
+    }
+    match url::Host::parse(input) {
+        Ok(url::Host::Ipv4(address)) => address,
+        _ => Ipv4Addr::BROADCAST,
+    }
+}
 
 /// Explicit configuration. No process environment is read implicitly.
 #[derive(Clone, Debug)]
@@ -21,6 +56,9 @@ pub struct Config {
     /// Initial worker-owned discovery peers, used on both configured ports.
     /// At most `capacity` entries; duplicates are coalesced at worker startup.
     pub discovery_relays: Vec<Ipv4Addr>,
+    /// Native GZ_RELAY seeds precede typed seeds on both discovery channels.
+    /// Empty by default; setup is bounded by 64 KiB and combined peer capacity.
+    pub legacy_discovery_relays: LegacyRelaySeeds,
     /// Opt into native statistics transport framing; aggregate metrics are separate.
     pub statistics_wire: bool,
     pub capacity: usize,
@@ -40,6 +78,7 @@ impl Default for Config {
             message_port: 10317,
             service_port: 10318,
             discovery_relays: Vec::new(),
+            legacy_discovery_relays: LegacyRelaySeeds::default(),
             statistics_wire: false,
             capacity: 1000,
             send_high_watermark: 1000,
@@ -60,7 +99,10 @@ impl Config {
         if self.discovery_relays.contains(&address) {
             return Ok(());
         }
-        if self.discovery_relays.len() >= self.capacity {
+        if self.discovery_relays.len() >= self.capacity
+            || (!self.legacy_discovery_relays.0.contains(&address)
+                && self.initial_discovery_relays().len() >= self.capacity)
+        {
             return Err(Error::QueueFull);
         }
         self.discovery_relays.push(address);
@@ -104,10 +146,54 @@ impl Config {
         self.namespace = namespace.into();
         Ok(())
     }
+    pub(crate) fn initial_discovery_relays(&self) -> Vec<Ipv4Addr> {
+        let mut seen = HashSet::new();
+        self.legacy_discovery_relays
+            .0
+            .iter()
+            .chain(&self.discovery_relays)
+            .copied()
+            .filter(|address| seen.insert(*address))
+            .collect()
+    }
+
+    fn capture_legacy_relays(&mut self, value: &str) -> Result<(), Error> {
+        if value.len() > MAX_RELAY_ENV_BYTES || value.contains('\0') {
+            return Err(Error::InvalidConfig);
+        }
+        if self.capacity == 0
+            || self.discovery_relays.len() > self.capacity
+            || self
+                .discovery_relays
+                .iter()
+                .any(|address| !relay_address_valid(*address))
+        {
+            return Err(Error::InvalidConfig);
+        }
+        let mut addresses = Vec::new();
+        let mut legacy_seen = HashSet::new();
+        let mut seen: HashSet<_> = self.discovery_relays.iter().copied().collect();
+        if !value.is_empty() {
+            for token in value.split(':') {
+                let address = legacy_relay_address(token);
+                if legacy_seen.insert(address) {
+                    if seen.insert(address) && seen.len() > self.capacity {
+                        return Err(Error::QueueFull);
+                    }
+                    addresses.push(address);
+                }
+            }
+        }
+        self.legacy_discovery_relays = LegacyRelaySeeds(addresses);
+        Ok(())
+    }
+
     pub(crate) fn validate(&self) -> Result<(), Error> {
         qualified_name(&self.partition, &self.namespace, "validation")?;
         if self.topic_remaps.len() > self.capacity
             || self.discovery_relays.len() > self.capacity
+            || self.legacy_discovery_relays.0.len() > self.capacity
+            || self.initial_discovery_relays().len() > self.capacity
             || self
                 .discovery_relays
                 .iter()
@@ -249,8 +335,8 @@ impl Config {
         if let Some(value) = lookup("GZ_TRANSPORT_TOPIC_STATISTICS") {
             self.statistics_wire = value == "1";
         }
-        if lookup("GZ_RELAY").is_some_and(|v| !v.is_empty()) {
-            return Err(Error::Unsupported("discovery relay"));
+        if let Some(value) = lookup("GZ_RELAY") {
+            self.capture_legacy_relays(&value)?;
         }
         if let Some(implementation) =
             lookup("GZ_TRANSPORT_IMPLEMENTATION").filter(|v| !v.is_empty())

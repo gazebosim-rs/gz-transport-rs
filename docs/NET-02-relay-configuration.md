@@ -10,7 +10,7 @@ environment capture is introduced.
 
 The additional public Config field requires exhaustive downstream struct literals
 to supply `discovery_relays`, or to use `..Config::default()`. Default/environment
-constructors retain empty seeds. Downstream revision pins are adopted separately.
+constructors retain an empty typed seed vector. Downstream revision pins are adopted separately.
 
 `Config::add_discovery_relay(Ipv4Addr)` shares the runtime API's explicit address
 validation: unspecified, multicast and broadcast destinations return
@@ -22,9 +22,10 @@ are coalesced at startup, preserving first occurrence order. The worker consumes
 its seed copy into two independently bounded channel vectors. Caller clones and
 subsequent configuration edits do not mutate an admitted worker.
 
-Empty defaults preserve existing behavior and allocate no seed payload. Existing
-`with_environment` absence/empty precedence is retained, and nonempty GZ_RELAY
-continues to return the same Unsupported error. The vector is an explicit typed
+Empty defaults preserve existing behavior and allocate no seed payload.
+This typed-only slice retained the GZ_RELAY Unsupported guard; the later
+[environment contract](NET-02-legacy-relay.md) replaces it with native-backed
+capture into a separate legacy seed value. The vector is an explicit typed
 Rust setup API, not an implementation of native environment grammar or native
 process-global discovery sharing.
 
@@ -59,3 +60,8 @@ reviewer-owned target, not a source export. Initial sandbox EPERM in
 the socket controls was a setup failure; the same tests passed outside sandbox.
 Normal strict staged checks and exact hosted qualification remain pending. No
 original ledger credit or broader NET-02 completion is claimed.
+
+
+The later [legacy environment slice](NET-02-legacy-relay.md) separately qualifies
+GZ_RELAY capture and its native-permissive numeric values. The typed contract
+above remains strict; the earlier guard statements describe this slice's scope.

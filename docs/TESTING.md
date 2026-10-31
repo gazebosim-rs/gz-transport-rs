@@ -1340,7 +1340,7 @@ broader cancellation/raw-inline/performance credit are implied.
 
 ## Two-channel discovery forwarding candidate
 
-The candidate preserves all old tests and the GZ_RELAY rejection. A native-backed
+This forwarding slice preserved all old tests and the then-existing GZ_RELAY rejection. A native-backed
 maximum-frame regression required replacing the initial append-only helper with
 a Flags-only transform using maintained prost codecs. The final four pure,
 four private and four public/native controls pass in debug, release and
@@ -1367,8 +1367,8 @@ hosted qualification remain pending. No ledger row is promoted. See the
 
 ## Typed initial relay configuration candidate
 
-The separate configuration slice retains every old test and the exact GZ_RELAY
-Unsupported guard. Thirteen pure configuration checks, one new private
+The typed-only configuration slice retained every old test and the exact
+GZ_RELAY Unsupported guard; the later legacy slice below replaces that guard. Thirteen pure configuration checks, one new private
 first-announcement control and five public relay controls pass in debug, release
 and instrumented profiles; all-target Clippy passes. New checks cover atomic
 bounded admission, rejected state, duplicates, caller clones, raw-field failure
@@ -1620,3 +1620,62 @@ Source and all complete predicates were reviewed with no findings. Independent
 release, tools or full-gate replay is not claimed. Exactly this one conditional
 mapping moves accepted 126/7/285 to 127/7/284 only after normal full staged and
 exact hosted/source-bound qualification. No supplement gains another case.
+
+
+## Legacy relay environment compatibility candidate
+
+The private implementation reuses pinned URL 2.5.8 plus a native-syntax adapter,
+without unsafe code. It separately retains legacy-permissive addresses, preserves
+strict typed seeds, merges both bounded channel lists before first announcement,
+and rejects environment-byte/capacity overflow before worker construction. The
+original 78-case observation fixture is unchanged. Native invalid-to-broadcast,
+unspecified and multicast cases run only under child-only send interception;
+real packet checks use held loopback ports. The two former Unsupported guards
+become exact positives for the same original inputs; all unrelated guards and
+22 immutable NSS cases remain unchanged. No ledger row or original credit changes.
+See [the exact syntax, limits and dependency audit](NET-02-legacy-relay.md).
+
+Initial public controls passed all 78 pure native outputs, both actual native
+constructor lists, public Rust captures and bounded worker send-order/failure
+checks. One new fixture initially expected insertion order from the existing
+sorted query API; only its expected query sorting was corrected, with send order
+still asserted independently. A separate configuration group initially lacked
+its existing native helper executable; that setup failure is retained separately.
+The first library regression then passed 199/200: the new private announcement
+fixture left port-zero setup values in the worker's configured send destinations.
+It now records the actual bound ports, exactly as the existing typed-seed control
+does; no production change or timeout expansion was needed. Final complete author
+regression/release results, independent review and normal staged/exact hosted
+qualification remain pending.
+
+
+The corrected complete affected debug run passed 200 library, two process-config,
+five unchanged relay and four initial legacy controls. Final safety tightening
+then added a fail-closed preload-ready marker and native destructor-send assertions:
+all five final legacy controls pass, including 9,777 generated native numeric
+comparisons and missing-interception rejection before constructors/workers start.
+All 42 tooling checks, formatting and workspace all-target Clippy pass. At that
+point independent review and release/full staged/exact hosted qualification were
+pending; the later results follow below.
+
+
+Final author release passed the three new private controls plus one existing
+metadata control selected by the filter, all five unchanged relay controls and
+all five final legacy controls. The durable 9,777-record native comparison and
+the 78 constructor/public cases pass in both profiles. Final formatting and
+workspace all-target Clippy also pass. All peers exited; no full staged or hosted
+acceptance is inferred. Earlier failed fixture/setup runs remain distinct.
+
+
+Independent Messages-owner review then passed the exact three new private
+controls and all five final public/native controls from a fresh source export
+and owned debug target, plus all-target Clippy. Native constructor/syntax,
+immutable retained observations, 9,777 generated actual-libc records,
+legacy/typed bounds/order and fail-closed send-capture behavior were reviewed.
+All 27 new registry archive checksums, extracted source/license bytes and old
+lock/NSS immutability were checked independently. There is no independent
+release/full-stage/hosted claim; author release evidence remains separate.
+Final live-doc summaries now point to this bounded legacy contract rather than
+claiming all GZ_RELAY input is Unsupported. All 418 ledger entries remain
+byte-identical. Normal full staged coverage and exact source-bound hosted
+qualification are still required before acceptance.

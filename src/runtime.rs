@@ -3057,9 +3057,9 @@ impl Worker {
         owner_dead: Arc<AtomicBool>,
         response_rx: Receiver<Command>,
     ) -> Result<Self, Error> {
-        let mut initial_relays = std::mem::take(&mut config.discovery_relays);
-        let mut seen = HashSet::new();
-        initial_relays.retain(|address| seen.insert(*address));
+        let initial_relays = config.initial_discovery_relays();
+        config.discovery_relays = Vec::new();
+        config.legacy_discovery_relays = Default::default();
         let discovery_relays = [initial_relays.clone(), initial_relays];
         #[cfg(unix)]
         let host_interfaces = local_interfaces()?;

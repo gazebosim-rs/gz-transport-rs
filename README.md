@@ -216,7 +216,8 @@ mapped assertions. Missing native infrastructure fails the gate.
 See [testing and evidence](docs/TESTING.md).
 The [discovery forwarding contract](docs/NET-02-discovery-relay.md) describes
 bounded worker-owned relay APIs. Typed [initial relay configuration](docs/NET-02-relay-configuration.md)
-seeds both channels at startup; GZ_RELAY environment capture remains unsupported.
+seeds both channels at startup. [Legacy GZ_RELAY capture](docs/NET-02-legacy-relay.md)
+preserves native numeric conversion separately from strict typed admission.
 
 The canonical cross-repository plan, test policy and compatibility contract live
 in [gz-sim-rs](https://github.com/gazebosim-rs/gz-sim-rs/blob/main/docs/PLAN.md).

@@ -23,8 +23,9 @@ bounded vectors until this worker exits, with no invented silence expiry.
 Both APIs use the existing nonblocking bounded command queue, configured reply
 timeout and shutdown errors. A caller timeout does not revoke a command already
 admitted to the worker. No additional thread, socket, timer or persistent queue
-is created. Empty address vectors allocate no payload storage. `GZ_RELAY`
-environment configuration remains explicitly unsupported in this first API slice.
+is created. Empty address vectors allocate no payload storage. This first API
+slice did not implement GZ_RELAY; the later [environment contract](NET-02-legacy-relay.md)
+adds it separately without relaxing explicit address admission.
 
 The flow matches pinned `Discovery.hh::DispatchDiscoveryMsg`:
 
@@ -101,4 +102,9 @@ The selected retained `NodeTest.relay` case checks absence of `127.0.0.123`, add
 it, then checks a one-element size increase and presence. The candidate preserves
 that complete one-Node assertion body through the owned API, with separate bounds
 and packet controls. Broader multi-host topology, shared native singleton
-identity, environment parsing, CLI relay and whole NET-02 completion remain open.
+identity, CLI relay and whole NET-02 completion remain open.
+
+
+A later [legacy environment slice](NET-02-legacy-relay.md) qualifies bounded
+GZ_RELAY parsing separately without changing forwarding or strict typed admission.
+Native global identity, multi-host topology and CLI scope remain open.

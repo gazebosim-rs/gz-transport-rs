@@ -343,7 +343,8 @@ def verify(profile):
                                ('interface-selection-peer', 'interface-selection-linkage.txt'),
                                ('network-clock-peer', 'network-clock-linkage.txt'),
                                ('wall-clock-peer', 'wall-clock-linkage.txt'),
-                               ('mixed-subscriber-peer', 'mixed-subscriber-linkage.txt')):
+                               ('mixed-subscriber-peer', 'mixed-subscriber-linkage.txt'),
+                               ('legacy-relay-peer', 'legacy-relay-linkage.txt')):
         linkage = subprocess.check_output(['ldd', str(ROOT / 'artifacts' / peer)], env=env, text=True)
         (ROOT / 'artifacts' / linkage_file).write_text(linkage)
         linked = re.findall(r'libgz-[^ ]+\s+=>\s+(\S+)', linkage)

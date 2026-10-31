@@ -1,0 +1,712 @@
+{
+  "native_source": "41913b9dfc3dbce33ac5464ddcb427cc82450f26",
+  "libc": [
+    "glibc",
+    "2.39"
+  ],
+  "helper_sha256": "a120b6d8ae1b978301d687b0a4419e9da1711a8cd5a8b7100692d9a0ccbbdb0b",
+  "cases": [
+    {
+      "case": 0,
+      "input": null,
+      "addresses": [],
+      "stdout": "ENV 0 0\nFINAL\n",
+      "stderr": ""
+    },
+    {
+      "case": 1,
+      "input": "",
+      "addresses": [],
+      "stdout": "ENV 1 0\nFINAL\n",
+      "stderr": ""
+    },
+    {
+      "case": 2,
+      "input": "127.0.0.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 3132372e302e302e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 3,
+      "input": "127.0.0.123",
+      "addresses": [
+        "127.0.0.123"
+      ],
+      "stdout": "ENV 1 11\nTOKEN 3132372e302e302e313233 127.0.0.123 0 0\nFINAL 127.0.0.123\n",
+      "stderr": ""
+    },
+    {
+      "case": 4,
+      "input": "10.0.0.1",
+      "addresses": [
+        "10.0.0.1"
+      ],
+      "stdout": "ENV 1 8\nTOKEN 31302e302e302e31 10.0.0.1 0 0\nFINAL 10.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 5,
+      "input": "0.0.0.0",
+      "addresses": [
+        "0.0.0.0"
+      ],
+      "stdout": "ENV 1 7\nTOKEN 302e302e302e30 0.0.0.0 0 0\nFINAL 0.0.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 6,
+      "input": "255.255.255.255",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 15\nTOKEN 3235352e3235352e3235352e323535 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 7,
+      "input": "224.0.0.1",
+      "addresses": [
+        "224.0.0.1"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 3232342e302e302e31 224.0.0.1 0 0\nFINAL 224.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 8,
+      "input": "240.0.0.1",
+      "addresses": [
+        "240.0.0.1"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 3234302e302e302e31 240.0.0.1 0 0\nFINAL 240.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 9,
+      "input": "127",
+      "addresses": [
+        "0.0.0.127"
+      ],
+      "stdout": "ENV 1 3\nTOKEN 313237 0.0.0.127 0 0\nFINAL 0.0.0.127\n",
+      "stderr": ""
+    },
+    {
+      "case": 10,
+      "input": "127.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 3132372e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 11,
+      "input": "127.0.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 7\nTOKEN 3132372e302e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 12,
+      "input": "0",
+      "addresses": [
+        "0.0.0.0"
+      ],
+      "stdout": "ENV 1 1\nTOKEN 30 0.0.0.0 0 0\nFINAL 0.0.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 13,
+      "input": "1",
+      "addresses": [
+        "0.0.0.1"
+      ],
+      "stdout": "ENV 1 1\nTOKEN 31 0.0.0.1 0 0\nFINAL 0.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 14,
+      "input": "256",
+      "addresses": [
+        "0.0.1.0"
+      ],
+      "stdout": "ENV 1 3\nTOKEN 323536 0.0.1.0 0 0\nFINAL 0.0.1.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 15,
+      "input": "65535",
+      "addresses": [
+        "0.0.255.255"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 3635353335 0.0.255.255 0 0\nFINAL 0.0.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 16,
+      "input": "65536",
+      "addresses": [
+        "0.1.0.0"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 3635353336 0.1.0.0 0 0\nFINAL 0.1.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 17,
+      "input": "16777215",
+      "addresses": [
+        "0.255.255.255"
+      ],
+      "stdout": "ENV 1 8\nTOKEN 3136373737323135 0.255.255.255 0 0\nFINAL 0.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 18,
+      "input": "16777216",
+      "addresses": [
+        "1.0.0.0"
+      ],
+      "stdout": "ENV 1 8\nTOKEN 3136373737323136 1.0.0.0 0 0\nFINAL 1.0.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 19,
+      "input": "4294967295",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 34323934393637323935 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 20,
+      "input": "4294967296",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 34323934393637323936 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 21,
+      "input": "-1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 2d31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 22,
+      "input": "+1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 2b31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 23,
+      "input": "-0",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 2d30 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 24,
+      "input": "+0",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 2b30 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 25,
+      "input": "0177.0.0.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 303137372e302e302e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 26,
+      "input": "08",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 3038 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 27,
+      "input": "09",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 3039 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 28,
+      "input": "010",
+      "addresses": [
+        "0.0.0.8"
+      ],
+      "stdout": "ENV 1 3\nTOKEN 303130 0.0.0.8 0 0\nFINAL 0.0.0.8\n",
+      "stderr": ""
+    },
+    {
+      "case": 29,
+      "input": "00",
+      "addresses": [
+        "0.0.0.0"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 3030 0.0.0.0 0 0\nFINAL 0.0.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 30,
+      "input": "0x",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 3078 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 31,
+      "input": "0X7f000001",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 30583766303030303031 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 32,
+      "input": "0x7f.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 6\nTOKEN 307837662e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 33,
+      "input": "0x100000000",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 11\nTOKEN 3078313030303030303030 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 34,
+      "input": "0xffffffff",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 30786666666666666666 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 35,
+      "input": "0x1.0.0.1",
+      "addresses": [
+        "1.0.0.1"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 3078312e302e302e31 1.0.0.1 0 0\nFINAL 1.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 36,
+      "input": "127.000.000.001",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 15\nTOKEN 3132372e3030302e3030302e303031 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 37,
+      "input": "127.00.0.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 3132372e30302e302e31 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 38,
+      "input": "1.2.65535",
+      "addresses": [
+        "1.2.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e3635353335 1.2.255.255 0 0\nFINAL 1.2.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 39,
+      "input": "1.2.65536",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e3635353336 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 40,
+      "input": "1.16777215",
+      "addresses": [
+        "1.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 312e3136373737323135 1.255.255.255 0 0\nFINAL 1.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 41,
+      "input": "1.16777216",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 312e3136373737323136 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 42,
+      "input": "256.1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 3235362e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 43,
+      "input": "1.256.1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 7\nTOKEN 312e3235362e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 44,
+      "input": "1.2.3.256",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e332e323536 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 45,
+      "input": "1.2.3.4.5",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e332e342e35 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 46,
+      "input": ".1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 2e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 47,
+      "input": "1.",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN 312e 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 48,
+      "input": "1..1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 4\nTOKEN 312e2e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 49,
+      "input": "1.2.3.",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 6\nTOKEN 312e322e332e 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 50,
+      "input": "\t127.0.0.1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 093132372e302e302e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 51,
+      "input": "127.0.0.1\t",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 3132372e302e302e3109 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 52,
+      "input": "127.0.0.1 garbage",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 17\nTOKEN 3132372e302e302e312067617262616765 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 53,
+      "input": "127.0.0.1\nignored",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 17\nTOKEN 3132372e302e302e310a69676e6f726564 127.0.0.1 0 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 54,
+      "input": "\n",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 1\nTOKEN 0a 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 55,
+      "input": "1 2",
+      "addresses": [
+        "0.0.0.1"
+      ],
+      "stdout": "ENV 1 3\nTOKEN 312032 0.0.0.1 0 0\nFINAL 0.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 56,
+      "input": "0x10g",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 3078313067 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 57,
+      "input": "1.2.3.4foo",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 312e322e332e34666f6f 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 58,
+      "input": "1.2.3.4/8",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e332e342f38 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 59,
+      "input": "127.0.0.1:",
+      "addresses": [
+        "127.0.0.1",
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 3132372e302e302e31 127.0.0.1 0 0\nTOKEN  255.255.255.255 0 1\nFINAL 127.0.0.1 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 60,
+      "input": ":",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 1\nTOKEN  255.255.255.255 0 1\nTOKEN  255.255.255.255 1 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 61,
+      "input": "::",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 2\nTOKEN  255.255.255.255 0 1\nTOKEN  255.255.255.255 1 1\nTOKEN  255.255.255.255 1 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 62,
+      "input": ":::",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 3\nTOKEN  255.255.255.255 0 1\nTOKEN  255.255.255.255 1 1\nTOKEN  255.255.255.255 1 1\nTOKEN  255.255.255.255 1 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 63,
+      "input": "[::1]",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 5\nTOKEN 5b 255.255.255.255 0 1\nTOKEN  255.255.255.255 1 1\nTOKEN 315d 255.255.255.255 1 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 64,
+      "input": "::ffff:127.0.0.1",
+      "addresses": [
+        "255.255.255.255",
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 16\nTOKEN  255.255.255.255 0 1\nTOKEN  255.255.255.255 1 1\nTOKEN 66666666 255.255.255.255 1 1\nTOKEN 3132372e302e302e31 127.0.0.1 0 0\nFINAL 255.255.255.255 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 65,
+      "input": "localhost",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 6c6f63616c686f7374 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 66,
+      "input": "example.com",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 11\nTOKEN 6578616d706c652e636f6d 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 67,
+      "input": "１２７.0.0.1",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 15\nTOKEN efbc91efbc92efbc972e302e302e31 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 68,
+      "input": "127.0.0.1 ",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 11\nTOKEN 3132372e302e302e31c2a0 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 69,
+      "input": "127.1:127.0.0.1:0x7f000001:0177.0.0.1",
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 37\nTOKEN 3132372e31 127.0.0.1 0 0\nTOKEN 3132372e302e302e31 127.0.0.1 1 0\nTOKEN 30783766303030303031 127.0.0.1 1 0\nTOKEN 303137372e302e302e31 127.0.0.1 1 0\nFINAL 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 70,
+      "input": "bad:garbage:255.255.255.255",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 27\nTOKEN 626164 255.255.255.255 0 1\nTOKEN 67617262616765 255.255.255.255 1 1\nTOKEN 3235352e3235352e3235352e323535 255.255.255.255 1 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 71,
+      "input": ":127.0.0.1:",
+      "addresses": [
+        "255.255.255.255",
+        "127.0.0.1"
+      ],
+      "stdout": "ENV 1 11\nTOKEN  255.255.255.255 0 1\nTOKEN 3132372e302e302e31 127.0.0.1 0 0\nTOKEN  255.255.255.255 1 1\nFINAL 255.255.255.255 127.0.0.1\n",
+      "stderr": ""
+    },
+    {
+      "case": 72,
+      "input": "127.0.0.2:127.0.0.10",
+      "addresses": [
+        "127.0.0.2",
+        "127.0.0.10"
+      ],
+      "stdout": "ENV 1 20\nTOKEN 3132372e302e302e32 127.0.0.2 0 0\nTOKEN 3132372e302e302e3130 127.0.0.10 0 0\nFINAL 127.0.0.2 127.0.0.10\n",
+      "stderr": ""
+    },
+    {
+      "case": 73,
+      "input": "1.2.3.004",
+      "addresses": [
+        "1.2.3.4"
+      ],
+      "stdout": "ENV 1 9\nTOKEN 312e322e332e303034 1.2.3.4 0 0\nFINAL 1.2.3.4\n",
+      "stderr": ""
+    },
+    {
+      "case": 74,
+      "input": "1.2.3.0000000004",
+      "addresses": [
+        "1.2.3.4"
+      ],
+      "stdout": "ENV 1 16\nTOKEN 312e322e332e30303030303030303034 1.2.3.4 0 0\nFINAL 1.2.3.4\n",
+      "stderr": ""
+    },
+    {
+      "case": 75,
+      "input": "0000.0.0.0",
+      "addresses": [
+        "0.0.0.0"
+      ],
+      "stdout": "ENV 1 10\nTOKEN 303030302e302e302e30 0.0.0.0 0 0\nFINAL 0.0.0.0\n",
+      "stderr": ""
+    },
+    {
+      "case": 76,
+      "input": "1.2.+3.4",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 8\nTOKEN 312e322e2b332e34 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    },
+    {
+      "case": 77,
+      "input": "1.2.-3.4",
+      "addresses": [
+        "255.255.255.255"
+      ],
+      "stdout": "ENV 1 8\nTOKEN 312e322e2d332e34 255.255.255.255 0 1\nFINAL 255.255.255.255\n",
+      "stderr": ""
+    }
+  ]
+}

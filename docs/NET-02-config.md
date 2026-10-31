@@ -15,7 +15,9 @@ ASCII leading whitespace, optional sign and numeric prefix, with default fallbac
 on invalid, negative or overflowing int32 input. Duplicate discovery ports adjust
 the service port upward, or downward at65535, exactly as NodeShared does.
 
-Pending modes return Unsupported: relay, PLAIN credentials when both environment
+[Legacy GZ_RELAY capture](NET-02-legacy-relay.md) is separately bounded and
+preserves native numeric interpretation without relaxing typed relay validation.
+Pending modes return Unsupported: PLAIN credentials when both environment
 variables are present and non-ZeroMQ implementation selection.
 HWM0 explicitly returns Unsupported because it requests an unbounded native
 queue. Ports0 and values beyond uint16 are invalid. These are explicit bounds of

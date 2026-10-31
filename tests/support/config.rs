@@ -43,12 +43,13 @@ fn initial_relay_configuration_is_bounded_atomic_and_copied() {
         .with_environment(|name| (name == "GZ_RELAY").then(String::new))
         .unwrap();
     assert_eq!(empty.discovery_relays, config.discovery_relays);
-    assert_eq!(
-        config
-            .with_environment(|name| (name == "GZ_RELAY").then(|| "127.0.0.2".into()))
-            .unwrap_err(),
-        Error::Unsupported("discovery relay")
-    );
+    // The legacy capability is now implemented separately; typed seeds persist.
+    let legacy = config
+        .clone()
+        .with_environment(|name| (name == "GZ_RELAY").then(|| "127.0.0.2".into()))
+        .unwrap();
+    assert_eq!(legacy.discovery_relays, config.discovery_relays);
+    assert_eq!(legacy.legacy_discovery_relays.addresses(), [first]);
 }
 
 #[test]
@@ -189,6 +190,13 @@ fn explicit_environment_settings_and_duplicate_ports() {
 }
 #[test]
 fn unsupported_and_invalid_configuration_are_explicit() {
+    // Exact former guard input now has a native-backed positive contract.
+    let legacy = configured(&[("GZ_RELAY", "10.0.0.1")]).unwrap();
+    assert_eq!(
+        legacy.legacy_discovery_relays.addresses(),
+        [Ipv4Addr::new(10, 0, 0, 1)]
+    );
+    assert!(legacy.discovery_relays.is_empty());
     for (values, error) in [
         (
             &[("GZ_TRANSPORT_SNDHWM", "0")][..],
@@ -197,10 +205,6 @@ fn unsupported_and_invalid_configuration_are_explicit() {
         (
             &[("GZ_TRANSPORT_RCVHWM", "0")][..],
             Error::Unsupported("unbounded ZeroMQ queues"),
-        ),
-        (
-            &[("GZ_RELAY", "10.0.0.1")][..],
-            Error::Unsupported("discovery relay"),
         ),
         (
             &[("GZ_TRANSPORT_IMPLEMENTATION", "zenoh")][..],
@@ -506,4 +510,122 @@ fn statistics_wire_metadata_limit_is_explicit() {
     config.statistics_wire = false;
     config.max_message_bytes = 1;
     config.validate().unwrap();
+}
+
+#[test]
+fn prepared_legacy_relay_environment_preserves_native_addresses_and_typed_admission() {
+    let mut config = Config {
+        capacity: 4,
+        ..Default::default()
+    }
+    .with_environment(|key| (key == "GZ_RELAY").then(|| "127.2:0177.0.0.2:bad::224.1.2.3:0".into()))
+    .unwrap();
+    let expected = vec![
+        Ipv4Addr::new(127, 0, 0, 2),
+        Ipv4Addr::BROADCAST,
+        Ipv4Addr::new(224, 1, 2, 3),
+        Ipv4Addr::UNSPECIFIED,
+    ];
+    assert_eq!(config.legacy_discovery_relays.addresses(), expected);
+    assert!(config.discovery_relays.is_empty());
+    assert_eq!(config.initial_discovery_relays(), expected);
+    config
+        .add_discovery_relay(Ipv4Addr::new(127, 0, 0, 2))
+        .unwrap();
+    assert_eq!(
+        config.add_discovery_relay(Ipv4Addr::LOCALHOST),
+        Err(Error::QueueFull)
+    );
+    for invalid in [
+        Ipv4Addr::BROADCAST,
+        Ipv4Addr::UNSPECIFIED,
+        Ipv4Addr::new(224, 1, 2, 3),
+    ] {
+        assert_eq!(
+            config.add_discovery_relay(invalid),
+            Err(Error::InvalidConfig)
+        );
+    }
+    let mut copy = config.clone();
+    let before = copy.legacy_discovery_relays.clone();
+    assert_eq!(
+        copy.capture_legacy_relays("127.1:127.2:127.3:127.4:127.5"),
+        Err(Error::QueueFull)
+    );
+    assert_eq!(copy.legacy_discovery_relays, before);
+    for invalid in ["x".repeat(MAX_RELAY_ENV_BYTES + 1), "127.1\0suffix".into()] {
+        assert_eq!(
+            copy.capture_legacy_relays(&invalid),
+            Err(Error::InvalidConfig)
+        );
+        assert_eq!(copy.legacy_discovery_relays, before);
+    }
+    copy.capture_legacy_relays(&"0".repeat(MAX_RELAY_ENV_BYTES))
+        .unwrap();
+    assert_eq!(
+        copy.legacy_discovery_relays.addresses(),
+        [Ipv4Addr::UNSPECIFIED]
+    );
+    copy.capacity = 1;
+    assert_eq!(copy.validate(), Err(Error::InvalidConfig));
+    assert_eq!(
+        config
+            .with_environment(|_| None)
+            .unwrap()
+            .legacy_discovery_relays,
+        before
+    );
+    assert!(
+        copy.with_environment(|key| (key == "GZ_RELAY").then(String::new))
+            .unwrap()
+            .legacy_discovery_relays
+            .addresses()
+            .is_empty()
+    );
+}
+
+#[test]
+fn legacy_capture_keeps_explicit_validation_and_capacity_errors() {
+    for config in [
+        Config {
+            capacity: 0,
+            ..Default::default()
+        },
+        Config {
+            discovery_relays: vec![Ipv4Addr::BROADCAST],
+            ..Default::default()
+        },
+        Config {
+            capacity: 1,
+            discovery_relays: vec![Ipv4Addr::LOCALHOST; 2],
+            ..Default::default()
+        },
+    ] {
+        assert!(matches!(
+            config.with_environment(|key| (key == "GZ_RELAY").then(|| "127.2".into())),
+            Err(Error::InvalidConfig)
+        ));
+    }
+    let mut config = Config::default()
+        .with_environment(|key| (key == "GZ_RELAY").then(|| "127.2:127.3".into()))
+        .unwrap();
+    config.capacity = 1;
+    assert_eq!(config.validate(), Err(Error::InvalidConfig));
+    let mut config = Config {
+        capacity: 1,
+        ..Default::default()
+    }
+    .with_environment(|key| (key == "GZ_RELAY").then(|| "127.2".into()))
+    .unwrap();
+    config
+        .add_discovery_relay(Ipv4Addr::new(127, 0, 0, 2))
+        .unwrap();
+    config
+        .add_discovery_relay(Ipv4Addr::new(127, 0, 0, 2))
+        .unwrap();
+    assert_eq!(config.discovery_relays, [Ipv4Addr::new(127, 0, 0, 2)]);
+    assert_eq!(
+        config.add_discovery_relay(Ipv4Addr::new(127, 0, 0, 3)),
+        Err(Error::QueueFull)
+    );
 }
