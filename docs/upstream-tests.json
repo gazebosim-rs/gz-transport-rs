@@ -993,10 +993,13 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubLargeMessageAboveShmThreshold",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubLargeMessageAboveShmThreshold",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "large_message_original_receives_unchanged_native_publisher_payload",
+        "large_message_native_receiver_checks_rust_original_publication_schedule"
+      ],
+      "review": "/root; fresh accepted-46a2d42 archive plus exact six-path overlay and reviewer-owned source/target passed both native/Rust directions in debug (6.03 s, zero skips), with a freshly compiled helper resolving all three Gazebo libraries in the canonical prefix. Complete original/helper bodies, 2500 ms receipt wait, full 256 KiB payload, publisher schedule, corruption latches and bounded RAII cleanup reviewed with no findings. Independent release, unchanged native original, tools, Clippy, full staged or hosted replay is not claimed; author debug two/release two, unchanged native original one, 42 tools, formatting and workspace Clippy pass. Normal staged and exact hosted/source-bound qualification remain required.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -1005,8 +1008,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete fixed original retains successful typed Bytes /large_msg subscription, callback execution after the unchanged 2500 ms sleep, exactly 256 * 1024 received bytes and complete equality with that many S bytes. The unchanged native publisher auxiliary also advertises Vector3d /foo with (1,2,3), publishes both original messages after 500 ms and another 1500 ms, then sleeps 1000 ms before destruction. Owned callback state and fallible Rust registration translate the native global reset and successful Subscribe return. One mutex observes flag/payload coherently; the Rust subscriber/Node retire before joining the unchanged publisher. Reverse setup READY identifies registration without waiting for connection or receipt, and preserves every original payload predicate and publication interval. No extra delivery, flush, receipt-count or acknowledgement assertion is inferred.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK with unchanged twoProcsPublisher_aux and a freshly built native receiver preserving all original payload checks. Child-only UUID partitions and held distinct reusable wildcard UDP discovery ports (multicast-all disabled) isolate both directions. The unchanged native original replaces only its partition and preserves those child port overrides. The reverse setup marker has a five-second bound, child joins a ten-second kill/reap watchdog, output a 64 KiB bound; these do not replace the 2500 ms original wait. The case name references an SHM threshold, but this qualifies the selected ZeroMQ profile and native wire payload only; no SHM, Zenoh, zero-copy, performance, global identity or general delivery guarantee is claimed.",
+      "evidence": "docs/NET-02-large-message-interop.md; author debug/release two and unchanged native original one pass, along with all 42 tools, formatting and workspace all-target Clippy. Root fresh-source/target debug two and canonical three-library linkage independently pass. Persistent corruption latches strengthen the original final-value check without extra original credit; reverse-direction supplementary admission checks add no separate mapping. Exactly this one row is conditional: accepted 127 faithful / 7 partial / 284 pending becomes 128 / 7 / 283 only after normal full staged checks and exact whole hosted success with downloaded source evidence. No production change or defect was introduced; dependencies, defaults, protocols, pins, old tests and all 22 NSS cases remain unchanged."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.LocalSubscriberReceivesOnceWithRemoteSubscriber",

@@ -1679,3 +1679,24 @@ Final live-doc summaries now point to this bounded legacy contract rather than
 claiming all GZ_RELAY input is Unsupported. All 418 ledger entries remain
 byte-identical. Normal full staged coverage and exact source-bound hosted
 qualification are still required before acceptance.
+# Two-process large payload candidate
+
+The separate large-message slice preserves the complete original
+`twoProcPubSub.PubSubLargeMessageAboveShmThreshold` payload contract. Its Rust
+subscriber runs the unchanged native auxiliary; its reverse native receiver
+checks the Rust translation of the original publication schedule. Both retain
+the original 2500 ms receipt wait, exact 256 KiB size and every `S` byte.
+Persistent corruption latches supplement those original predicates. The
+selected ZeroMQ reference does not qualify an SHM or Zenoh path. Held distinct
+discovery ports and child-only partitions isolate the peers from other suites.
+See [the contract](NET-02-large-message-interop.md) for setup, cleanup and API
+translations. Author debug two, release two and unchanged native original one
+pass with canonical linkage; all 42 tooling controls, formatting and workspace
+Clippy pass. Root independently passed both directions in debug from a fresh
+accepted-46 archive plus exact six-path overlay and reviewer-owned source/target,
+with freshly built canonical helper linkage. Its complete assertion/source and
+cleanup review found no issues; independent release, tools or unchanged native
+original replay is not claimed. Only this original row is a conditional
+candidate: 127/7/284 becomes 128/7/283 after the mandatory normal full staged gate
+and exact hosted success with downloaded source evidence. Reverse direction
+and corruption latches earn no extra original credit.

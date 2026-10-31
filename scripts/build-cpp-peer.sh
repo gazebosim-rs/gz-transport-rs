@@ -37,3 +37,6 @@ c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/mixed_subscriber_peer.cc -o 
 # Legacy relay inputs include invalid-to-broadcast; all sends are child-intercepted.
 c++ -std=c++17 -Wall -Wextra -Werror -I "${GZ_REFERENCE_SOURCE:-$(pwd)/../gz-transport}/src" tests/legacy_relay_peer.cc -o artifacts/legacy-relay-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
 c++ -std=c++17 -Wall -Wextra -Werror -shared -fPIC tests/legacy_relay_sends.cc -o artifacts/legacy-relay-sends.so
+
+# Exact 256KiB receipt predicates; child-only isolated domains come from tests.
+c++ -std=c++17 -Wall -Wextra -Werror -pthread tests/large_message_peer.cc -o artifacts/large-message-peer $(pkg-config --cflags --libs gz-transport) -Wl,-rpath,"${GZ_REFERENCE_PREFIX:-/home/nkoenig/local}/lib"
