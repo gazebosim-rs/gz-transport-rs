@@ -1587,3 +1587,36 @@ Initial sandbox EPERM was excluded setup and
 authorized host execution passed. Reviewer release/full-gate execution is not
 claimed. Exactly this original row is conditional: accepted 125/7/286 becomes
 126/7/285 only after the normal full staged and exact hosted checks.
+
+# Mixed typed, raw and individually owned subscribers
+
+`mixed_subscriber_original_uses_unchanged_native_receivers` preserves the complete
+pinned mixed-subscriber publisher body and actual unchanged auxiliary assertions.
+`mixed_subscriber_native_publisher_preserves_all_rust_callback_lifetimes` ports
+the auxiliary's four callback states against the exact SDK publication schedule.
+Both retain Vector3d `/foo`, values `(1, 2, 3)`, no initial interest, native
+10 s / 10 ms readiness, ten publications with 500 ms sleeps, the 100 x 100 ms
+receive loop and both one-second unsubscribe checks. Rust legacy typed/raw
+callbacks are owned handles retained through Node-wide unsubscribe; factory
+results and live owned registration state are the explicit API translation.
+The original reverse variant drops all handles and Node immediately after its
+second quiet check. Separate
+`mixed_subscriber_remote_interest_retires_while_node_stays_alive` retains the
+owner until the native publisher reports no remaining interest, so BYE cannot
+explain that supplemental result.
+
+Entry counters precede callback validation and persistent invalid-state checks
+cannot be swallowed by panic isolation. The separate positive-value test checks
+the native four-ULP boundary. Child-only partitions and held ports isolate both
+directions and the unchanged native original; SDK helper linkage is audited by
+the existing verifier. No old predicate, NSS fixture, protocol or default changes.
+See [the bounded contract](NET-02-mixed-subscriber-interest.md). Author four final
+controls pass in debug/release; unchanged native original one, all 42 tools and
+workspace all-target Clippy pass. Root's fresh accepted-d01 archive/exact overlay
+and owned debug target independently pass four controls; its fresh SDK helper
+resolves all three canonical Gazebo libraries, and unchanged native original one
+passes separately under held isolated ports and the same process-group bound.
+Source and all complete predicates were reviewed with no findings. Independent
+release, tools or full-gate replay is not claimed. Exactly this one conditional
+mapping moves accepted 126/7/285 to 127/7/284 only after normal full staged and
+exact hosted/source-bound qualification. No supplement gains another case.

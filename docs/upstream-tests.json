@@ -970,10 +970,13 @@
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubTwoProcsMixedSubscribers",
       "target": "INTEGRATION_twoProcsPubSub",
       "case": "twoProcPubSub.PubSubTwoProcsMixedSubscribers",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "mixed_subscriber_original_uses_unchanged_native_receivers",
+        "mixed_subscriber_native_publisher_preserves_all_rust_callback_lifetimes"
+      ],
+      "review": "/root; independent fresh accepted-d01 archive plus exact six-path staged overlay and reviewer-owned Cargo target passed all four Rust controls in debug (15.08 s, zero skips), with a newly compiled SDK helper resolving all three Gazebo libraries in the canonical prefix. Independently replayed the unchanged full native original one with held isolated ports, XML and the same 50-second process-group watchdog. Complete parent/helper bodies, four callbacks, waits, four-ULP bounds, latches, literal destruction versus retained-Node supplement and bounded cleanup reviewed with no findings. Independent release, tools, full staged or hosted execution is not claimed by this focused review; author debug/release four, native one, 42 tools and workspace Clippy pass. Final normal staged and exact hosted/source-bound qualification remain required.",
       "source": [
         {
           "path": "test/integration/twoProcsPubSub.cc",
@@ -982,8 +985,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete original retains successful Vector3d /foo advertisement, initially false HasConnections before the child starts, native 10 s / 10 ms connection readiness and ten successful publications of x=1/y=2/z=3 with a 500 ms sleep after each. The actual unchanged native auxiliary retains all four typed/raw/owned registration success checks, each callback's three EXPECT_DOUBLE_EQ values at four ULPs, raw type-name/parse success, the 100 x 100 ms all-flags receive loop, every flag reset, successful single-owned unsubscribe followed by 1 s and flags [true,true,false,true], then successful Node-wide unsubscribe followed by 1 s and all four false. Rust fallible results, known-membership snapshot and live owned registration state are explicit API translations; legacy typed/raw callbacks are owned handles held through Node-wide unsubscribe. The reverse literal variant drops handles and Node immediately after the second quiet check, matching the auxiliary boundary. No flush, callback barrier, fabricated invalid state or changed original wait is inserted.",
+      "configuration": "Pinned Linux x86_64 ZeroMQ SDK; actual unchanged twoProcsPubSubMixedSubscribers_aux plus a fresh SDK publisher retaining the original publication body and native waitUntil. Child-only UUID partition, loopback and held distinct discovery ports isolate peers; the full unchanged original resets its own partition but inherits the port overrides. Five-second helper setup observation, fifteen-second child-join watchdog, 64 KiB diagnostic collection and fifty-second full-reference process-group watchdog are bounded test setup/cleanup translations. New cached-interest observations do not claim physical socket retirement, process-global identity, convergence, general delivery guarantees, throughput or latency.",
+      "evidence": "docs/NET-02-mixed-subscriber-interest.md; author four controls pass debug/release, unchanged native original one, 42 tools and workspace all-target Clippy pass. Root independently passed fresh-source/target debug four and unchanged native one, with canonical helper linkage. Persistent error and pre-validation entry counters prevent caught callback panics from hiding bad values or retired invocations. The separate retained-Node control observes actual native HasConnections zero while the owner remains alive, excluding owner destruction/BYE; the value-boundary test and this supplement earn no additional original credit. Only this row is a conditional candidate: accepted 126 faithful / 7 partial / 285 pending becomes 127 / 7 / 284 after ordinary full staged coverage and exact hosted success with downloaded source evidence. Production, schema, defaults, dependencies, pins and all 22 NSS controls remain unchanged; no production defect was reproduced."
     },
     {
       "id": "INTEGRATION_twoProcsPubSub:twoProcPubSub.PubSubLargeMessageAboveShmThreshold",
