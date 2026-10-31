@@ -423,6 +423,14 @@ impl LocalInterestCache {
         }
     }
 }
+/// An admitted, owned publication returned by a Node's fallible factory.
+///
+/// An invalid default publisher is not representable through this API:
+/// ```compile_fail,E0599
+/// use gz_transport::Publisher;
+/// let invalid = Publisher::default();
+/// ```
+/// Construction does not imply subscriber readiness, delivery or liveness.
 pub struct Publisher {
     _lease: Lease,
     sender: Sender,

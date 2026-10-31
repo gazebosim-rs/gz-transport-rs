@@ -1519,3 +1519,33 @@ Exactly BadNetworkClock is a conditional candidate: 123/7/288 becomes 124/7/287
 only after the unchanged full normal staged and exact hosted checks. Native
 four readiness predicates/two waits remain preserved in the reference, not
 silently retired or mislabeled as literal Rust invalid-object predicate parity.
+
+# Publisher construction-validity API translation
+
+The separate `publisher_validity` target preserves the complete construction
+intent of pinned `NodePubTest.BoolOperatorTest` through a reason-qualified Rust
+API disposition. Two Nodes, Vector3d, literal `/foo` and the mutable/const
+false/false/true/true observation order remain. Invalid C++ default objects are
+unrepresentable through Rust's public Publisher API; actual empty-topic factory
+errors and a default-construction compile-fail guard document that difference.
+Successful public factories return actual owned Publishers. This is not literal
+runtime bool-predicate parity. See [the exact disposition](NET-02-publisher-validity.md).
+
+The original native body and four assertions are unchanged, with its exact
+filter added to the mandatory runner. A separate test checks both Nodes'
+advertised topic/Vector3d metadata and uses shared borrows of both handles for
+distinct payloads and bounded receipts. Those supplemental checks earn no
+additional original credit and imply no construction-time delivery/liveness.
+
+Author qualification passed two public tests and one Rustdoc in each of debug
+and release, the unchanged native original (one test), all 42 tools and workspace
+all-target Clippy. Actual rustc checks against the same built parent rlib accept
+the public Vector3d factory and reject Publisher::default solely with E0599.
+Independent fresh ac8317 archive/five-path overlay and own-target review passes
+the same public two/Rustdoc one in debug/release, native original one, 42 tools,
+Clippy and actual same-rLib compiler controls. Complete native constructors,
+Valid, both bool overloads and four original assertions have been reviewed with
+no findings. Initial sandbox socket and wrong compiler dependency-directory
+failures are excluded setup; proper fresh-source host runs qualify. Exactly
+BoolOperatorTest is conditional: accepted 124/7/287 becomes 125/7/286 only after
+the ordinary full staged and exact hosted checks. No other row gains credit.

@@ -3672,10 +3672,12 @@
       "id": "UNIT_Node_TEST:NodePubTest.BoolOperatorTest",
       "target": "UNIT_Node_TEST",
       "case": "NodePubTest.BoolOperatorTest",
-      "baseline": "not_run",
-      "disposition": "pending",
-      "replacement": [],
-      "review": "pending",
+      "baseline": "passed",
+      "disposition": "faithful_port",
+      "replacement": [
+        "publisher_bool_operator_original_with_fallible_construction"
+      ],
+      "review": "/root/integration_reviewer; fresh ac8317 archive plus five exact paths and own target passed public 2 and Publisher compile-fail Rustdoc 1 in debug/release, unchanged native BoolOperator 1, 42 tools and workspace all-target Clippy. Actual same-own-rLib public factory compiles and default construction fails solely E0599. Complete default constructor, Valid, both bool overloads and original four predicates reviewed; explicit owner-approved Result/default-unrepresentability disposition, not literal C++ bool-state parity. Initial sandbox socket and wrong compiler dependency-search failures were excluded setup; corrected fresh-source host runs qualify. No findings; normal full staged and exact hosted qualification remain required.",
       "source": [
         {
           "path": "src/Node_TEST.cc",
@@ -3684,8 +3686,9 @@
         }
       ],
       "reference_features": [],
-      "contract": "Retained original assertions; detailed per-case contract audit pending.",
-      "configuration": "Expanded on Linux x86_64; backend/environment conditions remain pending audit."
+      "contract": "Complete native construction reference: two Nodes; mutable and const default Publishers both false, then assign mutable and construct second const Publisher from Vector3d /foo factories, both true in that order. Native Valid checks only nonempty topic, not liveness or delivery. Safe Rust has no public invalid default Publisher; actual Publisher::default() fails E0599 while the public typed factory compiles. Ordered mutable/immutable empty-topic factory InvalidName Results, mutable replacement by successful /foo factory and second-Node immutable success preserve construction intent through the explicitly approved new API, not literal default-object/runtime bool predicate parity.",
+      "configuration": "Pinned Linux x86_64 canonical SDK; exact Vector3d and /foo from Node_TEST.cc48, no topic-spelling translation. Two Rust Nodes share an isolated partition and held reusable distinct discovery ports. Supplemental actual topic/type records and bounded local receipts through both immutable handle borrows are separate from the four original construction predicates; no new default object, bool facade, API, dependency, wire format or consumer pin.",
+      "evidence": "docs/NET-02-publisher-validity.md; unchanged native NodePubTest.BoolOperatorTest mandatory filter. Author and independent public 2/Rustdoc 1 each debug/release plus same-built-library factory/default compiler controls, native 1, 42 tools and Clippy pass. No compiler control program executes. Exactly this row is a conditional candidate: accepted 124 faithful / 7 partial / 287 pending becomes 125 / 7 / 286 only after the unchanged full staged gate and exact hosted success. No construction-time delivery/liveness, global identity or statistics-policy credit."
     },
     {
       "id": "UNIT_Node_TEST:NodePubTest.DestructionOrder",
